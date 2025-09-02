@@ -1,0 +1,22 @@
+{
+  "name": "pwa",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^6.1.1",
+    "svelte": "^5.38.1",
+    "vite": "^7.1.2",
+    "vite-plugin-pwa": "^1.0.3"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "leaflet": "^1.9.4",
+    "svelte-leafletjs": "^2.0.0"
+  }
+}

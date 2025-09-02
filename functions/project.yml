@@ -1,0 +1,36 @@
+environment:
+  ENV: production
+parameters: {}
+packages:
+  - name: api
+    actions:
+      - name: upcoming
+        runtime: 'go:1.20'
+        limits:
+          timeout: 15000
+        web: true
+        environment:
+          TURSO_DB_RO_TOKEN: "${TURSO_DB_RO_TOKEN}"
+          TURSO_DB_URL: "${TURSO_DB_URL}"
+      - name: past
+        runtime: 'go:1.20'
+        limits:
+          timeout: 15000
+        web: true
+        environment:
+          TURSO_DB_RO_TOKEN: "${TURSO_DB_RO_TOKEN}"
+          TURSO_DB_URL: "${TURSO_DB_URL}"
+  - name: scraper
+    actions:
+      - name: scraper
+        runtime: 'go:1.20'
+        limits:
+          timeout: 60000
+        triggers:
+          - name: scrape
+            sourceType: scheduler
+            sourceDetails:
+              cron: "0 6,15 * * * "
+        environment: 
+          TURSO_DB_RW_TOKEN: "${TURSO_DB_RW_TOKEN}"
+          TURSO_DB_URL: "${TURSO_DB_URL}"

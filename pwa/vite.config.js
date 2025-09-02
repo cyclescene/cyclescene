@@ -1,0 +1,50 @@
+import { defineConfig } from 'vite'
+import { svelte } from '@sveltejs/vite-plugin-svelte'
+import { VitePWA } from 'vite-plugin-pwa'
+
+// https://vite.dev/config/
+export default defineConfig({
+    plugins: [
+        svelte(),
+        VitePWA({
+            registerType: 'autoUpdate',
+            manifest: {
+                name: "Bike Bae",
+                short_name: "BikeBaePDX",
+                description: "Upcoming bike rides in Portland, Oregon",
+                theme_color: "#000000",
+                icons: [],
+            },
+            workbox: {
+                globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+                runtimeCaching: [
+                    {
+                        urlPattern: /^https:\/\/.*\.(?:tile.openstreetmap.org)\/.*$/,
+                        handler: 'CacheFirst',
+                        options: {
+                            cacheName: 'map-tiles-cache',
+                            expiration: {
+                                maxEntries: 500,
+                                maxAgeSeconds: 60 * 60 * 24 * 30,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200]
+                            }
+
+                        }
+                    },
+                    {
+                        urlPattern: /^https:\/\/faas-sfo3-7872a1dd\.doserverless\.co\/api\/v1\/web\/fn-69328def-615c-4bce-88c0-dc912d5f1d84\/api\/(upcoming|past)$/,
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'bike-bae-api-cache',
+                            cacheableResponse: {
+                                statuses: [0, 200]
+                            }
+                        }
+                    }
+                ]
+            }
+        })
+    ],
+})
