@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
@@ -28,7 +27,7 @@ func buildShift2BikesURL() (string, error) {
 	year, month, day := nowInPortland.Date()
 	startDate := time.Date(year, month, day, 0, 0, 0, 0, location)
 
-	endDate := startDate.AddDate(0, 0, 7)
+	endDate := startDate.AddDate(0, 0, 60)
 
 	formattedStartDate := startDate.Format(time.RFC3339)
 	formattedEndDate := endDate.Format(time.RFC3339)
@@ -94,6 +93,29 @@ type Shift2BikeEvents struct {
 	Events []Shift2BikeEvent `json:"events"`
 }
 
+type GoogleGeocodeResponse struct {
+	Results []GoogleGeocodeResult `json:"results"`
+	Status  string                `json:"status"`
+}
+
+type GoogleGeocodeResult struct {
+	Geometry GoogleGeometry `json:"geometry"`
+}
+
+type GoogleGeometry struct {
+	Location GoogleLocation `json:"location"`
+}
+
+type GoogleLocation struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lng"`
+}
+
+type geocodeCacheEntry struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
+}
+
 func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Fatalf("Error loading .env file: %v", err)
@@ -131,7 +153,7 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := createEventTable(db); err != nil {
+	if err := createTables(db); err != nil {
 		log.Fatalf("failed to create rides table: %v", err)
 	}
 
@@ -140,25 +162,18 @@ func main() {
 	}
 }
 
-type GeocodeResult struct {
-	Lat string `json:"lat"`
-	Lon string `json:"lon"`
-}
-
 func geocodeAddress(address string, client *http.Client) (float64, float64, error) {
-	baseURL := "https://nominatim.openstreetmap.org/search"
+	googleAPIKey := os.Getenv("GOOGLE_GEOCODING_API_KEY")
+	baseURL := "https://maps.googleapis.com/maps/api/geocode/json"
 	req, err := http.NewRequest(http.MethodGet, baseURL, nil)
 	if err != nil {
 		return 0.0, 0.0, err
 	}
 
 	q := req.URL.Query()
-	q.Add("q", address)
-	q.Add("format", "json")
-	q.Add("limit", "1")
+	q.Add("address", address)
+	q.Add("key", googleAPIKey)
 	req.URL.RawQuery = q.Encode()
-
-	req.Header.Set("User-Agent", "Bike Bae (jduarte0912@gmail.com)")
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -166,50 +181,68 @@ func geocodeAddress(address string, client *http.Client) (float64, float64, erro
 	}
 	defer res.Body.Close()
 
-	var results []GeocodeResult
-	if err := json.NewDecoder(res.Body).Decode(&results); err != nil {
-		return 0.0, 0.0, fmt.Errorf("failed to decode geocoding response: %v", err)
+	if res.StatusCode != http.StatusOK {
+		return 0.0, 0.0, fmt.Errorf("Google Geocoding API returned non-OK status code %d", res.StatusCode)
 	}
 
-	if len(results) == 0 {
-		return 0.0, 0.0, fmt.Errorf("no results found for address: %v", address)
+	var googleResponse GoogleGeocodeResponse
+	if err := json.NewDecoder(res.Body).Decode(&googleResponse); err != nil {
+		return 0, 0, fmt.Errorf("failed to decode Google geocoding response: %v", err)
 	}
 
-	lat, _ := strconv.ParseFloat(results[0].Lat, 64)
-	lon, _ := strconv.ParseFloat(results[0].Lon, 64)
+	if googleResponse.Status != "OK" {
+		if googleResponse.Status == "ZERO_RESULTS" {
+			return 0.0, 0.0, fmt.Errorf("Google Geocoding API found no results for address: '%s'", address)
+		}
+		return 0.0, 0.0, fmt.Errorf("Google Geocoding API returned status: %s for (for address: '%s')", googleResponse.Status, address)
+	}
+
+	if len(googleResponse.Results) == 0 {
+		return 0.0, 0.0, fmt.Errorf("no results found for address: '%s' (GOOGLE API 'OK' status but empty results", address)
+	}
+
+	lat := googleResponse.Results[0].Geometry.Location.Lat
+	lon := googleResponse.Results[0].Geometry.Location.Lon
 
 	return lat, lon, nil
 }
 
-func cleanAddress(rawAddress string) string {
+func cleanAddress(rawinput string) string {
+	if rawinput == "" {
+		return ""
+	}
+
+	clean := strings.ToLower(rawinput)
 	spaceRegex := regexp.MustCompile(`\s+`)
-	clean := spaceRegex.ReplaceAllString(rawAddress, " ")
+	clean = spaceRegex.ReplaceAllLiteralString(clean, " ")
 	clean = strings.TrimSpace(clean)
 
 	clean = strings.ReplaceAll(clean, " and ", " & ")
-	clean = strings.ReplaceAll(clean, " AND ", " & ")
 	clean = strings.ReplaceAll(clean, " @ ", " & ")
 
 	suiteRegex := regexp.MustCompile(`(?i)\s+(#|apt|unit|suite)\s*\w+`)
 	clean = suiteRegex.ReplaceAllString(clean, "")
+	clean = strings.ReplaceAll(clean, "av.", "ave")
+	clean = strings.ReplaceAll(clean, "st.", "st")
+	clean = strings.ReplaceAll(clean, "pl.", "place")
 
-	clean = strings.ReplaceAll(clean, "Av.", "Ave")
-	clean = strings.ReplaceAll(clean, "St.", "St")
+	hasPortland := strings.Contains(clean, "portland")
+	hasOregon := strings.Contains(clean, "or")
 
-	clean = strings.ReplaceAll(clean, " United States", "")
-	clean = strings.ReplaceAll(clean, " USA", "")
-
-	if !strings.Contains(clean, "Portland, OR") {
-		clean = clean + ", Portland, OR"
+	if !hasPortland && !hasOregon {
+		clean = clean + ", portland, or"
+	} else if hasPortland && !hasOregon {
+		clean = clean + ", or"
 	}
 
 	return clean
 }
 
-func createEventTable(db *sql.DB) error {
+func createTables(db *sql.DB) error {
 	createTableSQL := `
     CREATE TABLE IF NOT EXISTS rides (
-        id TEXT PRIMARY KEY,
+        composite_event_id TEXT PRIMARY KEY,
+        id TEXT NOT NULL,
         address TEXT,
         audience TEXT NOT NULL,
         cancelled INTEGER NOT NULL,
@@ -234,11 +267,48 @@ func createEventTable(db *sql.DB) error {
         source_data TEXT NOT NULL
     );`
 
+	createGeocodeCacheTableSQL := `
+    CREATE TABLE IF NOT EXISTS geocode_cache (
+    address_key TEXT PRIMARY KEY,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL,
+    last_updated TEXT NOT NULL
+    );`
+
 	if _, err := db.Exec(createTableSQL); err != nil {
 		return err
 	}
 
+	if _, err := db.Exec(createGeocodeCacheTableSQL); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func geocodeAndCache(client *http.Client, addressKey string, inMemoryCache map[string]geocodeCacheEntry, geocodeCacheUpsertStmt *sql.Stmt) (float64, float64, error) {
+	if addressKey == "" {
+		return 0.0, 0.0, fmt.Errorf("empty address key provided for geocoding")
+	}
+
+	if entry, ok := inMemoryCache[addressKey]; ok {
+		return entry.Lat, entry.Lon, nil
+	}
+
+	lat, lon, geocodeErr := geocodeAddress(addressKey, client)
+
+	if geocodeErr != nil {
+		log.Printf("failed to geocode address '%s' via Google API: %v", addressKey, geocodeErr)
+		return 0.0, 0.0, nil
+	}
+
+	inMemoryCache[addressKey] = geocodeCacheEntry{Lat: lat, Lon: lon}
+	_, err := geocodeCacheUpsertStmt.Exec(addressKey, lat, lon, time.Now().Format(time.RFC3339))
+	if err != nil {
+		log.Printf("failed to upsert new geocode results for '%s' to DB cache: %v", addressKey, err)
+	}
+
+	return lat, lon, nil
 }
 
 func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) error {
@@ -248,10 +318,44 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 		return err
 	}
 
-	stmt, err := tx.Prepare(`
-        INSERT INTO rides (id, address, audience, cancelled, date, details, endtime, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, source_data)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(id) DO UPDATE SET
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+			panic(r)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	cachedAddresses := make(map[string]geocodeCacheEntry)
+	rows, err := tx.Query("SELECT address_key, lat, lon FROM geocode_cache")
+	if err != nil {
+		log.Printf("Error loading geocode cache from DB: %v. Proceedign with empty cache", err)
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			var key string
+			var lat, lon float64
+			if err := rows.Scan(&key, &lat, &lon); err != nil {
+				log.Printf("Error scanning geocode cache row: %v", err)
+				continue
+			}
+			cachedAddresses[key] = geocodeCacheEntry{Lat: lat, Lon: lon}
+		}
+		if err = rows.Err(); err != nil {
+			log.Printf("error after iterating geocode cache rows: %v", err)
+		}
+		log.Printf("Loaded %d addresses into in-memory geocode cache", len(cachedAddresses))
+
+	}
+
+	ridesUpsertStmt, err := tx.Prepare(`
+        INSERT INTO rides (composite_event_id, id, address, audience, cancelled, date, details, endtime, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, source_data)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(composite_event_id) DO UPDATE SET
+            id=excluded.id,
             address=excluded.address,
             audience=excluded.audience,
             cancelled=excluded.cancelled,
@@ -276,13 +380,32 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
             source_data=excluded.source_data;
         `)
 	if err != nil {
-		log.Printf("failed to prepare statement: %v", err)
+		log.Printf("failed to prepare ride upsert statement: %v", err)
 		return err
 	}
-	defer stmt.Close()
+	defer ridesUpsertStmt.Close()
+
+	geocodeCacheUpsertStmt, err := tx.Prepare(`
+        INSERT INTO geocode_cache (address_key, lat, lon, last_updated)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(address_key) DO UPDATE SET
+            lat=excluded.lat,
+            lon=excluded.lon,
+            last_updated=excluded.last_updated;
+        `)
+	if err != nil {
+		log.Printf("failed to prepare geocode cache upsert statement: %v", err)
+		return err
+	}
+	defer geocodeCacheUpsertStmt.Close()
 
 	for _, event := range events.Events {
-		sourceData, _ := json.Marshal(event)
+		compositeEventID := fmt.Sprintf("%s_%s", event.ID, event.Date)
+		sourceData, marshalErr := json.Marshal(event)
+		if marshalErr != nil {
+			log.Printf("Warning: failed to marshal source_data for event ID %s (composite ID : %s) %v", event.ID, compositeEventID, marshalErr)
+			sourceData = []byte("{}")
+		}
 
 		cancelledInt := 0
 		if event.Cancelled {
@@ -300,12 +423,34 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 		}
 
 		var lat, lon float64
-		if event.Address != "" {
-			sanitizedAddress := cleanAddress(event.Address)
-			lat, lon, _ = geocodeAddress(sanitizedAddress, client)
+		var currentGeoCodeErr error
+
+		cleanedAddr := cleanAddress(event.Address)
+		if cleanedAddr != "" {
+			lat, lon, currentGeoCodeErr = geocodeAndCache(client, cleanedAddr, cachedAddresses, geocodeCacheUpsertStmt)
+		} else {
+			currentGeoCodeErr = fmt.Errorf("cleaned address was empty for event ID %s (composite ID: %s)", event.ID, compositeEventID)
 		}
 
-		_, err := stmt.Exec(
+		if currentGeoCodeErr != nil && event.Venue != "" {
+			log.Printf(
+				"Geocoding event.Address ('%s' -> cleaned '%s') failed or was empty for (composite ID: %s). Attempting event.Venue ('%s'). Error: %v",
+				event.Address, cleanedAddr, compositeEventID, event.Venue, currentGeoCodeErr)
+			cleanedVenue := cleanAddress(event.Venue)
+			if cleanedVenue != "" {
+				lat, lon, currentGeoCodeErr = geocodeAndCache(client, cleanedVenue, cachedAddresses, geocodeCacheUpsertStmt)
+			} else {
+				currentGeoCodeErr = fmt.Errorf("cleaned venue was exmpty after address failure for event ID: %s (composite event ID: %s)", event.ID, compositeEventID)
+			}
+		}
+
+		if currentGeoCodeErr != nil {
+			log.Printf("Could not get coordinates for event ID %s (composite event ID: %s) after trying both address ('%s') and venue ('%s'). Setting to 0.0", event.ID, compositeEventID, event.Address, event.Venue)
+			lat, lon = 0.0, 0.0
+		}
+
+		_, execErr := ridesUpsertStmt.Exec(
+			compositeEventID,
 			event.ID,
 			event.Address,
 			event.Audience,
@@ -329,19 +474,13 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 			event.Title,
 			event.Venue,
 			string(sourceData))
-		if err != nil {
-			tx.Rollback()
-			return fmt.Errorf("failed to execute statement for event ID %s: %v", event.ID, err)
+		if execErr != nil {
+			err = fmt.Errorf("failed to execute statement for event ID %s: %v", event.ID, err)
+			return err
 
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Printf("failed to commit transaction: %v", err)
-		return err
-	}
-
 	log.Printf("Successfully saved %d records to Turso", len(events.Events))
-
 	return nil
 }

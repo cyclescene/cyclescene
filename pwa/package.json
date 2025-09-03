@@ -17,6 +17,7 @@
   "dependencies": {
     "date-fns": "^4.1.0",
     "leaflet": "^1.9.4",
+    "sveaflet": "^0.1.4",
     "svelte-leafletjs": "^2.0.0"
   }
 }

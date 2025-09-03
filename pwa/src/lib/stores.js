@@ -46,6 +46,8 @@ export const currentView = writable('map')
 
 export const currentDate = writable(new Date())
 
+export const currentRide = writable(null)
+
 export const rides = createRidesStore()
 
 export const savedRideIds = writable([])
@@ -53,14 +55,12 @@ export const savedRideIds = writable([])
 export const filteredRides = derived(
     [rides, currentDate],
     ([$rides, $currentDate]) => {
-        // Check if we have valid data to work with
         if (!$rides || !$rides.data || !$currentDate) {
             return [];
         }
 
         return $rides.data.filter(ride => {
             const rideDate = parseISO(ride.date);
-
 
             return isSameDay($currentDate, rideDate);
         });
