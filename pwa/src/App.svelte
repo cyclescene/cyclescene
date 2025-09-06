@@ -1,12 +1,21 @@
 <script>
     import DatePicker from "./components/datePicker.svelte";
+    import RideDetailsTopBar from "./components/rideDetailsTopBar.svelte";
     import { currentView } from "./lib/stores.js";
     import MapView from "./views/MapView.svelte";
     import RideView from "./views/RideView.svelte";
 </script>
 
 <main>
-    <header><DatePicker /></header>
+    <header>
+        {#if $currentView == "map"}
+            <DatePicker />
+        {:else if $currentView == "ride"}
+            <RideDetailsTopBar />
+        {:else}
+            <p>Nothing to see here</p>
+        {/if}
+    </header>
     <div class="view-container">
         {#if $currentView == "map"}
             <MapView />
@@ -62,7 +71,8 @@
     footer {
         height: var(--footer-height);
         width: 100vw;
-        background-color: #242424;
+        /* background-color: #242424; */
+        background-color: red;
         position: absolute;
         height: var(--header-height);
         bottom: 0;

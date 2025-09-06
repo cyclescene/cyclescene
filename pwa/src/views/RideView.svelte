@@ -1,17 +1,9 @@
 <script>
-    import { currentRide, currentView } from "../lib/stores";
-
-    function onButtonClick() {
-        $currentView = "map";
-        $currentRide = null;
-    }
+    import { currentRide } from "../lib/stores";
 </script>
 
 <div class="ride-details-container">
-    <h1>{$currentRide.title}</h1>
-    <h2>{$currentRide.newsflash.String}</h2>
-    <p>{$currentRide.details.String}</p>
-    <button onclick={onButtonClick}>close</button>
+    <pre>{JSON.stringify($currentRide, null, 2)}</pre>
 </div>
 
 <style>
@@ -28,7 +20,7 @@
         overflow-y: auto;
     }
 
-    h1 {
+    pre {
         margin-top: 60px;
     }
 </style>

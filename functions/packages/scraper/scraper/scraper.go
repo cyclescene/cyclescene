@@ -302,13 +302,13 @@ func geocodeAndCache(client *http.Client, addressKey string, inMemoryCache map[s
 
 	if geocodeErr != nil {
 		log.Printf("failed to geocode address '%s' via Google API: %v", addressKey, geocodeErr)
-		return 0.0, 0.0, nil
+		return 0.0, 0.0, geocodeErr
 	}
 
 	inMemoryCache[addressKey] = geocodeCacheEntry{Lat: lat, Lon: lon}
 	_, err := geocodeCacheUpsertStmt.Exec(addressKey, lat, lon, time.Now().Format(time.RFC3339))
 	if err != nil {
-		log.Printf("failed to upsert new geocode results for '%s' to DB cache: %v", addressKey, err)
+		return 0.0, 0.0, fmt.Errorf("failed to upsert new geocode results for '%s' to DB cache: %v", addressKey, err)
 	}
 
 	return lat, lon, nil
@@ -447,9 +447,10 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 			}
 		}
 
+		// const ORIGINAL_MAP_CENTER = [45.52, -122.65];
 		if currentGeoCodeErr != nil {
 			log.Printf("Could not get coordinates for event ID %s (composite event ID: %s) after trying both address ('%s') and venue ('%s'). Setting to 0.0", event.ID, compositeEventID, event.Address, event.Venue)
-			lat, lon = 0.0, 0.0
+			lat, lon = 45.54, -122.65
 		}
 
 		_, execErr := ridesUpsertStmt.Exec(

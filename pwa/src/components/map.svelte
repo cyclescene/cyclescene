@@ -1,16 +1,22 @@
 <script>
-    import { Map, TileLayer, Tooltip, Marker, Popup } from "sveaflet";
+    import { Map, TileLayer, Marker, Popup } from "sveaflet";
     import "leaflet/dist/leaflet.css";
 
     import EventDetailsCard from "./eventDetailsCard.svelte";
     import { SvelteMap } from "svelte/reactivity";
 
+    import L from "leaflet";
+    import { LeafletMap } from "svelte-leafletjs";
+
     const ORIGINAL_MAP_CENTER = [45.52, -122.65];
     const ORIGINAL_MAP_ZOOM = 12;
 
-    export let rides = [];
     let mapCenter = ORIGINAL_MAP_CENTER;
     let mapZoom = ORIGINAL_MAP_ZOOM;
+
+    export let rides = [];
+
+    // group locations logic
 
     let groupedLocations = [];
 
@@ -32,6 +38,43 @@
         groupedLocations = Array.from(ridesByLocation.values());
     }
 
+    // sveaflet map logic
+    let sveafletMapInstance;
+
+    function fitAllMarkers() {
+        if (sveafletMapInstance && groupedLocations.length > 1) {
+            console.log("LENGTH");
+            if (groupedLocations.length == 1) {
+                const singleLocation = groupedLocations[0];
+                sveafletMapInstance.setView(
+                    L.LatLngBounds(singleLocation.lat, singleLocation.lng),
+                    ORIGINAL_MAP_ZOOM,
+                    { animate: true, duration: 0.8 },
+                );
+            } else {
+                const bounds = new L.LatLngBounds();
+
+                groupedLocations.forEach((group) => {
+                    bounds.extend(L.latLng(group.lat, group.lng));
+                });
+
+                sveafletMapInstance.fitBounds(bounds, {
+                    padding: [60, 60],
+                    animate: true,
+                    duration: 0.8,
+                });
+            }
+        } else if (sveafletMapInstance && groupedLocations.length == 1) {
+            mapCenter = [...ORIGINAL_MAP_CENTER];
+            mapZoom = ORIGINAL_MAP_ZOOM;
+        }
+    }
+
+    $: if (groupedLocations) {
+        fitAllMarkers();
+    }
+
+    // Add the tile url as a store that can be changed by the user
     // light url - https://{s}.basemaps.cartocdn.com/voyager_labels_under/{z}/{x}/{y}{r}.png
     // dark url - https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png
 
@@ -53,13 +96,15 @@
         }
     }
 
-    function recenterMap() {
-        mapCenter = [...ORIGINAL_MAP_CENTER];
-        mapZoom = ORIGINAL_MAP_ZOOM;
-    }
-
     let selectedEvents = null;
     let showEventCard = false;
+
+    function handleRecenter() {
+        fitAllMarkers();
+        sveafletMapInstance.closePopup();
+        selectedEvents = null;
+        showEventCard = false;
+    }
 
     function handleCardClose() {
         selectedEvents = null;
@@ -69,6 +114,7 @@
 
 <div class="map-container">
     <Map
+        bind:instance={sveafletMapInstance}
         options={{
             center: mapCenter,
             zoom: mapZoom,
@@ -93,7 +139,7 @@
             </Marker>
         {/each}
     </Map>
-    <button class="recenter-button" onclick={recenterMap}> ⟲ </button>
+    <button class="recenter-button" onclick={handleRecenter}> ⟲ </button>
 </div>
 
 <EventDetailsCard
@@ -117,13 +163,15 @@
     }
 
     .map-container {
-        height: 100%;
+        height: calc(100% - 115px);
         width: 100%;
+        margin-top: 60px;
+        margin-bottom: 50px;
     }
 
     .recenter-button {
         position: absolute;
-        top: 60px;
+        top: 70px;
         right: 10px;
         z-index: 400;
         color: #000;
