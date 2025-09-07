@@ -1,6 +1,6 @@
 <script>
     import { onMount } from "svelte";
-    import { rides, filteredRides } from "../lib/stores.js";
+    import { rides, filteredRides, filteredNoAddress } from "../lib/stores.js";
     import Map from "../components/map.svelte";
 
     onMount(() => {
@@ -9,4 +9,4 @@
     });
 </script>
 
-<Map rides={$filteredRides} />
+<Map rides={$filteredRides} noAddressRides={$filteredNoAddress} />

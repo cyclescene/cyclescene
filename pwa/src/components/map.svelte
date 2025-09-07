@@ -6,7 +6,6 @@
     import { SvelteMap } from "svelte/reactivity";
 
     import L from "leaflet";
-    import { LeafletMap } from "svelte-leafletjs";
 
     const ORIGINAL_MAP_CENTER = [45.52, -122.65];
     const ORIGINAL_MAP_ZOOM = 12;
@@ -15,6 +14,7 @@
     let mapZoom = ORIGINAL_MAP_ZOOM;
 
     export let rides = [];
+    export let noAddressRides = [];
 
     // group locations logic
 
@@ -43,7 +43,6 @@
 
     function fitAllMarkers() {
         if (sveafletMapInstance && groupedLocations.length > 1) {
-            console.log("LENGTH");
             if (groupedLocations.length == 1) {
                 const singleLocation = groupedLocations[0];
                 sveafletMapInstance.setView(
@@ -71,6 +70,7 @@
     }
 
     $: if (groupedLocations) {
+        console.log(noAddressRides);
         fitAllMarkers();
     }
 

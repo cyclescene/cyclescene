@@ -3,6 +3,9 @@ import { getPastRides, getUpcomingRides } from "./api";
 import { getRidesfromDB, saveRidesToDB } from "./db";
 import { isSameDay, parseISO } from "date-fns";
 
+const FALLBACK_LAT = 45.515232
+const FALLBACK_LON = -122.6783853
+
 function createRidesStore() {
     const { subscribe, set, update } = writable({
         loading: true,
@@ -52,6 +55,32 @@ export const rides = createRidesStore()
 
 export const savedRideIds = writable([])
 
+export const filteredNoAddress = derived(
+    [rides, currentDate],
+    ([$rides, $currentDate]) => {
+        if (!$rides || !$rides.data || !$currentDate) {
+            return [];
+        }
+
+        return $rides.data.filter(ride => {
+            const rideDate = parseISO(ride.date);
+
+            const lat = ride.lat?.Float64
+            const lon = ride.lon?.Float64
+
+            const isLatOrLonMissing = (lat === undefined || lat === null || lon === undefined || lon === null)
+
+            const isFallbackCoords = (lat === FALLBACK_LAT && lon === FALLBACK_LON)
+
+            const hasNoValidAddress = isLatOrLonMissing || isFallbackCoords
+
+            const isSameDayAsCurrent = isSameDay($currentDate, rideDate);
+
+            return isSameDayAsCurrent && hasNoValidAddress
+        })
+    }
+)
+
 export const filteredRides = derived(
     [rides, currentDate],
     ([$rides, $currentDate]) => {
@@ -62,7 +91,16 @@ export const filteredRides = derived(
         return $rides.data.filter(ride => {
             const rideDate = parseISO(ride.date);
 
-            return isSameDay($currentDate, rideDate);
+            const lat = ride.lat?.Float64
+            const lon = ride.lon?.Float64
+
+            const hasValidAddress = (
+                lat !== undefined && lat !== null && lon !== undefined && lon !== null && !(lat === FALLBACK_LAT && lon === FALLBACK_LON)
+            )
+
+            const isSameDayAsCurrent = isSameDay($currentDate, rideDate);
+
+            return isSameDayAsCurrent && hasValidAddress
         });
     }
 );
