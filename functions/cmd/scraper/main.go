@@ -173,6 +173,8 @@ func geocodeAddress(address string, client *http.Client) (float64, float64, erro
 	q := req.URL.Query()
 	q.Add("address", address)
 	q.Add("key", googleAPIKey)
+	q.Add("bounds", "45.35,-123.00|45.75,-122.30")
+	q.Add("components", "country:US")
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)

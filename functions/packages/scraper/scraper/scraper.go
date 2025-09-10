@@ -176,6 +176,8 @@ func geocodeAddress(address string, client *http.Client) (float64, float64, erro
 	q := req.URL.Query()
 	q.Add("address", address)
 	q.Add("key", googleAPIKey)
+	q.Add("bounds", "45.35,-123.00|45.75,-122.30")
+	q.Add("components", "country:US")
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)
@@ -447,9 +449,8 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 			}
 		}
 
-		// const ORIGINAL_MAP_CENTER = [45.52, -122.65];
 		if currentGeoCodeErr != nil {
-			log.Printf("Could not get coordinates for event ID %s (composite event ID: %s) after trying both address ('%s') and venue ('%s'). Setting to 0.0", event.ID, compositeEventID, event.Address, event.Venue)
+			log.Printf("Could not get coordinates for event ID %s (composite event ID: %s) after trying both address ('%s') and venue ('%s'). Setting to coords to Portland coords [45.54, -122.65]", event.ID, compositeEventID, event.Address, event.Venue)
 			lat, lon = 45.54, -122.65
 		}
 
