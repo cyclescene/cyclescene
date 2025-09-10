@@ -6,6 +6,7 @@
     import { SvelteMap } from "svelte/reactivity";
 
     import L from "leaflet";
+    import RidesNotShown from "./ridesNotShown.svelte";
 
     const ORIGINAL_MAP_CENTER = [45.52, -122.65];
     const ORIGINAL_MAP_ZOOM = 12;
@@ -70,7 +71,6 @@
     }
 
     $: if (groupedLocations) {
-        console.log(noAddressRides);
         fitAllMarkers();
     }
 
@@ -88,6 +88,7 @@
     function handleMarkerClick(ridesAtLocation) {
         selectedEvents = ridesAtLocation;
         showEventCard = true;
+        showNotShown = false;
         if (ridesAtLocation.length > 0) {
             mapCenter = [
                 ridesAtLocation[0].lat.Float64,
@@ -104,11 +105,23 @@
         sveafletMapInstance.closePopup();
         selectedEvents = null;
         showEventCard = false;
+        if (noAddressRides && noAddressRides.length > 1) {
+            showNotShown = true;
+        }
     }
 
     function handleCardClose() {
         selectedEvents = null;
         showEventCard = false;
+        if (noAddressRides && noAddressRides.length > 1) {
+            showNotShown = true;
+        }
+    }
+
+    let showNotShown = false;
+
+    $: if (noAddressRides && noAddressRides.length > 1) {
+        showNotShown = true;
     }
 </script>
 
@@ -147,6 +160,8 @@
     visible={showEventCard}
     on:close={handleCardClose}
 />
+
+<RidesNotShown visible={showNotShown} notShownLength={noAddressRides.length} />
 
 <style>
     :global(.map-container .leaflet-tooltip) {

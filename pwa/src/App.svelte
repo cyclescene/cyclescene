@@ -1,8 +1,11 @@
 <script>
     import DatePicker from "./components/datePicker.svelte";
+    import NavigationBar from "./components/navigationBar.svelte";
     import RideDetailsTopBar from "./components/rideDetailsTopBar.svelte";
     import { currentView } from "./lib/stores.js";
+    import ListView from "./views/ListView.svelte";
     import MapView from "./views/MapView.svelte";
+    import OtherRidesView from "./views/OtherRidesView.svelte";
     import RideView from "./views/RideView.svelte";
 </script>
 
@@ -12,20 +15,42 @@
             <DatePicker />
         {:else if $currentView == "ride"}
             <RideDetailsTopBar />
+        {:else if $currentView == "list"}
+            <DatePicker />
+        {:else if $currentView == "notShown"}
+            <RideDetailsTopBar />
         {:else}
             <p>Nothing to see here</p>
         {/if}
     </header>
-    <div class="view-container">
-        {#if $currentView == "map"}
-            <MapView />
-        {:else if $currentView == "ride"}
-            <RideView />
-        {:else}
-            <h1>Nothing to see here</h1>
-        {/if}
+
+    <div class="view-container" class:hidden={!($currentView === "map")}>
+        <MapView />
     </div>
-    <footer></footer>
+
+    <div class="view-container" class:hidden={!($currentView === "list")}>
+        <ListView />
+    </div>
+
+    <div class="view-container" class:hidden={!($currentView === "other")}>
+        <OtherRidesView />
+    </div>
+
+    <div class="view-container" class:hidden={!($currentView === "ride")}>
+        <RideView />
+    </div>
+
+    <div class="view-container" class:hidden={!($currentView === "saved")}>
+        Saved Rides go here
+    </div>
+
+    <div class="view-container" class:hidden={!($currentView === "settings")}>
+        Settings go here
+    </div>
+
+    <footer>
+        <NavigationBar />
+    </footer>
 </main>
 
 <style>
@@ -58,6 +83,10 @@
         z-index: 100;
     }
 
+    .hidden {
+        display: none;
+    }
+
     .view-container {
         position: absolute;
         top: 0;
@@ -71,8 +100,7 @@
     footer {
         height: var(--footer-height);
         width: 100vw;
-        /* background-color: #242424; */
-        background-color: red;
+        background-color: #242424;
         position: absolute;
         height: var(--header-height);
         bottom: 0;

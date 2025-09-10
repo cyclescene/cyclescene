@@ -68,8 +68,10 @@ export const filteredNoAddress = derived(
             const lat = ride.lat?.Float64
             const lon = ride.lon?.Float64
 
-            const isLatOrLonMissing = (lat === undefined || lat === null || lon === undefined || lon === null)
+            // if lat, lon undefined, null or == 0 lets not show them on the map
+            const isLatOrLonMissing = (lat === 0 || lat === undefined || lat === null || lon === 0 || lon === undefined || lon === null)
 
+            // if lat, lon == the fallback lets also not show them on the map
             const isFallbackCoords = (lat === FALLBACK_LAT && lon === FALLBACK_LON)
 
             const hasNoValidAddress = isLatOrLonMissing || isFallbackCoords
@@ -94,8 +96,9 @@ export const filteredRides = derived(
             const lat = ride.lat?.Float64
             const lon = ride.lon?.Float64
 
+            // if lat, lon are not valid lets not show them on the map
             const hasValidAddress = (
-                lat !== undefined && lat !== null && lon !== undefined && lon !== null && !(lat === FALLBACK_LAT && lon === FALLBACK_LON)
+                lat !== undefined && lat !== null && lat !== 0 && lon !== undefined && lon !== null && lon !== 0 && !(lat === FALLBACK_LAT && lon === FALLBACK_LON)
             )
 
             const isSameDayAsCurrent = isSameDay($currentDate, rideDate);
@@ -104,3 +107,20 @@ export const filteredRides = derived(
         });
     }
 );
+
+export const allRides = derived(
+    [rides, currentDate],
+    ([$rides, $currentDate]) => {
+        if (!$rides || !$rides.data || !$currentDate) {
+            return [];
+        }
+
+        return $rides.data.filter(ride => {
+            const rideDate = parseISO(ride.date);
+
+            const isSameDayAsCurrent = isSameDay($currentDate, rideDate);
+
+            return isSameDayAsCurrent
+        });
+    }
+)
