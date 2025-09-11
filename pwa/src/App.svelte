@@ -2,7 +2,15 @@
     import DatePicker from "./components/datePicker.svelte";
     import NavigationBar from "./components/navigationBar.svelte";
     import RideDetailsTopBar from "./components/rideDetailsTopBar.svelte";
-    import { currentView } from "./lib/stores.js";
+    import {
+        activeView,
+        VIEW_LIST,
+        VIEW_MAP,
+        VIEW_OTHER_RIDES,
+        VIEW_RIDE_DETAILS,
+        VIEW_SAVED,
+        VIEW_SETTINGS,
+    } from "./lib/stores.js";
     import ListView from "./views/ListView.svelte";
     import MapView from "./views/MapView.svelte";
     import OtherRidesView from "./views/OtherRidesView.svelte";
@@ -11,40 +19,46 @@
 
 <main>
     <header>
-        {#if $currentView == "map"}
+        {#if $activeView == VIEW_MAP}
             <DatePicker />
-        {:else if $currentView == "ride"}
+        {:else if $activeView == VIEW_RIDE_DETAILS}
             <RideDetailsTopBar />
-        {:else if $currentView == "list"}
+        {:else if $activeView == VIEW_LIST}
             <DatePicker />
-        {:else if $currentView == "notShown"}
+        {:else if $activeView == VIEW_OTHER_RIDES}
             <RideDetailsTopBar />
         {:else}
             <p>Nothing to see here</p>
         {/if}
     </header>
 
-    <div class="view-container" class:hidden={!($currentView === "map")}>
+    <div class="view-container" class:hidden={!($activeView === VIEW_MAP)}>
         <MapView />
     </div>
 
-    <div class="view-container" class:hidden={!($currentView === "list")}>
+    <div class="view-container" class:hidden={!($activeView === VIEW_LIST)}>
         <ListView />
     </div>
 
-    <div class="view-container" class:hidden={!($currentView === "other")}>
+    <div
+        class="view-container"
+        class:hidden={!($activeView === VIEW_OTHER_RIDES)}
+    >
         <OtherRidesView />
     </div>
 
-    <div class="view-container" class:hidden={!($currentView === "ride")}>
+    <div
+        class="view-container"
+        class:hidden={!($activeView === VIEW_RIDE_DETAILS)}
+    >
         <RideView />
     </div>
 
-    <div class="view-container" class:hidden={!($currentView === "saved")}>
+    <div class="view-container" class:hidden={!($activeView === VIEW_SAVED)}>
         Saved Rides go here
     </div>
 
-    <div class="view-container" class:hidden={!($currentView === "settings")}>
+    <div class="view-container" class:hidden={!($activeView === VIEW_SETTINGS)}>
         Settings go here
     </div>
 

@@ -1,10 +1,16 @@
 <script>
-    import { currentView } from "../lib/stores";
+    import {
+        navigateTo,
+        VIEW_LIST,
+        VIEW_MAP,
+        VIEW_SAVED,
+        VIEW_SETTINGS,
+    } from "../lib/stores";
 
-    const controls = ["map", "list", "saved", "settings"];
+    const controls = [VIEW_MAP, VIEW_LIST, VIEW_SAVED, VIEW_SETTINGS];
 
     function onViewChange(view) {
-        $currentView = view;
+        navigateTo(view);
     }
 </script>
 

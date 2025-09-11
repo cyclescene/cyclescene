@@ -1,8 +1,8 @@
 <script>
-    import { currentRide, currentView } from "../lib/stores";
+    import { currentRide, goBackInHistory } from "../lib/stores";
 
     function handleGoBack() {
-        $currentView = "map";
+        goBackInHistory();
         $currentRide = null;
     }
 </script>

@@ -1,11 +1,11 @@
 <script>
-    import { currentView } from "../lib/stores";
+    import { navigateTo, VIEW_OTHER_RIDES } from "../lib/stores";
 
     export let visible = false;
     export let notShownLength = 0;
 
     function onShowNotShown() {
-        $currentView = "notShown";
+        navigateTo(VIEW_OTHER_RIDES);
     }
 </script>
 

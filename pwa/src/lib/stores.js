@@ -3,8 +3,18 @@ import { getPastRides, getUpcomingRides } from "./api";
 import { getRidesfromDB, saveRidesToDB } from "./db";
 import { isSameDay, parseISO } from "date-fns";
 
+// Portland, OR coordinates
 const FALLBACK_LAT = 45.515232
 const FALLBACK_LON = -122.6783853
+
+// views
+export const VIEW_MAP = 'map'
+export const VIEW_LIST = 'list'
+export const VIEW_RIDE_DETAILS = 'rideDetails'
+export const VIEW_SAVED = 'saved'
+export const VIEW_SETTINGS = 'settings'
+export const VIEW_OTHER_RIDES = 'otherRides'
+
 
 function createRidesStore() {
     const { subscribe, set, update } = writable({
@@ -45,7 +55,39 @@ function createRidesStore() {
 }
 
 
-export const currentView = writable('map')
+export const viewStack = writable([VIEW_MAP])
+export const activeView = writable(VIEW_MAP)
+
+viewStack.subscribe(stack => {
+    if (stack.length > 0) {
+        activeView.set(stack[stack.length - 1])
+    } else {
+        activeView.set(VIEW_MAP)
+        viewStack.set([VIEW_MAP])
+    }
+})
+
+export function navigateTo(newViewIdentifier, options = { force: false }) {
+    viewStack.update(stack => {
+        if (!options.force && stack[stack.length - 1] === newViewIdentifier) {
+            return stack
+        }
+        return [...stack, newViewIdentifier]
+    })
+
+}
+
+export function goBackInHistory() {
+    viewStack.update(stack => {
+        if (stack.length > 1) {
+            stack.pop()
+        } else {
+            console.log("Cannot go further back, staying on current view.")
+        }
+        return stack
+    })
+}
+
 
 export const currentDate = writable(new Date())
 

@@ -1,6 +1,6 @@
 <script>
     import { format, parse } from "date-fns";
-    import { currentRide, currentView } from "../lib/stores";
+    import { currentRide, navigateTo, VIEW_RIDE_DETAILS } from "../lib/stores";
 
     export let events = null;
     export let visible = false;
@@ -12,7 +12,7 @@
     }
 
     function onCardClick(ride) {
-        $currentView = "ride";
+        navigateTo(VIEW_RIDE_DETAILS);
         $currentRide = ride;
     }
 </script>
