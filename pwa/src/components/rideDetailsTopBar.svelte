@@ -1,9 +1,9 @@
 <script>
-    import { currentRide, goBackInHistory } from "../lib/stores";
+    import { clearRide, goBackInHistory } from "../lib/stores";
 
     function handleGoBack() {
         goBackInHistory();
-        $currentRide = null;
+        clearRide();
     }
 </script>
 
@@ -12,7 +12,7 @@
 
     <div class="display-date">Ride Details</div>
 
-    <button class="date-nav-button"> Share </button>
+    <button class="date-nav-button">Share</button>
 </div>
 
 <style>

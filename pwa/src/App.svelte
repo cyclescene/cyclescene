@@ -1,7 +1,9 @@
 <script>
+    import "./app.css";
     import DatePicker from "./components/datePicker.svelte";
     import NavigationBar from "./components/navigationBar.svelte";
     import RideDetailsTopBar from "./components/rideDetailsTopBar.svelte";
+    
     import {
         activeView,
         VIEW_LIST,
@@ -9,8 +11,9 @@
         VIEW_OTHER_RIDES,
         VIEW_RIDE_DETAILS,
         VIEW_SAVED,
-        VIEW_SETTINGS,
+        VIEW_SETTINGS
     } from "./lib/stores.js";
+    
     import ListView from "./views/ListView.svelte";
     import MapView from "./views/MapView.svelte";
     import OtherRidesView from "./views/OtherRidesView.svelte";

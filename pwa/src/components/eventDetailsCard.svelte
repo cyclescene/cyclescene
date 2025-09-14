@@ -1,6 +1,8 @@
 <script>
     import { format, parse } from "date-fns";
-    import { currentRide, navigateTo, VIEW_RIDE_DETAILS } from "../lib/stores";
+    import { navigateTo, setRide, VIEW_RIDE_DETAILS } from "$lib/stores";
+    import * as ScrollArea from "$lib/components/ui/scroll-area/index";
+    import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
 
     export let events = null;
     export let visible = false;
@@ -13,11 +15,12 @@
 
     function onCardClick(ride) {
         navigateTo(VIEW_RIDE_DETAILS);
-        $currentRide = ride;
+        setRide(ride);
     }
 </script>
 
 {#if visible && events && events.length > 0}
+    <ScrollArea></ScrollArea>
     <div class="event-details-card">
         {#each events as event (event.id)}
             <button class="ride-detail-item" onclick={() => onCardClick(event)}>

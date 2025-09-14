@@ -1,4 +1,5 @@
 <script>
+    import Button from "$lib/components/ui/button/button.svelte";
     import { currentDate } from "../lib/stores";
     import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 
@@ -33,13 +34,11 @@
 </script>
 
 <div class="date-picker-container">
-    <button class="date-nav-button" onclick={() => changeDay(-1)}>
-        &lt;
-    </button>
+    <Button class="date-nav-button" onclick={() => changeDay(-1)}>&lt;</Button>
 
     <div class="display-date">{formattedDateForDisplay}</div>
 
-    <button class="date-nav-button" onclick={() => changeDay(1)}> &gt; </button>
+    <Button class="date-nav-button" onclick={() => changeDay(1)}>&gt;</Button>
 </div>
 
 <style>
@@ -72,6 +71,7 @@
 
     .display-date {
         font-size: 1.2em;
+        color: white;
         font-weight: bold;
         text-align: center;
         flex-grow: 1;

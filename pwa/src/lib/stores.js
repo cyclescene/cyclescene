@@ -91,7 +91,18 @@ export function goBackInHistory() {
 
 export const currentDate = writable(new Date())
 
-export const currentRide = writable(null)
+
+// current ride logic
+const initialRideState = null
+export const currentRide = writable(initialRideState)
+
+export function setRide(ride) {
+    currentRide.set(ride)
+}
+
+export function clearRide() {
+    currentRide.set(initialRideState)
+}
 
 export const rides = createRidesStore()
 
