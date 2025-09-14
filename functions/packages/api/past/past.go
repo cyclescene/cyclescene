@@ -79,6 +79,7 @@ type Ride struct {
 	Date          string          `json:"date"`
 	Details       sql.NullString  `json:"details,omitempty"`
 	EndTime       sql.NullString  `json:"endtime,omitempty"`
+	Email         sql.NullString  `json:"email,omitempty"`
 	EventDuration sql.NullInt32   `json:"eventduration,omitempty"`
 	Image         sql.NullString  `json:"image,omitempty"`
 	Lat           sql.NullFloat64 `json:"lat,omitempty"`
@@ -94,6 +95,8 @@ type Ride struct {
 	TimeDetails   sql.NullString  `json:"timedetails,omitempty"`
 	Title         string          `json:"title"`
 	Venue         sql.NullString  `json:"venue,omitempty"`
+	WebUrl        sql.NullString  `json:"weburl,omitempty"`
+	WebName       sql.NullString  `json:"webname,omitempty"`
 	SourceData    string          `json:"source_data"`
 }
 
@@ -115,6 +118,7 @@ func scanRides(db *sql.DB, query string) ([]Ride, error) {
 			&r.Date,
 			&r.Details,
 			&r.EndTime,
+			&r.Email,
 			&r.EventDuration,
 			&r.Image,
 			&r.Lat,
@@ -129,7 +133,9 @@ func scanRides(db *sql.DB, query string) ([]Ride, error) {
 			&r.StartTime,
 			&r.TimeDetails,
 			&r.Title,
-			&r.Venue); err != nil {
+			&r.Venue,
+			&r.WebName,
+			&r.WebUrl); err != nil {
 			return nil, err
 		}
 		rides = append(rides, r)
@@ -137,18 +143,9 @@ func scanRides(db *sql.DB, query string) ([]Ride, error) {
 	return rides, nil
 }
 
-func getUpcomingRides(db *sql.DB) ([]Ride, error) {
-	query := `
-    SELECT id, address, audience, cancelled, date, details, endtime, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue
-    FROM rides
-    WHERE date >= date('now', 'localtime')
-    ORDER BY date ASC, starttime ASC;`
-	return scanRides(db, query)
-}
-
 func getPastRides(db *sql.DB) ([]Ride, error) {
 	query := `
-    SELECT id, address, audience, cancelled, date, details, endtime, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue
+    SELECT id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
     FROM rides
     WHERE 
         date >= date('now', 'localtime', '-7 days')

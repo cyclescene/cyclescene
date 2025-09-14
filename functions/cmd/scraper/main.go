@@ -251,6 +251,7 @@ func createTables(db *sql.DB) error {
         date TEXT NOT NULL,
         details TEXT,
         endtime TEXT,
+        email TEXT,
         eventduration INTEGER,
         image TEXT,
         lat REAL,
@@ -266,6 +267,8 @@ func createTables(db *sql.DB) error {
         timedetails TEXT,
         title TEXT NOT NULL,
         venue TEXT,
+        webname TEXT,
+        weburl TEXT,
         source_data TEXT NOT NULL
     );`
 
@@ -354,8 +357,36 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 	}
 
 	ridesUpsertStmt, err := tx.Prepare(`
-        INSERT INTO rides (composite_event_id, id, address, audience, cancelled, date, details, endtime, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, source_data)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO rides (
+            composite_event_id,
+            id,
+            address,
+            audience,
+            cancelled,
+            date,
+            details,
+            endtime,
+            email,
+            eventduration,
+            image,
+            lat,
+            lon,
+            locdetails,
+            locend,
+            loopride,
+            newsflash,
+            organizer,
+            safetyplan,
+            shareable,
+            starttime,
+            timedetails,
+            title,
+            venue,
+            webname,
+            weburl,
+            source_data
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(composite_event_id) DO UPDATE SET
             id=excluded.id,
             address=excluded.address,
@@ -364,6 +395,7 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
             date=excluded.date,
             details=excluded.details,
             endtime=excluded.endtime,
+            email=excluded.email,
             eventduration=excluded.eventduration,
             image=excluded.image,
             lat=excluded.lat,
@@ -379,6 +411,8 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
             timedetails=excluded.timedetails,
             title=excluded.title,
             venue=excluded.venue,
+            webname=excluded.webname,
+            weburl=excluded.weburl,
             source_data=excluded.source_data;
         `)
 	if err != nil {
@@ -460,6 +494,7 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 			event.Date,
 			event.Details,
 			event.Endtime,
+			event.Email,
 			event.Eventduration,
 			event.Image,
 			lat,
@@ -475,6 +510,8 @@ func upsertEvents(db *sql.DB, client *http.Client, events Shift2BikeEvents) erro
 			event.Timedetails,
 			event.Title,
 			event.Venue,
+			event.Webname,
+			event.Weburl,
 			string(sourceData))
 		if execErr != nil {
 			err = fmt.Errorf("failed to execute statement for event ID %s: %v", event.ID, err)

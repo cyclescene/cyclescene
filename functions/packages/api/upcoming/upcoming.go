@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -81,6 +80,7 @@ type Ride struct {
 	Date          string          `json:"date"`
 	Details       sql.NullString  `json:"details,omitempty"`
 	EndTime       sql.NullString  `json:"endtime,omitempty"`
+	Email         sql.NullString  `json:"email,omitempty"`
 	EventDuration sql.NullInt32   `json:"eventduration,omitempty"`
 	Image         sql.NullString  `json:"image,omitempty"`
 	Lat           sql.NullFloat64 `json:"lat,omitempty"`
@@ -96,11 +96,13 @@ type Ride struct {
 	TimeDetails   sql.NullString  `json:"timedetails,omitempty"`
 	Title         string          `json:"title"`
 	Venue         sql.NullString  `json:"venue,omitempty"`
+	WebUrl        sql.NullString  `json:"weburl,omitempty"`
+	WebName       sql.NullString  `json:"webname,omitempty"`
 	SourceData    string          `json:"source_data"`
 }
 
-func scanRides(db *sql.DB, query string, args ...interface{}) ([]Ride, error) {
-	rows, err := db.Query(query, args...)
+func scanRides(db *sql.DB, query string) ([]Ride, error) {
+	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -117,6 +119,7 @@ func scanRides(db *sql.DB, query string, args ...interface{}) ([]Ride, error) {
 			&r.Date,
 			&r.Details,
 			&r.EndTime,
+			&r.Email,
 			&r.EventDuration,
 			&r.Image,
 			&r.Lat,
@@ -131,7 +134,9 @@ func scanRides(db *sql.DB, query string, args ...interface{}) ([]Ride, error) {
 			&r.StartTime,
 			&r.TimeDetails,
 			&r.Title,
-			&r.Venue); err != nil {
+			&r.Venue,
+			&r.WebName,
+			&r.WebUrl); err != nil {
 			return nil, err
 		}
 		rides = append(rides, r)
@@ -140,19 +145,10 @@ func scanRides(db *sql.DB, query string, args ...interface{}) ([]Ride, error) {
 }
 
 func getUpcomingRides(db *sql.DB) ([]Ride, error) {
-	location, err := time.LoadLocation("America/Los_Angeles")
-	if err != nil {
-		return nil, fmt.Errorf("could not load timezone: %w", err)
-	}
-
-	nowInPortland := time.Now().In(location)
-
-	todayStr := nowInPortland.Format("2006-01-02")
-
 	query := `
-    SELECT id, address, audience, cancelled, date, details, endtime, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue
+    SELECT id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
     FROM rides
-    WHERE date >= ?
+    WHERE date >= date('now', 'localtime')
     ORDER BY date ASC, starttime ASC;`
-	return scanRides(db, query, todayStr)
+	return scanRides(db, query)
 }
