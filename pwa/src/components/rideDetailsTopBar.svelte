@@ -7,26 +7,17 @@
     }
 </script>
 
-<div class="ride-details-top-bar-container">
+<div class="flex justify-center items-center p-2.5 bg-black z-[500] text-white">
     <button class="date-nav-button" onclick={handleGoBack}> Back </button>
 
-    <div class="display-date">Ride Details</div>
+    <div class="grow font-bold py-2 px-2.5 text-center text-xl">
+        Ride Details
+    </div>
 
     <button class="date-nav-button">Share</button>
 </div>
 
 <style>
-    .ride-details-top-bar-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px;
-        background-color: #242424;
-        border-bottom: 1px solid #ccc;
-        position: relative; /* For z-index if needed */
-        z-index: 500; /* Ensure it's above the map, but below modals */
-    }
-
     .date-nav-button {
         background-color: #eee;
         border: 1px solid #ccc;
@@ -41,14 +32,5 @@
 
     .date-nav-button:hover {
         background-color: #e0e0e0;
-    }
-
-    .display-date {
-        font-size: 1.2em;
-        font-weight: bold;
-        text-align: center;
-        flex-grow: 1;
-        padding: 8px 10px;
-        min-width: 120px;
     }
 </style>

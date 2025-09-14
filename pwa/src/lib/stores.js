@@ -100,6 +100,14 @@ export function setRide(ride) {
     currentRide.set(ride)
 }
 
+export function getRide() {
+    if (currentRide == initialRideState) {
+        return
+    } else {
+        return currentRide
+    }
+}
+
 export function clearRide() {
     currentRide.set(initialRideState)
 }

@@ -1,26 +1,5 @@
 <script>
-    import { currentRide } from "../lib/stores";
+    import RideDetails from "../components/rideDetails.svelte";
 </script>
 
-<div class="ride-details-container">
-    <pre>{JSON.stringify($currentRide, null, 2)}</pre>
-</div>
-
-<style>
-    .ride-details-container {
-        padding: 20px;
-        background: transparent;
-        color: lightgray;
-        border: 5px 5px lightgray;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        box-sizing: border-box;
-        z-index: 1000;
-        transform: translateY(0%);
-        transition: transform 0.3s ease-out;
-        overflow-y: auto;
-    }
-
-    pre {
-        margin-top: 60px;
-    }
-</style>
+<RideDetails />

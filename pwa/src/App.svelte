@@ -3,7 +3,7 @@
     import DatePicker from "./components/datePicker.svelte";
     import NavigationBar from "./components/navigationBar.svelte";
     import RideDetailsTopBar from "./components/rideDetailsTopBar.svelte";
-    
+
     import {
         activeView,
         VIEW_LIST,
@@ -11,63 +11,78 @@
         VIEW_OTHER_RIDES,
         VIEW_RIDE_DETAILS,
         VIEW_SAVED,
-        VIEW_SETTINGS
+        VIEW_SETTINGS,
     } from "./lib/stores.js";
-    
+
     import ListView from "./views/ListView.svelte";
     import MapView from "./views/MapView.svelte";
     import OtherRidesView from "./views/OtherRidesView.svelte";
     import RideView from "./views/RideView.svelte";
 </script>
 
-<main>
-    <header>
-        {#if $activeView == VIEW_MAP}
-            <DatePicker />
-        {:else if $activeView == VIEW_RIDE_DETAILS}
-            <RideDetailsTopBar />
-        {:else if $activeView == VIEW_LIST}
-            <DatePicker />
-        {:else if $activeView == VIEW_OTHER_RIDES}
-            <RideDetailsTopBar />
-        {:else}
-            <p>Nothing to see here</p>
-        {/if}
-    </header>
-
-    <div class="view-container" class:hidden={!($activeView === VIEW_MAP)}>
-        <MapView />
+<main class="flex flex-col min-h[100vh]">
+    <div class="shrink relative">
+        <header class="shrink">
+            {#if $activeView == VIEW_MAP}
+                <DatePicker />
+            {:else if $activeView == VIEW_RIDE_DETAILS}
+                <RideDetailsTopBar />
+            {:else if $activeView == VIEW_LIST}
+                <DatePicker />
+            {:else if $activeView == VIEW_OTHER_RIDES}
+                <RideDetailsTopBar />
+            {:else}
+                <p>Nothing to see here</p>
+            {/if}
+        </header>
     </div>
 
-    <div class="view-container" class:hidden={!($activeView === VIEW_LIST)}>
-        <ListView />
+    <div class="grow">
+        <div
+            class="map-view-container"
+            class:hidden={!($activeView === VIEW_MAP)}
+        >
+            <MapView />
+        </div>
+
+        <div class="view-container" class:hidden={!($activeView === VIEW_LIST)}>
+            <ListView />
+        </div>
+
+        <div
+            class="view-container"
+            class:hidden={!($activeView === VIEW_OTHER_RIDES)}
+        >
+            <OtherRidesView />
+        </div>
+
+        <div
+            class="view-container"
+            class:hidden={!($activeView === VIEW_RIDE_DETAILS)}
+        >
+            <RideView />
+        </div>
+
+        <div
+            class="view-container"
+            class:hidden={!($activeView === VIEW_SAVED)}
+        >
+            Saved Rides go here
+        </div>
+
+        <div
+            class="view-container"
+            class:hidden={!($activeView === VIEW_SETTINGS)}
+        >
+            Settings go here
+        </div>
     </div>
 
-    <div
-        class="view-container"
-        class:hidden={!($activeView === VIEW_OTHER_RIDES)}
-    >
-        <OtherRidesView />
+    <div class="shrink">
+        <footer>
+            <NavigationBar />
+        </footer>
     </div>
-
-    <div
-        class="view-container"
-        class:hidden={!($activeView === VIEW_RIDE_DETAILS)}
-    >
-        <RideView />
-    </div>
-
-    <div class="view-container" class:hidden={!($activeView === VIEW_SAVED)}>
-        Saved Rides go here
-    </div>
-
-    <div class="view-container" class:hidden={!($activeView === VIEW_SETTINGS)}>
-        Settings go here
-    </div>
-
-    <footer>
-        <NavigationBar />
-    </footer>
 </main>
 
 <style>
@@ -94,7 +109,6 @@
     header {
         width: 100vw;
         background-color: #242424;
-        position: absolute;
         height: var(--header-height);
         top: 0;
         z-index: 100;
@@ -104,14 +118,14 @@
         display: none;
     }
 
-    .view-container {
+    .map-view-container {
         position: absolute;
         top: 0;
         bottom: 0;
         left: 0;
         right: 0;
         overflow-y: auto;
-        z-index: 1;
+        z-index: 0;
     }
 
     footer {
