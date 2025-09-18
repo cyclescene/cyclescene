@@ -159,7 +159,7 @@ func getUpcomingRides(db *sql.DB) ([]Ride, error) {
 
 func getPastRides(db *sql.DB) ([]Ride, error) {
 	query := `
-    SELECT id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
+   SELECT id, address, audience, cancelled, date, details, endtime, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue
     FROM rides
     WHERE 
         date >= date('now', 'localtime', '-7 days')

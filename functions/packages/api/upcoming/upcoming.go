@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -101,8 +102,8 @@ type Ride struct {
 	SourceData    string          `json:"source_data"`
 }
 
-func scanRides(db *sql.DB, query string) ([]Ride, error) {
-	rows, err := db.Query(query)
+func scanRides(db *sql.DB, query string, args ...interface{}) ([]Ride, error) {
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -145,10 +146,19 @@ func scanRides(db *sql.DB, query string) ([]Ride, error) {
 }
 
 func getUpcomingRides(db *sql.DB) ([]Ride, error) {
+	location, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		return nil, fmt.Errorf("could not load timezone: %w", err)
+	}
+
+	nowInPortland := time.Now().In(location)
+
+	todayStr := nowInPortland.Format("2006-01-02")
+
 	query := `
     SELECT id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
     FROM rides
-    WHERE date >= date('now', 'localtime')
+    WHERE date >= ?
     ORDER BY date ASC, starttime ASC;`
-	return scanRides(db, query)
+	return scanRides(db, query, todayStr)
 }

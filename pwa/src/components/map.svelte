@@ -6,7 +6,6 @@
 
     import L from "leaflet";
     import RidesNotShown from "./ridesNotShown.svelte";
-    import TabsContent from "$lib/components/ui/tabs/tabs-content.svelte";
     import LocationCards from "./locationCards.svelte";
 
     const ORIGINAL_MAP_CENTER = [45.52, -122.65];

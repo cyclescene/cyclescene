@@ -33,49 +33,20 @@
     }
 </script>
 
-<div class="date-picker-container">
-    <Button class="date-nav-button" onclick={() => changeDay(-1)}>&lt;</Button>
+<div
+    class="flex items-center justify-center p-2.5 bg-black text-white border-b-[1px] relative z-[500]"
+>
+    <Button
+        class="bg-black border-2 border-white py-2 px-3 min-w-10"
+        onclick={() => changeDay(-1)}>&lt;</Button
+    >
 
-    <div class="display-date">{formattedDateForDisplay}</div>
+    <div class="text-2xl font-bold text-center grow py-2 px-3 min-w-[120px]">
+        {formattedDateForDisplay}
+    </div>
 
-    <Button class="date-nav-button" onclick={() => changeDay(1)}>&gt;</Button>
+    <Button
+        class="bg-black border-2 border-white py-2 px-3 min-w-10"
+        onclick={() => changeDay(1)}>&gt;</Button
+    >
 </div>
-
-<style>
-    .date-picker-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 10px;
-        background-color: #242424;
-        border-bottom: 1px solid #ccc;
-        position: relative; /* For z-index if needed */
-        z-index: 500; /* Ensure it's above the map, but below modals */
-    }
-
-    .date-nav-button {
-        background-color: #eee;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        padding: 8px 12px;
-        margin: 0 5px;
-        color: #000;
-        cursor: pointer;
-        font-size: 1em;
-        min-width: 40px;
-    }
-
-    .date-nav-button:hover {
-        background-color: #e0e0e0;
-    }
-
-    .display-date {
-        font-size: 1.2em;
-        color: white;
-        font-weight: bold;
-        text-align: center;
-        flex-grow: 1;
-        padding: 8px 10px;
-        min-width: 120px;
-    }
-</style>

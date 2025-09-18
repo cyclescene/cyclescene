@@ -18,7 +18,7 @@
 <div class="w-full h-full flex justify-evenly">
     {#each controls as view}
         <Button
-            class="grow h-full rounded-none"
+            class="bg-black grow h-full rounded-none"
             onclick={() => onChangeView(view)}
         >
             {view}

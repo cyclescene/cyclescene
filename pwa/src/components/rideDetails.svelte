@@ -6,6 +6,7 @@
     } from "$lib/components/ui/scroll-area/index";
     import { currentRide } from "$lib/stores";
     import { formatDate, formatTime } from "$lib/utils";
+    import RideMap from "./rideMap.svelte";
 
     const SHIFT2BIKES_IMG_URL = "https://www.shift2bikes.org/";
 
@@ -23,7 +24,7 @@
                 <div
                     class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl"
                 >
-                    MAP
+                    <RideMap ride={$currentRide} />
                 </div>
                 <h2 class="text-3xl">{$currentRide.title}</h2>
                 <p>{$currentRide.newsflash?.String}</p>
