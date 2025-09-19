@@ -2,6 +2,7 @@
     import * as Card from "$lib/components/ui/card";
     import { navigateTo, setRide, VIEW_RIDE_DETAILS } from "$lib/stores";
     import { cn, formatTime } from "$lib/utils";
+    import RideLabels from "./rideLabels.svelte";
 
     export let ride;
 
@@ -23,12 +24,18 @@
         on:keydown={(e) => onCardClick(ride)}
     >
         <Card.Header>
-            <Card.Title>{ride.title}</Card.Title>
+            <Card.Title
+                class={`${ride.cancelled ? "line-through" : ""} text-xl`}
+                >{ride.title}</Card.Title
+            >
         </Card.Header>
+
         <Card.Content>
             <p>{ride.newsflash.String}</p>
             <p>{ride.venue.String}</p>
             <p>{formatTime(ride.starttime)}</p>
+            <br />
+            <RideLabels {ride} />
         </Card.Content>
     </Card.Root>
 {/if}

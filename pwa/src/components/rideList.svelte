@@ -1,8 +1,5 @@
 <script>
-    import {
-        ScrollArea,
-        Scrollbar,
-    } from "$lib/components/ui/scroll-area/index";
+    import { ScrollArea } from "$lib/components/ui/scroll-area/index";
     import Card from "./card.svelte";
 
     export let rides = [];
@@ -21,6 +18,5 @@
                 No rides happening today :(
             {/if}
         </div>
-        <Scrollbar orientation="veritcal" />
     </ScrollArea>
 </div>

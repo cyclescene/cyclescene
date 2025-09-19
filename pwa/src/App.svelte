@@ -6,6 +6,7 @@
 
     import {
         activeView,
+        VIEW_DATE_PICKER,
         VIEW_LIST,
         VIEW_MAP,
         VIEW_OTHER_RIDES,
@@ -13,6 +14,7 @@
         VIEW_SAVED,
         VIEW_SETTINGS,
     } from "./lib/stores.js";
+    import DatePickerView from "./views/DatePickerView.svelte";
 
     import ListView from "./views/ListView.svelte";
     import MapView from "./views/MapView.svelte";
@@ -23,13 +25,9 @@
 <main class="flex flex-col min-h[100vh]">
     <div class="shrink relative">
         <header class="shrink">
-            {#if $activeView == VIEW_MAP}
+            {#if $activeView == VIEW_MAP || VIEW_LIST || VIEW_DATE_PICKER}
                 <DatePicker />
-            {:else if $activeView == VIEW_RIDE_DETAILS}
-                <RideDetailsTopBar />
-            {:else if $activeView == VIEW_LIST}
-                <DatePicker />
-            {:else if $activeView == VIEW_OTHER_RIDES}
+            {:else if $activeView == VIEW_RIDE_DETAILS || VIEW_OTHER_RIDES}
                 <RideDetailsTopBar />
             {:else}
                 <p>Nothing to see here</p>
@@ -75,6 +73,13 @@
             class:hidden={!($activeView === VIEW_SETTINGS)}
         >
             Settings go here
+        </div>
+
+        <div
+            class="view-container"
+            class:hidden={!($activeView === VIEW_DATE_PICKER)}
+        >
+            <DatePickerView />
         </div>
     </div>
 

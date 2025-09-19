@@ -6,13 +6,10 @@
     } from "$lib/components/ui/scroll-area/index";
     import { currentRide } from "$lib/stores";
     import { formatDate, formatTime } from "$lib/utils";
+    import RideLabels from "./rideLabels.svelte";
     import RideMap from "./rideMap.svelte";
 
-    const SHIFT2BIKES_IMG_URL = "https://www.shift2bikes.org/";
-
-    $: {
-        console.log($currentRide);
-    }
+    const SHIFT2BIKES_URL = "https://www.shift2bikes.org/";
 </script>
 
 {#if $currentRide}
@@ -28,11 +25,7 @@
                 </div>
                 <h2 class="text-3xl">{$currentRide.title}</h2>
                 <p>{$currentRide.newsflash?.String}</p>
-                <div class="flex flex-row">
-                    {$currentRide.cancelled}
-                    {$currentRide.audience}
-                    {$currentRide.safetyplan}
-                </div>
+                <RideLabels ride={$currentRide} />
 
                 <Card.Root class="bg-black text-white">
                     <Card.Header>
@@ -54,21 +47,22 @@
                             >{$currentRide.address}</Card.Description
                         >
                         <Card.Description
-                            >{$currentRide.loopride}</Card.Description
+                            >{$currentRide.loopride
+                                ? "Ride is a loop"
+                                : "Ride not a loop"}</Card.Description
                         >
                     </Card.Header>
-                    <Card.Content>
-                        <div
-                            class="h-96 w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl"
+
+                    {#if $currentRide.locdetails?.String != ""}
+                        <Card.Footer
+                            >{$currentRide.locdetails?.String}</Card.Footer
                         >
-                            MAP
-                        </div>
-                    </Card.Content>
-                    <Card.Footer>{$currentRide.locdetails?.String}</Card.Footer>
+                    {/if}
                 </Card.Root>
+
                 {#if $currentRide.image.String != ""}
                     <img
-                        src={SHIFT2BIKES_IMG_URL + $currentRide.image.String}
+                        src={SHIFT2BIKES_URL + $currentRide.image.String}
                         alt={`Image for ${$currentRide.title} bike ride`}
                     />
                 {/if}
@@ -78,6 +72,24 @@
                     <Card.Header>
                         <Card.Title>{$currentRide.organizer?.String}</Card.Title
                         >
+
+                        {#if $currentRide.email?.Valid}
+                            <Card.Title>
+                                {$currentRide.email?.String}
+                            </Card.Title>
+                        {/if}
+
+                        {#if $currentRide.weburl?.Valid && $currentRide.webname?.Valid}
+                            <a
+                                href={$currentRide.weburl?.String}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                <Card.Title class="text-yellow-400 mt-1"
+                                    >{$currentRide.webname?.String}</Card.Title
+                                >
+                            </a>
+                        {/if}
                     </Card.Header>
                 </Card.Root>
             </div>

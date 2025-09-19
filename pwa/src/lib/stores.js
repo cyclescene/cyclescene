@@ -14,6 +14,7 @@ export const VIEW_RIDE_DETAILS = 'rideDetails'
 export const VIEW_SAVED = 'saved'
 export const VIEW_SETTINGS = 'settings'
 export const VIEW_OTHER_RIDES = 'otherRides'
+export const VIEW_DATE_PICKER = "datePicker"
 
 
 function createRidesStore() {

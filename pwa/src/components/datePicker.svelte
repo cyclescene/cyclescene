@@ -1,6 +1,6 @@
 <script>
     import Button from "$lib/components/ui/button/button.svelte";
-    import { currentDate } from "../lib/stores";
+    import { currentDate, navigateTo, VIEW_DATE_PICKER } from "../lib/stores";
     import { format, isToday, isTomorrow, isYesterday } from "date-fns";
 
     let formattedDateForDisplay = "";
@@ -31,6 +31,10 @@
 
         $currentDate = newDate; // Update the store with the new Date object
     }
+
+    function openDatePicker() {
+        navigateTo(VIEW_DATE_PICKER);
+    }
 </script>
 
 <div
@@ -41,7 +45,12 @@
         onclick={() => changeDay(-1)}>&lt;</Button
     >
 
-    <div class="text-2xl font-bold text-center grow py-2 px-3 min-w-[120px]">
+    <div
+        role="button"
+        tabindex="0"
+        class="text-2xl font-bold text-center grow py-2 px-3 min-w-[120px]"
+        onclick={openDatePicker}
+    >
         {formattedDateForDisplay}
     </div>
 
