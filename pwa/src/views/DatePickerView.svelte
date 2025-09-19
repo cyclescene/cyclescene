@@ -1,24 +1,19 @@
 <script>
     import Calendar from "$lib/components/ui/calendar/calendar.svelte";
-    import { currentDate } from "$lib/stores";
+    import { dateStore, goBackInHistory } from "$lib/stores";
     import { getLocalTimeZone, today } from "@internationalized/date";
-
-    // Function to navigate between days
-    function changeDay(offset) {
-        const currentStoredDate = $currentDate;
-        // Create a new Date object to avoid mutating the store directly
-        const newDate = new Date(currentStoredDate.getTime());
-        // --- Native Date method: setDate handles day addition/subtraction ---
-        newDate.setDate(newDate.getDate() + offset);
-
-        $currentDate = newDate; // Update the store with the new Date object
-    }
 
     let value = $state(today(getLocalTimeZone()));
 
     $effect(() => {
-        console.log(value);
+        dateStore.setSpecificDate(value);
+        goBackInHistory();
     });
 </script>
 
-<Calendar bind:value></Calendar>
+<div class="h-[100vh] bg-black mx-auto">
+    <Calendar
+        bind:value
+        class=" absolute bg-black text-white p-5 border-2 border-white rounded-xl text-2xl"
+    />
+</div>

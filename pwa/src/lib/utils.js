@@ -1,15 +1,36 @@
 import { clsx, } from "clsx";
-import { format, isToday, isTomorrow, isYesterday, parse, parseISO } from "date-fns";
 import { twMerge } from "tailwind-merge";
 
+import { format, parse, parseISO, isToday, isTomorrow, isYesterday } from 'date-fns';
+import { parseTime } from "@internationalized/date";
+import { DateFormatter } from "@internationalized/date";
+import { parseDate } from "@internationalized/date";
+import { getLocalTimeZone } from "@internationalized/date";
+import { today } from "@internationalized/date";
 export function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
 
 export function formatTime(timeString) {
-    if (!timeString) return "N/A";
-    const parsedTime = parse(timeString, "HH:mm:ss", new Date());
-    return format(parsedTime, "h:mm a");
+    const parsedTime = parseTime(timeString)
+
+    let now = new Date()
+    let dateForFormatting = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        parsedTime.hour,
+        parsedTime.minute,
+        parsedTime.second
+    )
+
+    const timeFormatter = new DateFormatter("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+    })
+
+    return timeFormatter.format(dateForFormatting)
 }
 
 export function formatDate(dateString) {
@@ -17,22 +38,33 @@ export function formatDate(dateString) {
         return "";
     }
 
-    const date = parseISO(dateString);
+    // Parse the ISO date string into a Date object
+    const date = parseDate(dateString);
 
-    if (isNaN(date.getTime())) {
+    // Check if the parsed date is valid before proceeding
+    if (date.toString() === "Invalid Date") {
         console.warn(`Invalid date string provided to formatDate: ${dateString}`);
-        return ""; // Or some other fallback like "Invalid Date"
+        return "Invalid Date"; // Or some other fallback like "Invalid Date"
     }
 
+    const todaysDate = today(getLocalTimeZone())
+    const tomorrowsDate = todaysDate.add({ days: 1 })
+    const yesterdaysDate = todaysDate.subtract({ days: -1 })
 
-    if (isToday(date)) {
-        return "Today";
-    } else if (isTomorrow(date)) {
-        return "Tomorrow";
-    } else if (isYesterday(date)) {
-        return "Yesterday";
+    const dateFormatter = new DateFormatter("en-US", {
+        weekday: "short",
+        month: 'short',
+        day: "numeric"
+    })
+
+    if (date.compare(todaysDate) === 0) {
+        return "Today"
+    } else if (date.compare(tomorrowsDate) === 0) {
+        return "Tomorrow"
+    } else if (date.compare(yesterdaysDate) === 0) {
+        return "Yesterday"
     } else {
-        // Format as "Day, Mon D" e.g., "Sat, Sep 14"
-        return format(date, "eee, MMM d");
+        return dateFormatter.format(date.toDate(getLocalTimeZone()))
     }
+
 }

@@ -25,9 +25,9 @@
 <main class="flex flex-col min-h[100vh]">
     <div class="shrink relative">
         <header class="shrink">
-            {#if $activeView == VIEW_MAP || VIEW_LIST || VIEW_DATE_PICKER}
+            {#if $activeView == VIEW_MAP || $activeView == VIEW_LIST || $activeView == VIEW_DATE_PICKER}
                 <DatePicker />
-            {:else if $activeView == VIEW_RIDE_DETAILS || VIEW_OTHER_RIDES}
+            {:else if $activeView == VIEW_OTHER_RIDES || $activeView == VIEW_RIDE_DETAILS}
                 <RideDetailsTopBar />
             {:else}
                 <p>Nothing to see here</p>

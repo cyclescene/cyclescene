@@ -1,7 +1,8 @@
-import { writable, derived } from "svelte/store";
+import { parseDate } from "@internationalized/date";
 import { getPastRides, getUpcomingRides } from "./api";
 import { getRidesfromDB, saveRidesToDB } from "./db";
-import { isSameDay, parseISO } from "date-fns";
+import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
+import { writable, derived } from "svelte/store";
 
 // Portland, OR coordinates
 const FALLBACK_LAT = 45.515232
@@ -90,7 +91,69 @@ export function goBackInHistory() {
 }
 
 
-export const currentDate = writable(new Date())
+const initialDate = today(getLocalTimeZone())
+export const currentDate = writable(initialDate)
+
+export const dateStore = {
+    subscribe: currentDate.subscribe,
+    setToday: () => {
+        currentDate.set(today(getLocalTimeZone()))
+    },
+    addDays: (offset) => {
+        currentDate.update((currentStoredDate) => {
+            if (!currentStoredDate) {
+                console.error("dateStore.addDays: current store was undefined/null. " +
+                    "initializing to today and applying offset");
+                return today(getLocalTimeZone()).add({ days: offset })
+            }
+            return currentStoredDate.add({ days: offset })
+        })
+    },
+    subtractDays: (offset) => {
+        currentDate.update((currentStoredDate) => {
+            if (!currentStoredDate) {
+                console.error("dateStore.addDays: current store was undefined/null. " +
+                    "initializing to today and applying offset");
+                return today(getLocalTimeZone()).add({ days: offset })
+            }
+            return currentStoredDate.subtract({ days: offset })
+        })
+    },
+    setSpecificDate: (date) => {
+        currentDate.set(date)
+    }
+}
+
+
+export const formattedDate = derived([currentDate], ([$currentDate]) => {
+    if (!$currentDate) {
+        console.warn("formattedDate derived store received undefined/null currentDate.");
+        return "LoadingDate"
+    }
+
+
+
+    const dateFormatter = new DateFormatter("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+    });
+
+
+    const todaysDate = today(getLocalTimeZone());
+    const tomorrowsDate = todaysDate?.add({ days: 1 });
+    const yesterdaysDate = todaysDate?.subtract({ days: 1 });
+    if ($currentDate.compare(todaysDate) === 0) {
+        return "Today";
+    } else if ($currentDate.compare(tomorrowsDate) === 0) {
+        return "Tomorrow";
+    } else if ($currentDate.compare(yesterdaysDate) === 0) {
+        return "Yesterday";
+    } else {
+        return dateFormatter.format($currentDate.toDate(getLocalTimeZone()));
+    }
+
+})
 
 
 // current ride logic
@@ -125,7 +188,7 @@ export const filteredNoAddress = derived(
         }
 
         return $rides.data.filter(ride => {
-            const rideDate = parseISO(ride.date);
+            const rideDate = parseDate(ride.date);
 
             const lat = ride.lat?.Float64
             const lon = ride.lon?.Float64
@@ -138,7 +201,7 @@ export const filteredNoAddress = derived(
 
             const hasNoValidAddress = isLatOrLonMissing || isFallbackCoords
 
-            const isSameDayAsCurrent = isSameDay($currentDate, rideDate);
+            const isSameDayAsCurrent = $currentDate.compare(rideDate) === 0
 
             return isSameDayAsCurrent && hasNoValidAddress
         })
@@ -153,7 +216,7 @@ export const filteredRides = derived(
         }
 
         return $rides.data.filter(ride => {
-            const rideDate = parseISO(ride.date);
+            const rideDate = parseDate(ride.date);
 
             const lat = ride.lat?.Float64
             const lon = ride.lon?.Float64
@@ -163,7 +226,7 @@ export const filteredRides = derived(
                 lat !== undefined && lat !== null && lat !== 0 && lon !== undefined && lon !== null && lon !== 0 && !(lat === FALLBACK_LAT && lon === FALLBACK_LON)
             )
 
-            const isSameDayAsCurrent = isSameDay($currentDate, rideDate);
+            const isSameDayAsCurrent = $currentDate.compare(rideDate) === 0
 
             return isSameDayAsCurrent && hasValidAddress
         });
@@ -178,9 +241,9 @@ export const allRides = derived(
         }
 
         return $rides.data.filter(ride => {
-            const rideDate = parseISO(ride.date);
+            const rideDate = parseDate(ride.date);
 
-            const isSameDayAsCurrent = isSameDay($currentDate, rideDate);
+            const isSameDayAsCurrent = $currentDate.compare(rideDate) === 0
 
             return isSameDayAsCurrent
         });

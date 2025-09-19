@@ -1,39 +1,29 @@
 <script>
     import Button from "$lib/components/ui/button/button.svelte";
-    import { currentDate, navigateTo, VIEW_DATE_PICKER } from "../lib/stores";
-    import { format, isToday, isTomorrow, isYesterday } from "date-fns";
-
-    let formattedDateForDisplay = "";
-
-    $: {
-        if ($currentDate) {
-            if (isToday($currentDate)) {
-                formattedDateForDisplay = "Today";
-            } else if (isTomorrow($currentDate)) {
-                formattedDateForDisplay = "Tomorrow";
-            } else if (isYesterday($currentDate)) {
-                formattedDateForDisplay = "Yesterday";
-            } else {
-                formattedDateForDisplay = format($currentDate, "eee, MMM d");
-            }
-        } else {
-            formattedDateForDisplay = "";
-        }
-    }
+    import {
+        formattedDate,
+        dateStore,
+        navigateTo,
+        VIEW_DATE_PICKER,
+        activeView,
+        goBackInHistory,
+    } from "../lib/stores";
 
     // Function to navigate between days
     function changeDay(offset) {
-        const currentStoredDate = $currentDate;
-        // Create a new Date object to avoid mutating the store directly
-        const newDate = new Date(currentStoredDate.getTime());
-        // --- Native Date method: setDate handles day addition/subtraction ---
-        newDate.setDate(newDate.getDate() + offset);
-
-        $currentDate = newDate; // Update the store with the new Date object
+        if (offset > 0) {
+            dateStore.addDays(offset);
+        } else if (offset < 0) {
+            dateStore.subtractDays(Math.abs(offset));
+        }
     }
 
     function openDatePicker() {
-        navigateTo(VIEW_DATE_PICKER);
+        if ($activeView != VIEW_DATE_PICKER) {
+            navigateTo(VIEW_DATE_PICKER);
+        } else {
+            goBackInHistory();
+        }
     }
 </script>
 
@@ -45,15 +35,12 @@
         onclick={() => changeDay(-1)}>&lt;</Button
     >
 
-    <div
-        role="button"
-        tabindex="0"
-        class="text-2xl font-bold text-center grow py-2 px-3 min-w-[120px]"
+    <button
+        class="text-2xl grow font-bold text-center py-2 px-3"
         onclick={openDatePicker}
     >
-        {formattedDateForDisplay}
-    </div>
-
+        {$formattedDate}
+    </button>
     <Button
         class="bg-black border-2 border-white py-2 px-3 min-w-10"
         onclick={() => changeDay(1)}>&gt;</Button
