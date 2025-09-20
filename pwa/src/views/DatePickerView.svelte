@@ -1,19 +1,33 @@
 <script>
+    import Button from "$lib/components/ui/button/button.svelte";
     import Calendar from "$lib/components/ui/calendar/calendar.svelte";
     import { dateStore, goBackInHistory } from "$lib/stores";
     import { getLocalTimeZone, today } from "@internationalized/date";
 
-    let value = $state(today(getLocalTimeZone()));
+    const todaysDate = today(getLocalTimeZone());
+    let value = $state(todaysDate);
 
     $effect(() => {
         dateStore.setSpecificDate(value);
         goBackInHistory();
     });
+
+    function onClickToday() {
+        dateStore.setSpecificDate(todaysDate);
+        goBackInHistory();
+    }
 </script>
 
-<div class="h-[100vh] bg-black mx-auto">
+<div
+    class="absolute top-[60px] bottom-[75px] min-h-[calc(100vh_-_115px)] w-full p-5 bg-black flex flex-col items-center justify-center"
+>
     <Calendar
         bind:value
-        class=" absolute bg-black text-white p-5 border-2 border-white rounded-xl text-2xl"
+        class="bg-black text-white p-5 border-2 border-white rounded-xl text-2xl"
     />
+
+    <Button
+        onclick={onClickToday}
+        class="bg-transparent text-yellow-500 text-xl mt-10">Today</Button
+    >
 </div>
