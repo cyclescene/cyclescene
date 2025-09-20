@@ -7,6 +7,8 @@
     import L from "leaflet";
     import RidesNotShown from "./ridesNotShown.svelte";
     import LocationCards from "./locationCards.svelte";
+    import Button from "$lib/components/ui/button/button.svelte";
+    import RecenterIcon from "~icons/material-symbols-light/recenter-rounded";
 
     const ORIGINAL_MAP_CENTER = [45.52, -122.65];
     const ORIGINAL_MAP_ZOOM = 12;
@@ -152,7 +154,12 @@
             </Marker>
         {/each}
     </Map>
-    <button class="recenter-button" onclick={handleRecenter}> ⟲ </button>
+    <Button
+        class="absolute top-[85px] bg-black text-white h-10 w-10 z-[1000] right-2.5"
+        onclick={handleRecenter}
+    >
+        <RecenterIcon style="width: 30px; height: 30px;" />
+    </Button>
 </div>
 
 <LocationCards
@@ -182,6 +189,11 @@
         width: 100%;
         margin-top: 60px;
         margin-bottom: 50px;
+    }
+
+    .recenter-icon {
+        height: 32px;
+        width: 32px;
     }
 
     .recenter-button {

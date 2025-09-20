@@ -9,6 +9,9 @@
         goBackInHistory,
     } from "../lib/stores";
 
+    import IconChevronRight from "~icons/bxs/chevron-right";
+    import IconChevronLeft from "~icons/bxs/chevron-left";
+
     // Function to navigate between days
     function changeDay(offset) {
         if (offset > 0) {
@@ -31,8 +34,8 @@
     class="flex items-center justify-center p-2.5 bg-black text-white border-b-[1px] relative z-[500]"
 >
     <Button
-        class="bg-black border-2 border-white py-2 px-3 min-w-10"
-        onclick={() => changeDay(-1)}>&lt;</Button
+        class="bg-black py-2 px-3 text-yellow-400 min-w-10"
+        onclick={() => changeDay(-1)}><IconChevronLeft /></Button
     >
 
     <button
@@ -42,7 +45,7 @@
         {$formattedDate}
     </button>
     <Button
-        class="bg-black border-2 border-white py-2 px-3 min-w-10"
-        onclick={() => changeDay(1)}>&gt;</Button
+        class="bg-black py-2 px-3 text-yellow-400 min-w-10"
+        onclick={() => changeDay(1)}><IconChevronRight /></Button
     >
 </div>
