@@ -5,7 +5,7 @@
     import { SvelteMap } from "svelte/reactivity";
 
     import L from "leaflet";
-    import RidesNotShown from "./ridesNotShown.svelte";
+    import RidesNotShown from "./ride/ridesNotShown.svelte";
     import LocationCards from "./locationCards.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import RecenterIcon from "~icons/material-symbols-light/recenter-rounded";

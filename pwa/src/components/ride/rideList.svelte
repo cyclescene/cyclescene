@@ -1,6 +1,6 @@
 <script>
     import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-    import Card from "./card.svelte";
+    import Card from "../card.svelte";
 
     export let rides = [];
 </script>

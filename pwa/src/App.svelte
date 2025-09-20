@@ -1,11 +1,14 @@
 <script>
+    import { onMount } from "svelte";
     import "./app.css";
     import DatePicker from "./components/datePicker.svelte";
     import NavigationBar from "./components/navigationBar.svelte";
-    import RideDetailsTopBar from "./components/rideDetailsTopBar.svelte";
+    import RideDetailsTopBar from "./components/ride/rideDetailsTopBar.svelte";
 
     import {
         activeView,
+        rides,
+        savedRides,
         VIEW_DATE_PICKER,
         VIEW_LIST,
         VIEW_MAP,
@@ -20,6 +23,14 @@
     import MapView from "./views/MapView.svelte";
     import OtherRidesView from "./views/OtherRidesView.svelte";
     import RideView from "./views/RideView.svelte";
+    import SavedView from "./views/SavedView.svelte";
+
+    onMount(() => {
+        rides.init();
+        rides.fetchUpcoming();
+
+        savedRides.init();
+    });
 </script>
 
 <main class="flex flex-col min-h[100vh]">
@@ -29,8 +40,10 @@
                 <DatePicker />
             {:else if $activeView == VIEW_OTHER_RIDES || $activeView == VIEW_RIDE_DETAILS}
                 <RideDetailsTopBar />
-            {:else}
-                <p>Nothing to see here</p>
+            {:else if $activeView == VIEW_SAVED}
+                <p class="font-black text-5xl text-yellow-400">
+                    Saved Rides WIP
+                </p>
             {/if}
         </header>
     </div>
@@ -65,7 +78,7 @@
             class="view-container"
             class:hidden={!($activeView === VIEW_SAVED)}
         >
-            Saved Rides go here
+            <SavedView />
         </div>
 
         <div

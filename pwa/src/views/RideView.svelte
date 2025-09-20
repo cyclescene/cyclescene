@@ -1,5 +1,5 @@
 <script>
-    import RideDetails from "../components/rideDetails.svelte";
+    import RideDetails from "../components/ride/rideDetails.svelte";
 </script>
 
 <RideDetails />

@@ -1,8 +1,8 @@
 import { parseDate } from "@internationalized/date";
 import { getPastRides, getUpcomingRides } from "./api";
-import { getRidesfromDB, saveRidesToDB } from "./db";
+import { addSavedRide, getAllSavedRides, getRidesfromDB, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
-import { writable, derived } from "svelte/store";
+import { writable, derived, get } from "svelte/store";
 
 // Portland, OR coordinates
 const FALLBACK_LAT = 45.515232
@@ -56,9 +56,54 @@ function createRidesStore() {
     }
 }
 
+function createSavedRideStore() {
+    const { subscribe, set } = writable({
+        loading: true,
+        data: [],
+        error: null
+    })
+    return {
+        subscribe,
+        init: async () => {
+            try {
+                const cachedRides = await getAllSavedRides()
+                set({ loading: false, data: cachedRides, error: null })
+            } catch (error) {
+                set({ loading: false, data: [], error: "Could not load saved rides" })
+            }
+        },
+        saveRide: async (ride) => {
+            try {
+                await addSavedRide(ride)
+                const savedRides = await getAllSavedRides()
+                set({ loading: false, data: savedRides, error: null })
+
+            } catch (e) {
+                set({ loading: false, data: [], error: "Could not load saved rides" })
+            }
+        },
+    }
+}
+
+export const savedRides = createSavedRideStore()
+export const allSavedRides = derived(
+    [savedRides],
+    ([$savedRides]) => {
+        if (!$savedRides || !$savedRides.data) {
+            return [];
+        }
+
+
+        return $savedRides.data
+    }
+)
+
+// NAVIGATION STORE
 
 export const viewStack = writable([VIEW_MAP])
 export const activeView = writable(VIEW_MAP)
+
+
 
 viewStack.subscribe(stack => {
     if (stack.length > 0) {
@@ -69,6 +114,7 @@ viewStack.subscribe(stack => {
     }
 })
 
+// sets the next view on top of a stack to be able to return to the view a user was before
 export function navigateTo(newViewIdentifier, options = { force: false }) {
     viewStack.update(stack => {
         if (!options.force && stack[stack.length - 1] === newViewIdentifier) {
@@ -79,6 +125,7 @@ export function navigateTo(newViewIdentifier, options = { force: false }) {
 
 }
 
+// go back to the previous View
 export function goBackInHistory() {
     viewStack.update(stack => {
         if (stack.length > 1) {
@@ -90,6 +137,8 @@ export function goBackInHistory() {
     })
 }
 
+
+// DATE STORE
 
 const initialDate = today(getLocalTimeZone())
 export const currentDate = writable(initialDate)
@@ -156,30 +205,30 @@ export const formattedDate = derived([currentDate], ([$currentDate]) => {
 })
 
 
-// current ride logic
+// CURRENT RIDE STORE
 const initialRideState = null
 export const currentRide = writable(initialRideState)
 
-export function setRide(ride) {
-    currentRide.set(ride)
-}
+export const currentRideStore = {
+    subscribe: currentRide.subscribe,
+    setRide: function (ride) {
+        currentRide.set(ride)
+    },
+    getRide: function () {
+        if (currentRide == initialRideState) {
+            return
+        } else {
+            return get(currentRide)
+        }
+    },
 
-export function getRide() {
-    if (currentRide == initialRideState) {
-        return
-    } else {
-        return currentRide
+    clearRide: function clearRide() {
+        currentRide.set(initialRideState)
     }
 }
 
-export function clearRide() {
-    currentRide.set(initialRideState)
-}
-
+// ALL RIDES STORE
 export const rides = createRidesStore()
-
-export const savedRideIds = writable([])
-
 export const filteredNoAddress = derived(
     [rides, currentDate],
     ([$rides, $currentDate]) => {

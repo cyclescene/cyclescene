@@ -21,10 +21,7 @@
 <div
     class="absolute top-[60px] bottom-[75px] min-h-[calc(100vh_-_115px)] w-full p-5 bg-black flex flex-col items-center justify-center"
 >
-    <Calendar
-        bind:value
-        class="bg-black text-white p-5 border-2 border-white rounded-xl text-2xl"
-    />
+    <Calendar bind:value class="bg-black text-white p-5 rounded-xl text-2xl" />
 
     <Button
         onclick={onClickToday}

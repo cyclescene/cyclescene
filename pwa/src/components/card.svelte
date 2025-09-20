@@ -1,14 +1,18 @@
 <script>
     import * as Card from "$lib/components/ui/card";
-    import { navigateTo, setRide, VIEW_RIDE_DETAILS } from "$lib/stores";
+    import {
+        navigateTo,
+        currentRideStore,
+        VIEW_RIDE_DETAILS,
+    } from "$lib/stores";
     import { cn, formatTime } from "$lib/utils";
-    import RideLabels from "./rideLabels.svelte";
+    import RideLabels from "./ride/rideLabels.svelte";
 
     export let ride;
 
     function onCardClick(ride) {
         navigateTo(VIEW_RIDE_DETAILS);
-        setRide(ride);
+        currentRideStore.setRide(ride);
     }
 </script>
 

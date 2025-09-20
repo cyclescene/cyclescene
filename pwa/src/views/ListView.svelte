@@ -1,5 +1,5 @@
 <script>
-    import RideList from "../components/rideList.svelte";
+    import RideList from "../components/ride/rideList.svelte";
     import { allRides } from "../lib/stores";
 </script>
 

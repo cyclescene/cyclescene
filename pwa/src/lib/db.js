@@ -1,14 +1,19 @@
 import { openDB } from 'idb'
 
-const DB_NAME = 'bike-bae-db'
-const RIDES_STORE_NAME = 'rides'
-const DB_VERSION = 1
+const DB_NAME = 'cycle-scene-pdx'
+const ALLRIDES_STORE_NAME = 'rides'
+const SAVED_RIDES_STORE_NAME = "saved"
+const DB_VERSION = 2
 
 // Initialize the database and create the object store if it doesn't exist
+// LOGIC FOR ALL RIDES ////////////////////
 const dbPromise = openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
-        if (!db.objectStoreNames.contains(RIDES_STORE_NAME)) {
-            db.createObjectStore(RIDES_STORE_NAME, { keyPath: 'id' })
+        if (!db.objectStoreNames.contains(ALLRIDES_STORE_NAME)) {
+            db.createObjectStore(ALLRIDES_STORE_NAME, { keyPath: 'id' })
+        }
+        if (!db.objectStoreNames.contains(SAVED_RIDES_STORE_NAME)) {
+            db.createObjectStore(SAVED_RIDES_STORE_NAME, { keyPath: 'id' })
         }
     }
 })
@@ -19,9 +24,8 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
  */
 export async function saveRidesToDB(rides) {
     const db = await dbPromise
-    const tx = db.transaction(RIDES_STORE_NAME, "readwrite")
-    await tx.store.clear()
-    await Promise.all(rides.map(ride => tx.store.add(ride)))
+    const tx = db.transaction(ALLRIDES_STORE_NAME, "readwrite")
+    await Promise.all(rides.map(ride => tx.store.put(ride))).catch(e => console.error(e))
     await tx.done
 }
 
@@ -31,5 +35,34 @@ export async function saveRidesToDB(rides) {
  */
 export async function getRidesfromDB() {
     const db = await dbPromise
-    return await db.getAll(RIDES_STORE_NAME)
+    return await db.getAll(ALLRIDES_STORE_NAME)
+}
+
+
+// LOGIC for user instance saved rides ////////////////////////////////
+
+// saves a ride to the saved ride store
+export async function addSavedRide(ride) {
+    const db = await dbPromise
+    const tx = db.transaction(SAVED_RIDES_STORE_NAME, "readwrite")
+    try {
+        await tx.store.put(ride)
+
+    } catch (e) {
+        console.error(e);
+    }
+    await tx.done
+}
+
+// get all saved rides
+export async function getAllSavedRides() {
+    const db = await dbPromise
+    return await db.getAll(SAVED_RIDES_STORE_NAME)
+}
+
+// in case a user want to clear their saved rides
+export async function clearSavedRides() {
+    const db = await dbPromise
+    return await db.clear(SAVED_RIDES_STORE_NAME)
+
 }
