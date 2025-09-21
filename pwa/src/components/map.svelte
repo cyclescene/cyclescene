@@ -9,6 +9,7 @@
     import LocationCards from "./locationCards.svelte";
     import Button from "$lib/components/ui/button/button.svelte";
     import RecenterIcon from "~icons/material-symbols-light/recenter-rounded";
+    import { mapViewStore } from "$lib/stores";
 
     const ORIGINAL_MAP_CENTER = [45.52, -122.65];
     const ORIGINAL_MAP_ZOOM = 12;
@@ -88,9 +89,9 @@
     };
 
     function handleMarkerClick(ridesAtLocation) {
-        selectedEvents = ridesAtLocation;
-        showEventCard = true;
-        showNotShown = false;
+        mapViewStore.setSelectedRides(ridesAtLocation);
+        mapViewStore.showEventCards(true);
+        mapViewStore.showOtherRides(false);
         if (ridesAtLocation.length > 0) {
             mapCenter = [
                 ridesAtLocation[0].lat.Float64,
@@ -99,31 +100,26 @@
         }
     }
 
-    let selectedEvents = null;
-    let showEventCard = false;
-
     function handleRecenter() {
         fitAllMarkers();
         sveafletMapInstance.closePopup();
-        selectedEvents = null;
-        showEventCard = false;
+        mapViewStore.clearSelectedRides();
+        mapViewStore.showEventCards(false);
         if (noAddressRides && noAddressRides.length > 1) {
-            showNotShown = true;
+            mapViewStore.showOtherRides(true);
         }
     }
 
     function handleCardClose() {
-        selectedEvents = null;
-        showEventCard = false;
+        mapViewStore.showEventCards(false);
+        mapViewStore.clearSelectedRides();
         if (noAddressRides && noAddressRides.length > 1) {
-            showNotShown = true;
+            mapViewStore.showOtherRides(true);
         }
     }
 
-    let showNotShown = false;
-
     $: if (noAddressRides && noAddressRides.length > 1) {
-        showNotShown = true;
+        mapViewStore.showOtherRides(true);
     }
 </script>
 
@@ -162,13 +158,9 @@
     </Button>
 </div>
 
-<LocationCards
-    rides={selectedEvents}
-    visible={showEventCard}
-    on:close={handleCardClose}
-/>
+<LocationCards on:close={handleCardClose} />
 
-<RidesNotShown visible={showNotShown} notShownLength={noAddressRides.length} />
+<RidesNotShown />
 
 <style>
     :global(.map-container .leaflet-tooltip) {

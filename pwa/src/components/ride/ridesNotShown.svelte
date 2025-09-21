@@ -1,19 +1,19 @@
 <script>
-    import { navigateTo, VIEW_OTHER_RIDES } from "$lib/stores";
-
-    export let visible = false;
-    export let notShownLength = 0;
+    import { mapViewStore, navigateTo, VIEW_OTHER_RIDES } from "$lib/stores";
 
     function onShowNotShown() {
         navigateTo(VIEW_OTHER_RIDES);
     }
 </script>
 
-{#if visible && notShownLength > 0}
+{#if $mapViewStore.otherRidesVisible && $mapViewStore.otherRides.length > 0}
     <div class="event-not-shown-card">
         <button class="ride-not-shown-button" onclick={() => onShowNotShown()}>
             <p>
-                {notShownLength} ride{notShownLength == 1 ? "" : "s"} not shown
+                {$mapViewStore.otherRides.length} ride{$mapViewStore.otherRides
+                    .length == 1
+                    ? ""
+                    : "s"} not shown
             </p>
         </button>
     </div>

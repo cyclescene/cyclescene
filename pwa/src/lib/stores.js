@@ -298,3 +298,58 @@ export const allRides = derived(
         });
     }
 )
+
+
+// MAP STORE
+function createMapViewStore() {
+    const { subscribe, update } = writable({
+        eventCardsVisible: false,
+        otherRidesVisible: false,
+        selectedEvents: [],
+        otherRides: []
+    })
+
+    return {
+        subscribe: subscribe,
+        showEventCards: (bool) => {
+            update(store => ({
+                ...store,
+                eventCardsVisible: bool
+            }))
+        },
+        showOtherRides: (bool) => {
+            update(store => ({
+                ...store,
+                otherRidesVisible: bool
+            }))
+        },
+        setSelectedRides: (rides) => {
+            if (rides.length > 0) {
+                update(store => ({
+                    ...store,
+                    selectedEvents: rides
+                }))
+            }
+        },
+        clearSelectedRides: () => {
+            update(store => ({
+                ...store,
+                selectedEvents: []
+            }))
+        },
+        setOtherRides: (rides) => {
+            update(store => ({
+                ...store,
+                otherRides: rides
+            }))
+        },
+        clearOtherRides: () => {
+            update(store => ({
+                ...store,
+                otherRides: []
+            }))
+        }
+    }
+}
+
+export const mapViewStore = createMapViewStore()
