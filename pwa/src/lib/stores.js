@@ -3,6 +3,7 @@ import { getPastRides, getUpcomingRides } from "./api";
 import { addSavedRide, getAllSavedRides, getRidesfromDB, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
+import { SvelteMap } from "svelte/reactivity";
 
 // Portland, OR coordinates
 const FALLBACK_LAT = 45.515232
@@ -95,6 +96,27 @@ export const allSavedRides = derived(
 
 
         return $savedRides.data
+    }
+)
+
+export const savedRidesGroupedByDate = derived(
+    [savedRides],
+    ([savedRides]) => {
+        let ridesByDate = new SvelteMap()
+        if (!savedRides.data && savedRides.data.length < 0) {
+            return
+        }
+        savedRides.data.forEach((ride) => {
+            const key = ride.date
+            if (!ridesByDate.has(key)) {
+                ridesByDate.set(key, {
+                    date: ride.date,
+                    rides: []
+                })
+            }
+            ridesByDate.get(key).rides.push(ride);
+        });
+        return Array.from(ridesByDate.values())
     }
 )
 
@@ -353,3 +375,4 @@ function createMapViewStore() {
 }
 
 export const mapViewStore = createMapViewStore()
+

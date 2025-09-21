@@ -20,8 +20,6 @@
     export let rides = [];
     export let noAddressRides = [];
 
-    // group locations logic
-
     let groupedLocations = [];
 
     $: {

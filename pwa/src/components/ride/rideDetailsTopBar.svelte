@@ -1,11 +1,5 @@
 <script>
-    import {
-        allSavedRides,
-        currentRideStore,
-        goBackInHistory,
-        rides,
-        savedRides,
-    } from "$lib/stores";
+    import { currentRideStore, goBackInHistory, savedRides } from "$lib/stores";
 
     import SaveIcon from "~icons/material-symbols/save-rounded";
     import SharteIcon from "~icons/material-symbols/battery-android-share-outline";
@@ -24,10 +18,6 @@
         } catch (e) {
             console.error(`unable to save ride ${e}`);
         }
-    }
-
-    $: {
-        console.log($allSavedRides);
     }
 </script>
 

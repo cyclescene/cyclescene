@@ -37,12 +37,12 @@
     class="flex items-center justify-center p-2.5 bg-black text-white border-b-[1px] relative z-[500]"
 >
     <Button
-        class="bg-black border-2 border-white py-2 px-3 min-w-10"
+        class="bg-black py-2 px-3 text-yellow-400 min-w-10"
         onclick={() => changeDay(-1)}><IconChevronLeft /></Button
     >
 
     <button
-        class="text-2xl grow font-bold text-center py-2 px-3"
+        class="text-xl text-yellow-400 grow font-bold text-center py-2 px-3"
         onclick={openDatePicker}
     >
         {$formattedDate}

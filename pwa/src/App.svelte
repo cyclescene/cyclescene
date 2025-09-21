@@ -24,6 +24,7 @@
     import OtherRidesView from "./views/OtherRidesView.svelte";
     import RideView from "./views/RideView.svelte";
     import SavedView from "./views/SavedView.svelte";
+    import SavedRideTopBar from "./components/saved/savedRideTopBar.svelte";
 
     onMount(() => {
         rides.init();
@@ -41,9 +42,7 @@
             {:else if $activeView == VIEW_OTHER_RIDES || $activeView == VIEW_RIDE_DETAILS}
                 <RideDetailsTopBar />
             {:else if $activeView == VIEW_SAVED}
-                <p class="font-black text-5xl text-yellow-400">
-                    Saved Rides WIP
-                </p>
+                <SavedRideTopBar />
             {/if}
         </header>
     </div>
