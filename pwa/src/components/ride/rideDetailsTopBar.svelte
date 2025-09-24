@@ -1,5 +1,6 @@
 <script>
     import { currentRideStore, goBackInHistory, savedRides } from "$lib/stores";
+    import { toast, Toaster } from "svelte-sonner";
 
     import SaveIcon from "~icons/material-symbols/save-rounded";
     import SharteIcon from "~icons/material-symbols/battery-android-share-outline";
@@ -14,7 +15,11 @@
     async function saveRide() {
         const ride = currentRideStore.getRide();
         try {
-            await savedRides.saveRide(ride);
+            toast.promise(savedRides.saveRide(ride), {
+                loading: "Saving...",
+                success: "Ride saved!",
+                error: "Unable to save ride",
+            });
         } catch (e) {
             console.error(`unable to save ride ${e}`);
         }
@@ -22,6 +27,7 @@
 </script>
 
 <div class="flex justify-center items-center p-2.5 bg-black z-[500] text-white">
+    <Toaster position="top-center" />
     <Button class="bg-black h-10 w-10" onclick={handleGoBack}>
         <BackIcon />
     </Button>

@@ -69,7 +69,8 @@ function createSavedRideStore() {
             try {
                 const cachedRides = await getAllSavedRides()
                 set({ loading: false, data: cachedRides, error: null })
-            } catch (error) {
+            } catch (e) {
+                console.error(e);
                 set({ loading: false, data: [], error: "Could not load saved rides" })
             }
         },
@@ -101,24 +102,55 @@ export const allSavedRides = derived(
 
 export const savedRidesGroupedByDate = derived(
     [savedRides],
-    ([savedRides]) => {
+    ([$savedRides]) => {
         let ridesByDate = new SvelteMap()
-        if (!savedRides.data && savedRides.data.length < 0) {
-            return
+        if (!$savedRides.data && $savedRides.data.length === 0) {
+            return []
         }
-        savedRides.data.forEach((ride) => {
-            const key = ride.date
+        $savedRides.data.forEach((ride) => {
+            const calendarDate = parseDate(ride.date)
+            const key = calendarDate.toString()
             if (!ridesByDate.has(key)) {
                 ridesByDate.set(key, {
-                    date: ride.date,
+                    date: calendarDate,
                     rides: []
                 })
             }
             ridesByDate.get(key).rides.push(ride);
         });
-        return Array.from(ridesByDate.values())
+        return Array.from(ridesByDate.values()).sort((a, b) => a.date.compare(b.date));
     }
 )
+
+export const selectedSaveRidesNagivationDate = writable(today(getLocalTimeZone()))
+export const allSavedRidesNavigationDates = derived(
+    [savedRidesGroupedByDate],
+    ([$savedRidesGroupedByDate]) => {
+        const uniqueDatesMap = new SvelteMap()
+
+        $savedRidesGroupedByDate.forEach(group => {
+            uniqueDatesMap.set(group.date.toString(), group.date)
+        })
+
+        const todaysDate = today(getLocalTimeZone())
+        uniqueDatesMap.set(todaysDate.toString(), todaysDate)
+
+        return Array.from(uniqueDatesMap.values()).sort((a, b) => a.compare(b))
+    }
+)
+
+export const savedRidesForSelectedDay = derived(
+    [savedRidesGroupedByDate, selectedSaveRidesNagivationDate],
+    ([$groupedRides, $selectedDate]) => {
+        if (!$groupedRides || $groupedRides.length === 0) {
+            return []
+        }
+        const dayGroup = $groupedRides.find(group => group.date.compare($selectedDate) === 0)
+        return dayGroup ? dayGroup.rides : []
+    }
+)
+
+
 
 // NAVIGATION STORE
 
@@ -152,8 +184,6 @@ export function goBackInHistory() {
     viewStack.update(stack => {
         if (stack.length > 1) {
             stack.pop()
-        } else {
-            console.log("Cannot go further back, staying on current view.")
         }
         return stack
     })

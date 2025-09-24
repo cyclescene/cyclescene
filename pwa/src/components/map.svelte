@@ -109,6 +109,7 @@
     }
 
     function handleCardClose() {
+        fitAllMarkers();
         mapViewStore.showEventCards(false);
         mapViewStore.clearSelectedRides();
         if (noAddressRides && noAddressRides.length > 1) {

@@ -7,6 +7,7 @@ import { DateFormatter } from "@internationalized/date";
 import { parseDate } from "@internationalized/date";
 import { getLocalTimeZone } from "@internationalized/date";
 import { today } from "@internationalized/date";
+import { SvelteMap } from "svelte/reactivity";
 export function cn(...inputs) {
     return twMerge(clsx(inputs));
 }
@@ -67,4 +68,21 @@ export function formatDate(dateString) {
         return dateFormatter.format(date.toDate(getLocalTimeZone()))
     }
 
+}
+
+export function getSortedUniqueDatesWithToday(savedRides) {
+    const existingCalendarDates = savedRides.map(ride => ride.date);
+
+    const todaysCalendarDate = today(getLocalTimeZone())
+
+    const allCalendarDates = [...existingCalendarDates, todaysCalendarDate]
+
+    const uniqueDatesMap = new SvelteMap()
+    for (const calendarDate of allCalendarDates) {
+        uniqueDatesMap.set(calendarDate.toString(), calendarDate)
+    }
+
+    const uniqueSortedDates = Array.from(uniqueDatesMap.values()).sort((a, b) => a.compare(b))
+
+    return uniqueSortedDates
 }

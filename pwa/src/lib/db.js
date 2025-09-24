@@ -3,6 +3,7 @@ import { openDB } from 'idb'
 const DB_NAME = 'cycle-scene-pdx'
 const ALLRIDES_STORE_NAME = 'rides'
 const SAVED_RIDES_STORE_NAME = "saved"
+const SAVED_RIDES_STORE_DATE_INDEX = "dateIndex"
 const DB_VERSION = 2
 
 // Initialize the database and create the object store if it doesn't exist
@@ -13,7 +14,9 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
             db.createObjectStore(ALLRIDES_STORE_NAME, { keyPath: 'id' })
         }
         if (!db.objectStoreNames.contains(SAVED_RIDES_STORE_NAME)) {
-            db.createObjectStore(SAVED_RIDES_STORE_NAME, { keyPath: 'id' })
+            const savedRidesStore = db.createObjectStore(SAVED_RIDES_STORE_NAME, { keyPath: 'id' })
+            // dateIndex needed to be able to sort by the ride date
+            savedRidesStore.createIndex(SAVED_RIDES_STORE_DATE_INDEX, "date", { unique: false })
         }
     }
 })
@@ -57,7 +60,11 @@ export async function addSavedRide(ride) {
 // get all saved rides
 export async function getAllSavedRides() {
     const db = await dbPromise
-    return await db.getAll(SAVED_RIDES_STORE_NAME)
+    const tx = db.transaction(SAVED_RIDES_STORE_NAME)
+    let objectStore = tx.objectStore(SAVED_RIDES_STORE_NAME)
+    let index = objectStore.index(SAVED_RIDES_STORE_DATE_INDEX)
+
+    return await index.getAll()
 }
 
 // in case a user want to clear their saved rides
