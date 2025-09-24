@@ -145,7 +145,7 @@ func scanRides(db *sql.DB, query string) ([]Ride, error) {
 
 func getPastRides(db *sql.DB) ([]Ride, error) {
 	query := `
-    SELECT id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
+    SELECT composite_event_id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
     FROM rides
     WHERE 
         date >= date('now', 'localtime', '-7 days')

@@ -180,29 +180,4 @@
         margin-top: 60px;
         margin-bottom: 50px;
     }
-
-    .recenter-icon {
-        height: 32px;
-        width: 32px;
-    }
-
-    .recenter-button {
-        position: absolute;
-        top: 70px;
-        right: 10px;
-        z-index: 400;
-        color: #000;
-        background-color: white;
-        border: 2px solid #ccc;
-        border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 1.2em;
-        cursor: pointer;
-        box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
-        transition: background-color 0.2s;
-    }
-
-    .recenter-button:hover {
-        background-color: #f4f4f4;
-    }
 </style>

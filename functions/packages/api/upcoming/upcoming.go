@@ -156,7 +156,7 @@ func getUpcomingRides(db *sql.DB) ([]Ride, error) {
 	todayStr := nowInPortland.Format("2006-01-02")
 
 	query := `
-    SELECT id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
+    SELECT composite_event_id, address, audience, cancelled, date, details, endtime, email, eventduration, image, lat, lon, locdetails, locend, loopride, newsflash, organizer, safetyplan, shareable, starttime, timedetails, title, venue, webname, weburl
     FROM rides
     WHERE date >= ?
     ORDER BY date ASC, starttime ASC;`
