@@ -16,7 +16,7 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-func buildShift2BikesURL() (string, error) {
+func buildShift2BikesURLUpcoming() (string, error) {
 	location, err := time.LoadLocation("America/Los_Angeles")
 	if err != nil {
 		return "", fmt.Errorf("failed to load timezone location: %w", err)
@@ -27,7 +27,36 @@ func buildShift2BikesURL() (string, error) {
 	year, month, day := nowInPortland.Date()
 	startDate := time.Date(year, month, day, 0, 0, 0, 0, location)
 
-	endDate := startDate.AddDate(0, 0, 60)
+	endDate := startDate.AddDate(0, 0, 100)
+
+	formattedStartDate := startDate.Format(time.RFC3339)
+	formattedEndDate := endDate.Format(time.RFC3339)
+
+	baseURL := "https://www.shift2bikes.org/api/events.php"
+
+	finalURL, _ := url.Parse(baseURL)
+
+	params := url.Values{}
+	params.Set("startdate", formattedStartDate)
+	params.Set("enddate", formattedEndDate)
+
+	finalURL.RawQuery = params.Encode()
+
+	return finalURL.String(), nil
+}
+
+func buildShift2BikesURLPast() (string, error) {
+	location, err := time.LoadLocation("America/Los_Angeles")
+	if err != nil {
+		return "", fmt.Errorf("failed to load timezone location: %w", err)
+	}
+
+	nowInPortland := time.Now().In(location)
+
+	year, month, day := nowInPortland.Date()
+	startDate := time.Date(year, month, day, 0, 0, 0, 0, location)
+
+	endDate := startDate.AddDate(0, 0, -100)
 
 	formattedStartDate := startDate.Format(time.RFC3339)
 	formattedEndDate := endDate.Format(time.RFC3339)
@@ -128,7 +157,7 @@ func Main() {
 		log.Fatal("FATAL: GOOGLE_GEOCODING_API_KEY not properly set")
 	}
 
-	url, err := buildShift2BikesURL()
+	url, err := buildShift2BikesURLUpcoming()
 	if err != nil {
 		slog.Error("failed to build Shift2bikes event url", slog.String("error", err.Error()))
 		log.Fatalf("failed to build Shift2Bikes event url: %v", err)

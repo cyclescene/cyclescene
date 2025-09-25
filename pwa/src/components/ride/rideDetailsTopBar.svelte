@@ -1,5 +1,9 @@
 <script>
-    import { currentRideStore, goBackInHistory, savedRides } from "$lib/stores";
+    import {
+        currentRideStore,
+        goBackInHistory,
+        savedRidesStore,
+    } from "$lib/stores";
     import { toast, Toaster } from "svelte-sonner";
 
     import SaveIcon from "~icons/material-symbols/save-rounded";
@@ -15,7 +19,7 @@
     async function saveRide() {
         const ride = currentRideStore.getRide();
         try {
-            toast.promise(savedRides.saveRide(ride), {
+            toast.promise(savedRidesStore.saveRide(ride), {
                 loading: "Saving...",
                 success: "Ride saved!",
                 error: "Unable to save ride",

@@ -73,3 +73,11 @@ export async function clearSavedRides() {
     return await db.clear(SAVED_RIDES_STORE_NAME)
 
 }
+
+export async function savedRideExists(rideId) {
+    const db = await dbPromise
+    const tx = db.transaction(SAVED_RIDES_STORE_NAME)
+    let objectStore = tx.objectStore(SAVED_RIDES_STORE_NAME)
+    const result = await objectStore.get(rideId)
+    return result !== undefined
+}

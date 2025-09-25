@@ -5,16 +5,16 @@
     "packageVersions": {},
     "actionVersions": {
       "api/past": {
-        "digest": "d17bb84cb8230416e3a1896c9f2e8c198aa3dc9d0cfe3f06a0420b8ba2710fa1",
-        "version": "0.0.20"
+        "digest": "d3e272a73f797eb16acb9fc4f6d39c8035afa304978b166a798fe4f967fade6e",
+        "version": "0.0.21"
       },
       "api/upcoming": {
-        "digest": "8bb86eec574730f3bb88753e5d3c1887016ecb813587f0f042f36e26ad89a958",
-        "version": "0.0.20"
+        "digest": "01eb8ecb921aaa8d663d210fa8ed253e63a2a73d40731b616125039fcaafa8ba",
+        "version": "0.0.21"
       },
       "scraper/scraper": {
-        "digest": "ef8c5606a2598e1e7fe8523f6fc6d416d525a39623175977b0fe692e40e47b28",
-        "version": "0.0.8"
+        "digest": "530be2992c109fee41c84fb5e36739fc1c49525c60991f990c479e59aa6b6b8d",
+        "version": "0.0.9"
       }
     }
   }

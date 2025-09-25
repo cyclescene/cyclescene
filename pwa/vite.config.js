@@ -19,8 +19,8 @@ export default defineConfig({
         VitePWA({
             registerType: 'autoUpdate',
             manifest: {
-                name: "Bike Bae",
-                short_name: "BikeBaePDX",
+                name: "Cycle Scene - PDX",
+                short_name: "CycleScenePDX",
                 description: "Upcoming bike rides in Portland, Oregon",
                 theme_color: "#000000",
                 icons: []
@@ -52,7 +52,6 @@ export default defineConfig({
                             cacheableResponse: { statuses: [0, 200] }
                         }
                     },
-                    ,
                     {
                         urlPattern: /^https:\/\/faas-sfo3-7872a1dd\.doserverless\.co\/api\/v1\/web\/fn-69328def-615c-4bce-88c0-dc912d5f1d84\/api\/(upcoming|past)$/,
                         handler: 'NetworkFirst',

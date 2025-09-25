@@ -1,6 +1,6 @@
 import { parseDate } from "@internationalized/date";
 import { getPastRides, getUpcomingRides } from "./api";
-import { addSavedRide, getAllSavedRides, getRidesfromDB, saveRidesToDB } from "./db";
+import { addSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
@@ -84,12 +84,22 @@ function createSavedRideStore() {
                 set({ loading: false, data: [], error: "Could not load saved rides" })
             }
         },
+        isRideSaved: async (rideID) => {
+            try {
+                const exists = await savedRideExists(rideID)
+                return exists
+            } catch (e) {
+
+
+            }
+
+        }
     }
 }
 
-export const savedRides = createSavedRideStore()
+export const savedRidesStore = createSavedRideStore()
 export const allSavedRides = derived(
-    [savedRides],
+    [savedRidesStore],
     ([$savedRides]) => {
         if (!$savedRides || !$savedRides.data) {
             return [];
@@ -101,7 +111,7 @@ export const allSavedRides = derived(
 )
 
 export const savedRidesGroupedByDate = derived(
-    [savedRides],
+    [savedRidesStore],
     ([$savedRides]) => {
         let ridesByDate = new SvelteMap()
         if (!$savedRides.data && $savedRides.data.length === 0) {
@@ -149,6 +159,7 @@ export const savedRidesForSelectedDay = derived(
         return dayGroup ? dayGroup.rides : []
     }
 )
+
 
 
 
@@ -268,7 +279,7 @@ export const currentRideStore = {
     },
     getRide: function () {
         if (currentRide == initialRideState) {
-            return
+            return null
         } else {
             return get(currentRide)
         }

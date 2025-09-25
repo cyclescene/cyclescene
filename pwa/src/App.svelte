@@ -8,7 +8,7 @@
     import {
         activeView,
         rides,
-        savedRides,
+        savedRidesStore,
         VIEW_DATE_PICKER,
         VIEW_LIST,
         VIEW_MAP,
@@ -30,7 +30,7 @@
         rides.init();
         rides.fetchUpcoming();
 
-        savedRides.init();
+        savedRidesStore.init();
     });
 </script>
 

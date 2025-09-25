@@ -4,7 +4,6 @@
         ScrollArea,
         Scrollbar,
     } from "$lib/components/ui/scroll-area/index";
-    import { Toaster } from "$lib/components/ui/sonner";
     import { currentRide } from "$lib/stores";
     import { formatDate, formatTime } from "$lib/utils";
     import RideLabels from "./rideLabels.svelte";
