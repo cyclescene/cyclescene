@@ -32,16 +32,26 @@
 </script>
 
 <div
-  class="flex items-center justify-center p-2.5 border-b-[1px] relative z-[500]"
+  class="flex items-center justify-center gap-5 p-2.5 border-b-[1px] relative z-[500]"
 >
-  <Button class="py-2 px-3 text-yellow-400 min-w-10" onclick={goToPreviousDay}
-    ><IconChevronLeft /></Button
+  <Button
+    disabled={false}
+    variant="secondary"
+    class="py-2 px-3 text-yellow-400 min-w-10"
+    onclick={goToPreviousDay}><IconChevronLeft /></Button
   >
 
-  <button class="text-xl text-yellow-400 grow font-bold text-center py-2 px-3">
+  <Button
+    disabled={false}
+    variant="secondary"
+    class="text-xl text-yellow-400 grow font-bold text-center py-2 px-3"
+  >
     {formatDate($selectedSaveRidesNagivationDate.toString())}
-  </button>
-  <Button class="py-2 px-3 text-yellow-400 min-w-10" onclick={goToNextDay}
-    ><IconChevronRight /></Button
+  </Button>
+  <Button
+    disabled={false}
+    variant="secondary"
+    class="py-2 px-3 text-yellow-400 min-w-10"
+    onclick={goToNextDay}><IconChevronRight /></Button
   >
 </div>

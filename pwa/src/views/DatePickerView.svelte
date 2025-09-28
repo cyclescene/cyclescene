@@ -24,7 +24,9 @@
   <Calendar bind:value class="p-5 rounded-xl text-2xl" />
 
   <Button
+    disabled={false}
+    variant="secondary"
     onclick={onClickToday}
-    class="bg-transparent text-yellow-500 text-xl mt-10">Today</Button
+    class="text-yellow-500 text-xl mt-10">Today</Button
   >
 </div>

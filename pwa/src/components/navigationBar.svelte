@@ -44,6 +44,8 @@
 <div class="w-full h-full flex justify-evenly">
   {#each controls as view (view.name)}
     <Button
+      disabled={false}
+      variant="secondary"
       class="grow h-full rounded-none flex flex-col"
       onclick={() => onChangeView(view.view)}
     >
