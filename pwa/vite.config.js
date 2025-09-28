@@ -29,7 +29,24 @@ export default defineConfig({
         short_name: "CycleScenePDX",
         description: "Upcoming bike rides in Portland, Oregon",
         theme_color: "#000000",
-        icons: []
+        icons: [
+          {
+            src: "./public/icons/manifest-icon-192.maskable.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "./public/icons/manifest-icon-512.maskable.png",
+            sizes: "512x512",
+            type: "image/png"
+          },
+          {
+            src: "./public/icons/manifest-icon-192.maskable.png",
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable"
+          }
+        ]
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],

@@ -26,6 +26,8 @@
   import SavedView from "./views/SavedView.svelte";
   import SavedRideTopBar from "./components/saved/savedRideTopBar.svelte";
   import { mode, ModeWatcher } from "mode-watcher";
+  import SettingsView from "./views/SettingsView.svelte";
+  import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
 
   onMount(() => {
     rides.init();
@@ -46,6 +48,8 @@
         <RideDetailsTopBar />
       {:else if $activeView == VIEW_SAVED}
         <SavedRideTopBar />
+      {:else if $activeView == VIEW_SETTINGS}
+        <SettingsTopBar />
       {/if}
     </header>
   </div>
@@ -78,7 +82,7 @@
     </div>
 
     <div class="view-container" class:hidden={!($activeView === VIEW_SETTINGS)}>
-      Settings go here
+      <SettingsView />
     </div>
 
     <div
