@@ -38,14 +38,14 @@
 >
   <Button
     disabled={false}
-    variant="secondary"
+    variant="ghost"
     class="py-2 px-3 text-yellow-400 min-w-10"
     onclick={() => changeDay(-1)}><IconChevronLeft /></Button
   >
 
   <Button
     disabled={false}
-    variant="secondary"
+    variant="ghost"
     class="text-xl text-yellow-400 grow font-bold text-center py-2 px-3"
     onclick={openDatePicker}
   >
@@ -53,7 +53,7 @@
   </Button>
   <Button
     disabled={false}
-    variant="secondary"
+    variant="ghost"
     class="py-2 px-3 text-yellow-400 min-w-10"
     onclick={() => changeDay(1)}><IconChevronRight /></Button
   >

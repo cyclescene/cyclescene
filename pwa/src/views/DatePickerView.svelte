@@ -25,7 +25,7 @@
 
   <Button
     disabled={false}
-    variant="secondary"
+    variant="ghost"
     onclick={onClickToday}
     class="text-yellow-500 text-xl mt-10">Today</Button
   >

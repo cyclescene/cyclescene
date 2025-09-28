@@ -43,7 +43,7 @@
 <div class="flex justify-center items-center p-2.5 z-[500] text-white">
   <Toaster position="top-center" />
   <Button
-    variant="secondary"
+    variant="ghost"
     disabled={false}
     class="h-10 w-10"
     onclick={handleGoBack}
@@ -57,14 +57,14 @@
 
   <div>
     <Button
-      variant="secondary"
+      variant="ghost"
       disabled={rideExists ? true : false}
       class={`${rideExists ? "bg-green-500" : ""} h-10 w-10`}
       onclick={saveRide}
     >
       <SaveIcon />
     </Button>
-    <Button variant="secondary" disabled={false} class="h-10 w-10">
+    <Button variant="ghost" disabled={false} class="h-10 w-10">
       <ShareIcon />
     </Button>
   </div>

@@ -9,7 +9,7 @@
 >
   <Button
     disabled={false}
-    variant="secondary"
+    variant="ghost"
     class="shrink py-2 px-3 text-yellow-400 min-w-10"
     onclick={goBackInHistory}><IconChevronLeft /></Button
   >

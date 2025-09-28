@@ -162,7 +162,7 @@
   <Button
     disabled={false}
     class={`absolute top-[85px] h-10 w-10 z-[1000] right-2.5`}
-    variant="secondary"
+    variant="ghost"
     onclick={handleRecenter}
   >
     <RecenterIcon style="width: 30px; height: 30px;" />

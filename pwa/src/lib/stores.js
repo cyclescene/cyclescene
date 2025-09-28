@@ -16,7 +16,14 @@ export const VIEW_RIDE_DETAILS = 'rideDetails'
 export const VIEW_SAVED = 'saved'
 export const VIEW_SETTINGS = 'settings'
 export const VIEW_OTHER_RIDES = 'otherRides'
-export const VIEW_DATE_PICKER = "datePicker"
+export const VIEW_DATE_PICKER = 'datePicker'
+
+// setting sub views
+export const SUB_VIEW_APPEARANCE = 'appearance'
+export const SUB_VIEW_DATA = 'data'
+export const SUB_VIEW_ABOUT = 'about'
+export const SUB_VIEW_DONATE = 'donate'
+export const SUB_VIEW_HOST = 'host'
 
 
 function createRidesStore() {

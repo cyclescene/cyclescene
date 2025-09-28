@@ -45,7 +45,7 @@
   {#each controls as view (view.name)}
     <Button
       disabled={false}
-      variant="secondary"
+      variant="ghost"
       class="grow h-full rounded-none flex flex-col"
       onclick={() => onChangeView(view.view)}
     >
