@@ -14,5 +14,5 @@
     onclick={goBackInHistory}><IconChevronLeft /></Button
   >
 
-  <span class="grow text-center mr-12 text-2xl font-bold">Settings</span>
+  <span class="grow text-center mr-18 text-2xl font-bold">Settings</span>
 </div>

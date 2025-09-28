@@ -22,8 +22,7 @@ export const VIEW_DATE_PICKER = 'datePicker'
 export const SUB_VIEW_APPEARANCE = 'appearance'
 export const SUB_VIEW_DATA = 'data'
 export const SUB_VIEW_ABOUT = 'about'
-export const SUB_VIEW_DONATE = 'donate'
-export const SUB_VIEW_HOST = 'host'
+export const SUB_VIEW_CONTACT = 'contact'
 
 
 

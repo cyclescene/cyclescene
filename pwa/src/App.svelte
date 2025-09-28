@@ -9,6 +9,9 @@
     activeView,
     rides,
     savedRidesStore,
+    SUB_VIEW_ABOUT,
+    SUB_VIEW_APPEARANCE,
+    SUB_VIEW_CONTACT,
     VIEW_DATE_PICKER,
     VIEW_LIST,
     VIEW_MAP,
@@ -28,6 +31,8 @@
   import { ModeWatcher } from "mode-watcher";
   import SettingsView from "./views/SettingsView.svelte";
   import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
+  import SettingsSubTopBar from "./components/settings/settingsSubTopBar.svelte";
+  import SettingsAppearance from "./components/settings/settingsAppearance.svelte";
 
   onMount(() => {
     rides.init();
@@ -49,6 +54,8 @@
         <SavedRideTopBar />
       {:else if $activeView == VIEW_SETTINGS}
         <SettingsTopBar />
+      {:else if $activeView === SUB_VIEW_ABOUT || $activeView === SUB_VIEW_APPEARANCE || $activeView === SUB_VIEW_CONTACT}
+        <SettingsSubTopBar />
       {/if}
     </header>
   </div>
@@ -89,6 +96,13 @@
       class:hidden={!($activeView === VIEW_DATE_PICKER)}
     >
       <DatePickerView />
+    </div>
+
+    <div
+      class="view-container"
+      class:hidden={!($activeView === SUB_VIEW_APPEARANCE)}
+    >
+      <SettingsAppearance />
     </div>
   </div>
 
