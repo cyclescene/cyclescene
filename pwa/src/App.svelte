@@ -25,7 +25,7 @@
   import RideView from "./views/RideView.svelte";
   import SavedView from "./views/SavedView.svelte";
   import SavedRideTopBar from "./components/saved/savedRideTopBar.svelte";
-  import { mode, ModeWatcher } from "mode-watcher";
+  import { ModeWatcher } from "mode-watcher";
   import SettingsView from "./views/SettingsView.svelte";
   import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
 
@@ -34,7 +34,6 @@
     rides.fetchUpcoming();
 
     savedRidesStore.init();
-    console.log(mode.current);
   });
 </script>
 

@@ -1,6 +1,6 @@
 import { parseDate } from "@internationalized/date";
 import { getPastRides, getUpcomingRides } from "./api";
-import { addSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
+import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
@@ -24,6 +24,13 @@ export const SUB_VIEW_DATA = 'data'
 export const SUB_VIEW_ABOUT = 'about'
 export const SUB_VIEW_DONATE = 'donate'
 export const SUB_VIEW_HOST = 'host'
+
+
+
+export const TILE_URLS = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+};
 
 
 function createRidesStore() {
@@ -90,6 +97,16 @@ function createSavedRideStore() {
       } catch (e) {
         set({ loading: false, data: [], error: "Could not load saved rides" })
       }
+    },
+    deleteRide: async (rideID) => {
+      try {
+        await deleteSavedRide(rideID)
+        const savedRides = await getAllSavedRides()
+        set({ loading: false, data: savedRides, error: null })
+      } catch (e) {
+        set({ loading: false, data: [], error: "Could not load saved rides" })
+      }
+
     },
     isRideSaved: async (rideID) => {
       try {

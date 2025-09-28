@@ -33,7 +33,21 @@
       </Button>
     </Card.Header>
   </Card.Root>
-  <Card.Root class="p-2 gap-2"></Card.Root>
+  <Card.Root class="p-2 gap-2">
+    <Card.Header class=" flex p-0">
+      <Button
+        disabled={false}
+        variant="ghost"
+        onclick={() => console.log("clicked")}
+        class="grow h-full w-full flex flex-row justify-center items-center"
+      >
+        <Card.Title class="grow text-left"
+          >Report Bug / Request Feature</Card.Title
+        >
+        <IconChevronRight class="shrink" />
+      </Button>
+    </Card.Header>
+  </Card.Root>
   <Card.Root class="p-2 gap-2">
     <Card.Header class=" flex p-0">
       <Button

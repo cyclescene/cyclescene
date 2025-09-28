@@ -57,6 +57,18 @@ export async function addSavedRide(ride) {
   await tx.done
 }
 
+// remove a saved ride
+export async function deleteSavedRide(rideID) {
+  const db = await dbPromise
+  const tx = db.transaction(SAVED_RIDES_STORE_NAME, "readwrite")
+  try {
+    await tx.store.delete(rideID)
+  } catch (e) {
+    console.error(e);
+  }
+  await tx.done
+}
+
 // get all saved rides
 export async function getAllSavedRides() {
   const db = await dbPromise
