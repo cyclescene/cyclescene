@@ -2,6 +2,7 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import {
     allSavedRidesNavigationDates,
+    savedRidesStore,
     selectedSaveRidesNagivationDate,
   } from "$lib/stores";
   import IconChevronRight from "~icons/bxs/chevron-right";

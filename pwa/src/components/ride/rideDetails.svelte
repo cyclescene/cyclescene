@@ -1,7 +1,7 @@
 <script>
   import * as Card from "$lib/components/ui/card";
   import { ScrollArea, Scrollbar } from "$lib/components/ui/scroll-area/index";
-  import { currentRide } from "$lib/stores";
+  import { currentRide, savedRidesStore } from "$lib/stores";
   import { formatDate, formatTime } from "$lib/utils";
   import RideLabels from "./rideLabels.svelte";
   import RideMap from "./rideMap.svelte";
