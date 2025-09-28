@@ -1,160 +1,159 @@
 <script>
-    import { Map, TileLayer, Marker, Popup } from "sveaflet";
-    import "leaflet/dist/leaflet.css";
+  import { Map, TileLayer, Marker, Popup } from "sveaflet";
+  import "leaflet/dist/leaflet.css";
 
-    import { SvelteMap } from "svelte/reactivity";
+  import { SvelteMap } from "svelte/reactivity";
 
-    import L from "leaflet";
-    import RidesNotShown from "./ride/ridesNotShown.svelte";
-    import LocationCards from "./locationCards.svelte";
-    import Button from "$lib/components/ui/button/button.svelte";
-    import RecenterIcon from "~icons/material-symbols-light/recenter-rounded";
-    import { mapViewStore } from "$lib/stores";
+  import L from "leaflet";
+  import RidesNotShown from "./ride/ridesNotShown.svelte";
+  import LocationCards from "./locationCards.svelte";
+  import Button from "$lib/components/ui/button/button.svelte";
+  import RecenterIcon from "~icons/material-symbols-light/recenter-rounded";
+  import { mapViewStore } from "$lib/stores";
 
-    const ORIGINAL_MAP_CENTER = [45.52, -122.65];
-    const ORIGINAL_MAP_ZOOM = 12;
+  const ORIGINAL_MAP_CENTER = [45.52, -122.65];
+  const ORIGINAL_MAP_ZOOM = 12;
 
-    let mapCenter = ORIGINAL_MAP_CENTER;
-    let mapZoom = ORIGINAL_MAP_ZOOM;
+  let mapCenter = ORIGINAL_MAP_CENTER;
+  let mapZoom = ORIGINAL_MAP_ZOOM;
 
-    export let rides = [];
-    export let noAddressRides = [];
+  export let rides = [];
+  export let noAddressRides = [];
 
-    let groupedLocations = [];
+  let groupedLocations = [];
 
-    $: {
-        let ridesByLocation = new SvelteMap();
-        rides.forEach((ride) => {
-            const key = `${ride.lat.Float64},${ride.lon.Float64}`;
-            if (!ridesByLocation.has(key)) {
-                ridesByLocation.set(key, {
-                    venue: ride.venue.String,
-                    lat: ride.lat.Float64,
-                    lng: ride.lon.Float64,
-                    rides: [],
-                });
-            }
-            ridesByLocation.get(key).rides.push(ride);
+  $: {
+    let ridesByLocation = new SvelteMap();
+    rides.forEach((ride) => {
+      const key = `${ride.lat.Float64},${ride.lon.Float64}`;
+      if (!ridesByLocation.has(key)) {
+        ridesByLocation.set(key, {
+          venue: ride.venue.String,
+          lat: ride.lat.Float64,
+          lng: ride.lon.Float64,
+          rides: [],
+        });
+      }
+      ridesByLocation.get(key).rides.push(ride);
+    });
+
+    groupedLocations = Array.from(ridesByLocation.values());
+  }
+
+  // sveaflet map logic
+  let sveafletMapInstance;
+
+  function fitAllMarkers() {
+    if (sveafletMapInstance && groupedLocations.length > 1) {
+      if (groupedLocations.length == 1) {
+        const singleLocation = groupedLocations[0];
+        sveafletMapInstance.setView(
+          L.LatLngBounds(singleLocation.lat, singleLocation.lng),
+          ORIGINAL_MAP_ZOOM,
+          { animate: true, duration: 0.8 },
+        );
+      } else {
+        const bounds = new L.LatLngBounds();
+
+        groupedLocations.forEach((group) => {
+          bounds.extend(L.latLng(group.lat, group.lng));
         });
 
-        groupedLocations = Array.from(ridesByLocation.values());
+        sveafletMapInstance.fitBounds(bounds, {
+          padding: [60, 60],
+          animate: true,
+          duration: 0.8,
+        });
+      }
+    } else if (sveafletMapInstance && groupedLocations.length == 1) {
+      mapCenter = [...ORIGINAL_MAP_CENTER];
+      mapZoom = ORIGINAL_MAP_ZOOM;
     }
+  }
 
-    // sveaflet map logic
-    let sveafletMapInstance;
+  $: if (groupedLocations) {
+    fitAllMarkers();
+  }
 
-    function fitAllMarkers() {
-        if (sveafletMapInstance && groupedLocations.length > 1) {
-            if (groupedLocations.length == 1) {
-                const singleLocation = groupedLocations[0];
-                sveafletMapInstance.setView(
-                    L.LatLngBounds(singleLocation.lat, singleLocation.lng),
-                    ORIGINAL_MAP_ZOOM,
-                    { animate: true, duration: 0.8 },
-                );
-            } else {
-                const bounds = new L.LatLngBounds();
+  // Add the tile url as a store that can be changed by the user
+  // light url - https://{s}.basemaps.cartocdn.com/voyager_labels_under/{z}/{x}/{y}{r}.png
+  // dark url - https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png
 
-                groupedLocations.forEach((group) => {
-                    bounds.extend(L.latLng(group.lat, group.lng));
-                });
+  const tileURL =
+    "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
+  const tileLayerOptions = {
+    attribution:
+      "Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.",
+  };
 
-                sveafletMapInstance.fitBounds(bounds, {
-                    padding: [60, 60],
-                    animate: true,
-                    duration: 0.8,
-                });
-            }
-        } else if (sveafletMapInstance && groupedLocations.length == 1) {
-            mapCenter = [...ORIGINAL_MAP_CENTER];
-            mapZoom = ORIGINAL_MAP_ZOOM;
-        }
+  function handleMarkerClick(ridesAtLocation) {
+    mapViewStore.setSelectedRides(ridesAtLocation);
+    mapViewStore.showEventCards(true);
+    mapViewStore.showOtherRides(false);
+    if (ridesAtLocation.length > 0) {
+      mapCenter = [
+        ridesAtLocation[0].lat.Float64,
+        ridesAtLocation[0].lon.Float64,
+      ];
     }
+  }
 
-    $: if (groupedLocations) {
-        fitAllMarkers();
+  function handleRecenter() {
+    fitAllMarkers();
+    sveafletMapInstance.closePopup();
+    mapViewStore.clearSelectedRides();
+    mapViewStore.showEventCards(false);
+    if (noAddressRides && noAddressRides.length > 1) {
+      mapViewStore.showOtherRides(true);
     }
+  }
 
-    // Add the tile url as a store that can be changed by the user
-    // light url - https://{s}.basemaps.cartocdn.com/voyager_labels_under/{z}/{x}/{y}{r}.png
-    // dark url - https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png
-
-    const tileURL =
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-    const tileLayerOptions = {
-        attribution:
-            "Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.",
-    };
-
-    function handleMarkerClick(ridesAtLocation) {
-        mapViewStore.setSelectedRides(ridesAtLocation);
-        mapViewStore.showEventCards(true);
-        mapViewStore.showOtherRides(false);
-        if (ridesAtLocation.length > 0) {
-            mapCenter = [
-                ridesAtLocation[0].lat.Float64,
-                ridesAtLocation[0].lon.Float64,
-            ];
-        }
+  function handleCardClose() {
+    fitAllMarkers();
+    mapViewStore.showEventCards(false);
+    mapViewStore.clearSelectedRides();
+    if (noAddressRides && noAddressRides.length > 1) {
+      mapViewStore.showOtherRides(true);
     }
+  }
 
-    function handleRecenter() {
-        fitAllMarkers();
-        sveafletMapInstance.closePopup();
-        mapViewStore.clearSelectedRides();
-        mapViewStore.showEventCards(false);
-        if (noAddressRides && noAddressRides.length > 1) {
-            mapViewStore.showOtherRides(true);
-        }
-    }
-
-    function handleCardClose() {
-        fitAllMarkers();
-        mapViewStore.showEventCards(false);
-        mapViewStore.clearSelectedRides();
-        if (noAddressRides && noAddressRides.length > 1) {
-            mapViewStore.showOtherRides(true);
-        }
-    }
-
-    $: if (noAddressRides && noAddressRides.length > 1) {
-        mapViewStore.showOtherRides(true);
-    }
+  $: if (noAddressRides && noAddressRides.length > 1) {
+    mapViewStore.showOtherRides(true);
+  }
 </script>
 
 <div class="map-container">
-    <Map
-        bind:instance={sveafletMapInstance}
-        options={{
-            center: mapCenter,
-            zoom: mapZoom,
-            zoomControl: false,
-        }}
-        onclick={handleCardClose}
-    >
-        <TileLayer url={tileURL} options={tileLayerOptions} />
-        {#each groupedLocations as group (group.lat + "," + group.lng)}
-            <Marker
-                latLng={[group.lat, group.lng]}
-                onclick={() => handleMarkerClick(group.rides)}
-            >
-                <Popup>
-                    <strong
-                        >{group.venue} - {group.rides.length} ride{group.rides
-                            .length !== 1
-                            ? "s"
-                            : ""} starting here</strong
-                    >
-                </Popup>
-            </Marker>
-        {/each}
-    </Map>
-    <Button
-        class="absolute top-[85px] bg-black text-white h-10 w-10 z-[1000] right-2.5"
-        onclick={handleRecenter}
-    >
-        <RecenterIcon style="width: 30px; height: 30px;" />
-    </Button>
+  <Map
+    bind:instance={sveafletMapInstance}
+    options={{
+      center: mapCenter,
+      zoom: mapZoom,
+      zoomControl: false,
+    }}
+    onclick={handleCardClose}
+  >
+    <TileLayer url={tileURL} options={tileLayerOptions} />
+    {#each groupedLocations as group (group.lat + "," + group.lng)}
+      <Marker
+        latLng={[group.lat, group.lng]}
+        onclick={() => handleMarkerClick(group.rides)}
+      >
+        <Popup>
+          <strong
+            >{group.venue} - {group.rides.length} ride{group.rides.length !== 1
+              ? "s"
+              : ""} starting here</strong
+          >
+        </Popup>
+      </Marker>
+    {/each}
+  </Map>
+  <Button
+    class="absolute top-[85px] h-10 w-10 z-[1000] right-2.5"
+    onclick={handleRecenter}
+  >
+    <RecenterIcon style="width: 30px; height: 30px;" />
+  </Button>
 </div>
 
 <LocationCards on:close={handleCardClose} />
@@ -162,23 +161,23 @@
 <RidesNotShown />
 
 <style>
-    :global(.map-container .leaflet-tooltip) {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        font-weight: bold !important;
-        color: #000 !important;
-        text-shadow:
-            1px 1px 2px white,
-            -1px -1px 2px white,
-            1px -1px 2px white,
-            -1px 1px 2px white !important;
-    }
+  :global(.map-container .leaflet-tooltip) {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    font-weight: bold !important;
+    color: #000 !important;
+    text-shadow:
+      1px 1px 2px white,
+      -1px -1px 2px white,
+      1px -1px 2px white,
+      -1px 1px 2px white !important;
+  }
 
-    .map-container {
-        height: calc(100% - 115px);
-        width: 100%;
-        margin-top: 60px;
-        margin-bottom: 50px;
-    }
+  .map-container {
+    height: calc(100% - 115px);
+    width: 100%;
+    margin-top: 60px;
+    margin-bottom: 50px;
+  }
 </style>

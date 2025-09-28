@@ -27,11 +27,13 @@
     "@iconify/json": "^2.2.386",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "idb": "^8.0.3",
     "leaflet": "^1.9.4",
     "sveaflet": "^0.1.4",
     "svelte-leafletjs": "^2.0.0",
     "tailwind-merge": "^3.3.1",
-    "unplugin-icons": "^22.3.0"
+    "unplugin-icons": "^22.3.0",
+    "vite-plugin-ngrok": "^1.1.2"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
