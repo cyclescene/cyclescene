@@ -408,8 +408,8 @@ export const allRides = derived(
   }
 )
 
-export const allUpcomingAdultOnlyRides = derived([rides, currentDate], ([$rides, $currentDate]) => {
-  if (!$rides || !$rides.data || !$currentDate) {
+export const allUpcomingAdultOnlyRides = derived([rides], ([$rides]) => {
+  if (!$rides || !$rides.data) {
     return [];
   }
 
@@ -417,7 +417,7 @@ export const allUpcomingAdultOnlyRides = derived([rides, currentDate], ([$rides,
   return $rides.data.filter(ride => {
     const rideDate = parseDate(ride.date)
     //
-    const isTodayOrUpcoming = $currentDate.compare(rideDate) <= 0
+    const isTodayOrUpcoming = initialDate.compare(rideDate) <= 0
     const isAdultsOnlyRide = ride.audience === "A"
 
     return isAdultsOnlyRide && isTodayOrUpcoming
@@ -425,8 +425,8 @@ export const allUpcomingAdultOnlyRides = derived([rides, currentDate], ([$rides,
 
 })
 
-export const allUpcomingFamilyFriendlyRides = derived([rides, currentDate], ([$rides, $currentDate]) => {
-  if (!$rides || !$rides.data || !$currentDate) {
+export const allUpcomingFamilyFriendlyRides = derived([rides], ([$rides]) => {
+  if (!$rides || !$rides.data) {
     return [];
   }
 
@@ -434,7 +434,7 @@ export const allUpcomingFamilyFriendlyRides = derived([rides, currentDate], ([$r
   return $rides.data.filter(ride => {
     const rideDate = parseDate(ride.date)
     //
-    const isTodayOrUpcoming = $currentDate.compare(rideDate) <= 0
+    const isTodayOrUpcoming = initialDate.compare(rideDate) <= 0
     const isFamilyFriendlyRide = ride.audience === "F"
 
     return isFamilyFriendlyRide && isTodayOrUpcoming
@@ -442,8 +442,8 @@ export const allUpcomingFamilyFriendlyRides = derived([rides, currentDate], ([$r
 
 })
 
-export const allUpcomingCovidSafetyRides = derived([rides, currentDate], ([$rides, $currentDate]) => {
-  if (!$rides || !$rides.data || !$currentDate) {
+export const allUpcomingCovidSafetyRides = derived([rides], ([$rides]) => {
+  if (!$rides || !$rides.data) {
     return [];
   }
 
@@ -451,7 +451,7 @@ export const allUpcomingCovidSafetyRides = derived([rides, currentDate], ([$ride
   return $rides.data.filter(ride => {
     const rideDate = parseDate(ride.date)
     //
-    const isTodayOrUpcoming = $currentDate.compare(rideDate) <= 0
+    const isTodayOrUpcoming = initialDate.compare(rideDate) <= 0
     const isCovidSafetyRide = ride.safetyplan
 
     return isCovidSafetyRide && isTodayOrUpcoming
