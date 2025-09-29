@@ -39,12 +39,12 @@
   import SettingsView from "./views/SettingsView.svelte";
   import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
   import SettingsSubTopBar from "./components/settings/settingsSubTopBar.svelte";
-  import SettingsAppearance from "./components/settings/settingsAppearance.svelte";
-  import SubRideListView from "./components/settings/subRideListView.svelte";
-  import SubPrivacyPolicyView from "./components/settings/subPrivacyPolicyView.svelte";
-  import SubTermsOfServiceView from "./components/settings/subTermsOfServiceView.svelte";
-  import SubAboutView from "./components/settings/subAboutView.svelte";
-  import SubChangelog from "./components/settings/subChangelog.svelte";
+  import SubAppearanceView from "./views/sub/subAppearanceView.svelte";
+  import SubRideListView from "./views/sub/subRideListView.svelte";
+  import SubPrivacyPolicyView from "./views/sub/subPrivacyPolicyView.svelte";
+  import SubAboutView from "./views/sub/subAboutView.svelte";
+  import SubTermsOfServiceView from "./views/sub/subTermsOfServiceView.svelte";
+  import SubChangelogView from "./views/sub/subChangelogView.svelte";
 
   onMount(() => {
     rides.init();
@@ -114,7 +114,7 @@
       class="view-container"
       class:hidden={!($activeView === SUB_VIEW_APPEARANCE)}
     >
-      <SettingsAppearance />
+      <SubAppearanceView />
     </div>
 
     <div
@@ -151,7 +151,7 @@
       class="view-container"
       class:hidden={!($activeView === SUB_VIEW_CHANGE_LOG)}
     >
-      <SubChangelog />
+      <SubChangelogView />
     </div>
   </div>
 
