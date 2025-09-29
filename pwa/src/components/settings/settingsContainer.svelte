@@ -3,7 +3,19 @@
   import * as Card from "$lib/components/ui/card";
   import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
   import { Separator } from "$lib/components/ui/separator";
-  import { navigateTo, SUB_VIEW_ABOUT, SUB_VIEW_APPEARANCE } from "$lib/stores";
+  import {
+    navigateTo,
+    SUB_VIEW_ABOUT,
+    SUB_VIEW_ADULT_ONLY_RIDES,
+    SUB_VIEW_APPEARANCE,
+    SUB_VIEW_CHANGE_LOG,
+    SUB_VIEW_CONTACT,
+    SUB_VIEW_COVID_SAFETY_RIDES,
+    SUB_VIEW_DATA,
+    SUB_VIEW_FAMILY_FRIENDLY_RIDES,
+    SUB_VIEW_PRIVACY_POLICY,
+    SUB_VIEW_TERMS_OF_USE,
+  } from "$lib/stores";
   import IconChevronRight from "~icons/bxs/chevron-right";
 
   // https://www.shift2bikes.org/addevent/
@@ -58,7 +70,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_ADULT_ONLY_RIDES)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left">Adults Only Rides</Card.Title>
@@ -70,7 +82,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_FAMILY_FRIENDLY_RIDES)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left">Family Friendly Rides</Card.Title
@@ -83,7 +95,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_COVID_SAFETY_RIDES)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left">Covid Safety Rides</Card.Title>
@@ -126,7 +138,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_DATA)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left">Refresh Data</Card.Title>
@@ -138,7 +150,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_PRIVACY_POLICY)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left">Privacy Policy</Card.Title>
@@ -150,7 +162,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_TERMS_OF_USE)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left">Terms of Use</Card.Title>
@@ -162,7 +174,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_CHANGE_LOG)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left">Changelog</Card.Title>
@@ -174,7 +186,7 @@
           <Button
             disabled={false}
             variant="ghost"
-            onclick={() => console.log("clicked")}
+            onclick={() => navigateTo(SUB_VIEW_CONTACT)}
             class="w-full justify-center"
           >
             <Card.Title class="grow text-left"

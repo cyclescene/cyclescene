@@ -19,10 +19,33 @@ export const VIEW_OTHER_RIDES = 'otherRides'
 export const VIEW_DATE_PICKER = 'datePicker'
 
 // setting sub views
+//
 export const SUB_VIEW_APPEARANCE = 'appearance'
 export const SUB_VIEW_DATA = 'data'
 export const SUB_VIEW_ABOUT = 'about'
+export const SUB_VIEW_ADULT_ONLY_RIDES = 'adultOnlyRides'
+export const SUB_VIEW_FAMILY_FRIENDLY_RIDES = 'familyFriendlyRides'
+export const SUB_VIEW_COVID_SAFETY_RIDES = 'covideSafetyRides'
+export const SUB_VIEW_PRIVACY_POLICY = "privacyPolicy"
+export const SUB_VIEW_TERMS_OF_USE = 'termsOfUse'
+export const SUB_VIEW_CHANGE_LOG = 'changeLog'
 export const SUB_VIEW_CONTACT = 'contact'
+
+
+
+export const SUB_VIEWS = [
+  SUB_VIEW_APPEARANCE,
+  SUB_VIEW_DATA,
+  SUB_VIEW_ABOUT,
+  SUB_VIEW_ADULT_ONLY_RIDES,
+  SUB_VIEW_FAMILY_FRIENDLY_RIDES,
+  SUB_VIEW_COVID_SAFETY_RIDES,
+  SUB_VIEW_PRIVACY_POLICY,
+  SUB_VIEW_TERMS_OF_USE,
+  SUB_VIEW_CHANGE_LOG,
+  SUB_VIEW_CONTACT,
+]
+
 
 
 
@@ -384,6 +407,57 @@ export const allRides = derived(
     });
   }
 )
+
+export const allUpcomingAdultOnlyRides = derived([rides, currentDate], ([$rides, $currentDate]) => {
+  if (!$rides || !$rides.data || !$currentDate) {
+    return [];
+  }
+
+
+  return $rides.data.filter(ride => {
+    const rideDate = parseDate(ride.date)
+    //
+    const isTodayOrUpcoming = $currentDate.compare(rideDate) <= 0
+    const isAdultsOnlyRide = ride.audience === "A"
+
+    return isAdultsOnlyRide && isTodayOrUpcoming
+  })
+
+})
+
+export const allUpcomingFamilyFriendlyRides = derived([rides, currentDate], ([$rides, $currentDate]) => {
+  if (!$rides || !$rides.data || !$currentDate) {
+    return [];
+  }
+
+
+  return $rides.data.filter(ride => {
+    const rideDate = parseDate(ride.date)
+    //
+    const isTodayOrUpcoming = $currentDate.compare(rideDate) <= 0
+    const isFamilyFriendlyRide = ride.audience === "F"
+
+    return isFamilyFriendlyRide && isTodayOrUpcoming
+  })
+
+})
+
+export const allUpcomingCovidSafetyRides = derived([rides, currentDate], ([$rides, $currentDate]) => {
+  if (!$rides || !$rides.data || !$currentDate) {
+    return [];
+  }
+
+
+  return $rides.data.filter(ride => {
+    const rideDate = parseDate(ride.date)
+    //
+    const isTodayOrUpcoming = $currentDate.compare(rideDate) <= 0
+    const isCovidSafetyRide = ride.safetyplan
+
+    return isCovidSafetyRide && isTodayOrUpcoming
+  })
+
+})
 
 
 // MAP STORE

@@ -1,10 +1,7 @@
 <script>
-  import { Button } from "$lib/components/ui/button";
   import * as Select from "$lib/components/ui/select";
   import * as Card from "$lib/components/ui/card";
   import { setMode, systemPrefersMode } from "mode-watcher";
-
-  console.log(systemPrefersMode.current);
 
   const themes = [
     {
@@ -37,9 +34,9 @@
 </script>
 
 <div class="p-5">
-  <Card.Root class="p-2 gap-2">
-    <Card.Header class=" flex p-0">
-      <Button disabled={false} variant="ghost" class="w-full justify-center">
+  <Card.Root class="p-0 gap-2">
+    <Card.Header class=" flex flex-row items-center justify-center p-1">
+      <div class=" flex flex-row items-center justify-center p-0.5 w-full mx-3">
         <Card.Title class="grow text-left">Theme</Card.Title>
         <Select.Root type="single" onValueChange={handleThemeChange}>
           <Select.Trigger class="w-[180px]">
@@ -51,7 +48,7 @@
             {/each}
           </Select.Content>
         </Select.Root>
-      </Button>
+      </div>
     </Card.Header>
   </Card.Root>
 </div>

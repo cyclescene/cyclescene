@@ -10,8 +10,14 @@
     rides,
     savedRidesStore,
     SUB_VIEW_ABOUT,
+    SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
     SUB_VIEW_CONTACT,
+    SUB_VIEW_COVID_SAFETY_RIDES,
+    SUB_VIEW_FAMILY_FRIENDLY_RIDES,
+    SUB_VIEW_PRIVACY_POLICY,
+    SUB_VIEW_TERMS_OF_USE,
+    SUB_VIEWS,
     VIEW_DATE_PICKER,
     VIEW_LIST,
     VIEW_MAP,
@@ -33,6 +39,10 @@
   import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
   import SettingsSubTopBar from "./components/settings/settingsSubTopBar.svelte";
   import SettingsAppearance from "./components/settings/settingsAppearance.svelte";
+  import SubRideListView from "./components/settings/subRideListView.svelte";
+  import SubPrivacyPolicyView from "./components/settings/subPrivacyPolicyView.svelte";
+  import SubTermsOfServiceView from "./components/settings/subTermsOfServiceView.svelte";
+  import SubAboutView from "./components/settings/subAboutView.svelte";
 
   onMount(() => {
     rides.init();
@@ -54,7 +64,7 @@
         <SavedRideTopBar />
       {:else if $activeView == VIEW_SETTINGS}
         <SettingsTopBar />
-      {:else if $activeView === SUB_VIEW_ABOUT || $activeView === SUB_VIEW_APPEARANCE || $activeView === SUB_VIEW_CONTACT}
+      {:else if SUB_VIEWS.includes($activeView)}
         <SettingsSubTopBar />
       {/if}
     </header>
@@ -103,6 +113,36 @@
       class:hidden={!($activeView === SUB_VIEW_APPEARANCE)}
     >
       <SettingsAppearance />
+    </div>
+
+    <div
+      class="view-container"
+      class:hidden={!($activeView === SUB_VIEW_ADULT_ONLY_RIDES) &&
+        !($activeView === SUB_VIEW_FAMILY_FRIENDLY_RIDES) &&
+        !($activeView === SUB_VIEW_COVID_SAFETY_RIDES)}
+    >
+      <SubRideListView />
+    </div>
+
+    <div
+      class="view-container"
+      class:hidden={!($activeView === SUB_VIEW_PRIVACY_POLICY)}
+    >
+      <SubPrivacyPolicyView />
+    </div>
+
+    <div
+      class="view-container"
+      class:hidden={!($activeView === SUB_VIEW_ABOUT)}
+    >
+      <SubAboutView />
+    </div>
+
+    <div
+      class="view-container"
+      class:hidden={!($activeView === SUB_VIEW_TERMS_OF_USE)}
+    >
+      <SubTermsOfServiceView />
     </div>
   </div>
 
