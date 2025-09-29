@@ -1,7 +1,7 @@
 <script>
   import * as Select from "$lib/components/ui/select";
   import * as Card from "$lib/components/ui/card";
-  import { setMode, systemPrefersMode } from "mode-watcher";
+  import { setMode, systemPrefersMode, theme } from "mode-watcher";
 
   const themes = [
     {

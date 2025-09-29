@@ -12,6 +12,7 @@
     SUB_VIEW_ABOUT,
     SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
+    SUB_VIEW_CHANGE_LOG,
     SUB_VIEW_CONTACT,
     SUB_VIEW_COVID_SAFETY_RIDES,
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
@@ -43,6 +44,7 @@
   import SubPrivacyPolicyView from "./components/settings/subPrivacyPolicyView.svelte";
   import SubTermsOfServiceView from "./components/settings/subTermsOfServiceView.svelte";
   import SubAboutView from "./components/settings/subAboutView.svelte";
+  import SubChangelog from "./components/settings/subChangelog.svelte";
 
   onMount(() => {
     rides.init();
@@ -143,6 +145,13 @@
       class:hidden={!($activeView === SUB_VIEW_TERMS_OF_USE)}
     >
       <SubTermsOfServiceView />
+    </div>
+
+    <div
+      class="view-container"
+      class:hidden={!($activeView === SUB_VIEW_CHANGE_LOG)}
+    >
+      <SubChangelog />
     </div>
   </div>
 

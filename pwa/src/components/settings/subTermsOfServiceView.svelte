@@ -8,12 +8,14 @@
 <div
   class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 absolute top-[60px] bottom-[75px] min-h-[calc(100vh_-_115px)]"
 >
-  <ScrollArea>
+  <ScrollArea class="relative">
     <section class="space-y-6 h-[calc(100vh_-_160px)] flex flex-col gap-2">
       <h1 class="text-3xl font-bold tracking-tight text-foreground">
         CycleScene Terms of Use
       </h1>
-      <p class="text-sm text-muted-foreground">Last Updated: [CURRENT DATE]</p>
+      <p class="text-sm text-muted-foreground">
+        Last Updated: September 27, 2025
+      </p>
 
       <h2 class="text-xl font-semibold mt-6">1. Acceptance of Terms</h2>
       <p>
