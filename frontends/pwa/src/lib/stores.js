@@ -4,10 +4,13 @@ import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedR
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
+import { STARTING_LAT, STARTING_LON } from "./config";
+
+
 
 // Portland, OR coordinates
-const FALLBACK_LAT = 45.515232
-const FALLBACK_LON = -122.6783853
+const FALLBACK_LAT = STARTING_LAT
+const FALLBACK_LON = STARTING_LON
 
 // views
 export const VIEW_MAP = 'map'
@@ -53,6 +56,7 @@ export const TILE_URLS = {
   dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
   light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
 };
+
 
 
 function createRidesStore() {

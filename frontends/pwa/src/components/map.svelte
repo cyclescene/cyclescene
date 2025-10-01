@@ -10,12 +10,12 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import RecenterIcon from "~icons/material-symbols-light/recenter-rounded";
   import { mapViewStore, TILE_URLS } from "$lib/stores";
-  import { mode, theme, toggleMode } from "mode-watcher";
+  import { mode } from "mode-watcher";
+  import { STARTING_LAT, STARTING_LON } from "$lib/config";
 
-  const ORIGINAL_MAP_CENTER = [45.52, -122.65];
   const ORIGINAL_MAP_ZOOM = 12;
 
-  let mapCenter = ORIGINAL_MAP_CENTER;
+  let mapCenter = [STARTING_LAT, STARTING_LON];
   let mapZoom = ORIGINAL_MAP_ZOOM;
 
   export let rides = [];
@@ -67,7 +67,7 @@
         });
       }
     } else if (sveafletMapInstance && groupedLocations.length == 1) {
-      mapCenter = [...ORIGINAL_MAP_CENTER];
+      mapCenter = [STARTING_LAT, STARTING_LON];
       mapZoom = ORIGINAL_MAP_ZOOM;
     }
   }
@@ -75,13 +75,6 @@
   $: if (groupedLocations) {
     fitAllMarkers();
   }
-
-  $: map_url = mode.current === "dark" ? TILE_URLS.dark : TILE_URLS.light;
-
-  // Add the tile url as a store that can be changed by the user
-  // light url - https://{s}.basemaps.cartocdn.com/voyager_labels_under/{z}/{x}/{y}{r}.png
-  // dark url - https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png
-  //
 
   const tileLayerOptions = {
     attribution:

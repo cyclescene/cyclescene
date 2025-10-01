@@ -8,20 +8,20 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
  * @throws {Error} Throws an error if the network request fails or the server responds with error status
  */
 async function apiFetch(endpoint, options = {}) {
-    const url = `${API_BASE_URL}${endpoint}`
+  const url = `${API_BASE_URL}${endpoint}`
 
-    try {
-        const response = await fetch(url, options)
-        if (!response.ok) {
-            const errorBody = await response.text()
-            throw new Error(`API request to ${endpoint} failed with status ${response.status}: ${errorBody}`)
-        }
-
-        return await response.json()
-    } catch (error) {
-        console.error(`Error during API fetch to ${endpoint}`, error)
-        throw error
+  try {
+    const response = await fetch(url, options)
+    if (!response.ok) {
+      const errorBody = await response.text()
+      throw new Error(`API request to ${endpoint} failed with status ${response.status}: ${errorBody}`)
     }
+
+    return await response.json()
+  } catch (error) {
+    console.error(`Error during API fetch to ${endpoint}`, error)
+    throw error
+  }
 }
 
 
@@ -30,7 +30,7 @@ async function apiFetch(endpoint, options = {}) {
  * @returns {Promise<Array>} a promise that resolves to an array of upcoming ride objects
  */
 export async function getUpcomingRides() {
-    return apiFetch('/upcoming')
+  return apiFetch('/upcoming')
 }
 
 
@@ -39,6 +39,6 @@ export async function getUpcomingRides() {
  * @returns {Promise<Array>} a promise that resolves to an array of past rides
  */
 export async function getPastRides() {
-    return apiFetch('/past')
+  return apiFetch('/past')
 }
 
