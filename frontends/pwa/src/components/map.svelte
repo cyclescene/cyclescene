@@ -44,7 +44,6 @@
 
   function fitAllMarkers() {
     const locations = groupedLocations;
-    console.log(locations);
 
     // if no rides happening that day set the map zoom to the default location
     if (locations.length === 0) {

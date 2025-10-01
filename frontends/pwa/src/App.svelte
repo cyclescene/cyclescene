@@ -15,6 +15,7 @@
     SUB_VIEW_CHANGE_LOG,
     SUB_VIEW_CONTACT,
     SUB_VIEW_COVID_SAFETY_RIDES,
+    SUB_VIEW_DATA,
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
     SUB_VIEW_PRIVACY_POLICY,
     SUB_VIEW_TERMS_OF_USE,
@@ -45,6 +46,7 @@
   import SubAboutView from "./views/sub/subAboutView.svelte";
   import SubTermsOfServiceView from "./views/sub/subTermsOfServiceView.svelte";
   import SubChangelogView from "./views/sub/subChangelogView.svelte";
+  import { SvelteSet } from "svelte/reactivity";
 
   onMount(() => {
     rides.init();
@@ -52,108 +54,74 @@
 
     savedRidesStore.init();
   });
+
+  const headerMap = {
+    [VIEW_MAP]: DatePicker,
+    [VIEW_LIST]: DatePicker,
+    [VIEW_DATE_PICKER]: DatePicker,
+    [VIEW_OTHER_RIDES]: RideDetailsTopBar,
+    [VIEW_RIDE_DETAILS]: RideDetailsTopBar,
+    [VIEW_SAVED]: SavedRideTopBar,
+    [VIEW_SETTINGS]: SettingsTopBar,
+  };
+
+  const SUB_VIEWS_SET = new SvelteSet(SUB_VIEWS);
+
+  $: ActiveHeaderComponent = (() => {
+    const active = $activeView;
+
+    if (headerMap[active]) {
+      return headerMap[active];
+    }
+
+    if (SUB_VIEWS_SET.has(active)) {
+      return SettingsSubTopBar;
+    }
+
+    return null;
+  })();
+
+  const viewMap = {
+    [VIEW_LIST]: ListView,
+    [VIEW_OTHER_RIDES]: OtherRidesView,
+    [VIEW_RIDE_DETAILS]: RideView,
+    [VIEW_SAVED]: SavedView,
+    [VIEW_SETTINGS]: SettingsView,
+    [VIEW_DATE_PICKER]: DatePickerView,
+    [SUB_VIEW_APPEARANCE]: SubAppearanceView,
+    [SUB_VIEW_TERMS_OF_USE]: SubTermsOfServiceView,
+    [SUB_VIEW_PRIVACY_POLICY]: SubPrivacyPolicyView,
+    [SUB_VIEW_ADULT_ONLY_RIDES]: SubRideListView,
+    [SUB_VIEW_FAMILY_FRIENDLY_RIDES]: SubRideListView,
+    [SUB_VIEW_COVID_SAFETY_RIDES]: SubRideListView,
+    [SUB_VIEW_ABOUT]: SubAboutView,
+    [SUB_VIEW_CHANGE_LOG]: SubChangelogView,
+    [SUB_VIEW_DATA]: SubAboutView,
+  };
+
+  $: ActiveComponent = viewMap[$activeView];
+  $: isMapVisible = $activeView === VIEW_MAP;
 </script>
 
 <main class="flex flex-col min-h[100vh]">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
   <div class="shrink relative">
     <header class="shrink">
-      {#if $activeView == VIEW_MAP || $activeView == VIEW_LIST || $activeView == VIEW_DATE_PICKER}
-        <DatePicker />
-      {:else if $activeView == VIEW_OTHER_RIDES || $activeView == VIEW_RIDE_DETAILS}
-        <RideDetailsTopBar />
-      {:else if $activeView == VIEW_SAVED}
-        <SavedRideTopBar />
-      {:else if $activeView == VIEW_SETTINGS}
-        <SettingsTopBar />
-      {:else if SUB_VIEWS.includes($activeView)}
-        <SettingsSubTopBar />
-      {/if}
+      <svelte:component this={ActiveHeaderComponent} />
     </header>
   </div>
 
-  <div class="grow">
-    <div class="map-view-container" class:hidden={!($activeView === VIEW_MAP)}>
+  <section class="grow">
+    <div class="map-view-container" class:hidden={!isMapVisible}>
       <MapView />
     </div>
 
-    <div class="view-container" class:hidden={!($activeView === VIEW_LIST)}>
-      <ListView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === VIEW_OTHER_RIDES)}
-    >
-      <OtherRidesView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === VIEW_RIDE_DETAILS)}
-    >
-      <RideView />
-    </div>
-
-    <div class="view-container" class:hidden={!($activeView === VIEW_SAVED)}>
-      <SavedView />
-    </div>
-
-    <div class="view-container" class:hidden={!($activeView === VIEW_SETTINGS)}>
-      <SettingsView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === VIEW_DATE_PICKER)}
-    >
-      <DatePickerView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === SUB_VIEW_APPEARANCE)}
-    >
-      <SubAppearanceView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === SUB_VIEW_ADULT_ONLY_RIDES) &&
-        !($activeView === SUB_VIEW_FAMILY_FRIENDLY_RIDES) &&
-        !($activeView === SUB_VIEW_COVID_SAFETY_RIDES)}
-    >
-      <SubRideListView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === SUB_VIEW_PRIVACY_POLICY)}
-    >
-      <SubPrivacyPolicyView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === SUB_VIEW_ABOUT)}
-    >
-      <SubAboutView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === SUB_VIEW_TERMS_OF_USE)}
-    >
-      <SubTermsOfServiceView />
-    </div>
-
-    <div
-      class="view-container"
-      class:hidden={!($activeView === SUB_VIEW_CHANGE_LOG)}
-    >
-      <SubChangelogView />
-    </div>
-  </div>
+    {#if !isMapVisible && ActiveComponent}
+      <div class="map-view-container">
+        <svelte:component this={ActiveComponent} />
+      </div>
+    {/if}
+  </section>
 
   <div class="shrink">
     <footer>

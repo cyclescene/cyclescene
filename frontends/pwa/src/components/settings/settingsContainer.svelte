@@ -17,8 +17,6 @@
     SUB_VIEW_TERMS_OF_USE,
   } from "$lib/stores";
   import IconChevronRight from "~icons/bxs/chevron-right";
-
-  // https://www.shift2bikes.org/addevent/
 </script>
 
 <div
