@@ -3,7 +3,7 @@ import { getPastRides, getUpcomingRides } from "./api";
 import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
-import { SvelteMap } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import { STARTING_LAT, STARTING_LON } from "./config";
 
 
@@ -22,7 +22,6 @@ export const VIEW_OTHER_RIDES = 'otherRides'
 export const VIEW_DATE_PICKER = 'datePicker'
 
 // setting sub views
-//
 export const SUB_VIEW_APPEARANCE = 'appearance'
 export const SUB_VIEW_DATA = 'data'
 export const SUB_VIEW_ABOUT = 'about'
@@ -49,6 +48,7 @@ export const SUB_VIEWS = [
   SUB_VIEW_CONTACT,
 ]
 
+const SUB_VIEWS_SET = new SvelteSet(SUB_VIEWS)
 
 
 
@@ -218,8 +218,6 @@ export const savedRidesForSelectedDay = derived(
 export const viewStack = writable([VIEW_MAP])
 export const activeView = writable(VIEW_MAP)
 
-
-
 viewStack.subscribe(stack => {
   if (stack.length > 0) {
     activeView.set(stack[stack.length - 1])
@@ -235,9 +233,21 @@ export function navigateTo(newViewIdentifier, options = { force: false }) {
     if (!options.force && stack[stack.length - 1] === newViewIdentifier) {
       return stack
     }
+
     return [...stack, newViewIdentifier]
   })
 
+}
+
+export function jumpToView(targetViewIdentifier) {
+  viewStack.update(stack => {
+    const index = stack.lastIndexOf(targetViewIdentifier)
+    if (index !== -1) {
+      return stack.slice(0, index + 1)
+    }
+  })
+
+  return [VIEW_MAP]
 }
 
 // go back to the previous View

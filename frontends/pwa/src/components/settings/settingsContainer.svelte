@@ -24,7 +24,7 @@
 <div
   class="absolute top-[60px] bottom-[55px] min-h-[calc(100vh_-_135px)] w-full p-5"
 >
-  <ScrollArea class={`relative`}>
+  <ScrollArea class={`relative`} scrollbarYClasses={`hidden`}>
     <div class="h-[calc(100vh_-_140px)] flex flex-col gap-4">
       <Card.Root class="p-2 gap-2">
         <Card.Header class=" flex p-0">

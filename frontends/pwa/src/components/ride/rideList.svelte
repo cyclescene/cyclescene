@@ -9,7 +9,7 @@
 <div
   class="absolute top-[60px] bottom-[75px] min-h-[calc(100vh_-_115px)] w-full p-5"
 >
-  <ScrollArea class={`relative`}>
+  <ScrollArea class={`relative`} scrollbarYClasses={"hidden"}>
     <div class="h-[calc(100vh_-_160px)] flex flex-col gap-2">
       {#if rides && rides.length > 0}
         {#each rides as ride (ride.id)}

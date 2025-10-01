@@ -1,7 +1,7 @@
 <script>
   import Button from "$lib/components/ui/button/button.svelte";
   import * as Card from "$lib/components/ui/card";
-  import { ScrollArea, Scrollbar } from "$lib/components/ui/scroll-area/index";
+  import { ScrollArea } from "$lib/components/ui/scroll-area/index";
   import { currentRide } from "$lib/stores";
   import { formatDate, formatTime } from "$lib/utils";
   import RideLabels from "./rideLabels.svelte";
@@ -14,7 +14,7 @@
   <div
     class="absolute top-[60px] bottom-[75px] min-h-[calc(100vh-115px)] left-0 w-full p-5 overflow-hidden z-50"
   >
-    <ScrollArea class="h-full w-full">
+    <ScrollArea class="h-full w-full" scrollbarYClasses={`hidden`}>
       <div class=" flex flex-col gap-5">
         <div
           class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl"
@@ -97,8 +97,6 @@
           Donate to Shift2Bikes
         </Button>
       </div>
-
-      <Scrollbar orientation="veritcal" />
     </ScrollArea>
   </div>
 {/if}

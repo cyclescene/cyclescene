@@ -31,18 +31,26 @@ export default defineConfig({
         theme_color: "#000000",
         icons: [
           {
-            src: "./public/icons/manifest-icon-192.maskable.png",
+            src: "public/icons/manifest-icon-192.maskable.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any"
           },
           {
-            src: "./public/icons/manifest-icon-512.maskable.png",
-            sizes: "512x512",
-            type: "image/png"
-          },
-          {
-            src: "./public/icons/manifest-icon-192.maskable.png",
+            src: "public/icons/manifest-icon-192.maskable.png",
             sizes: "192x192",
+            type: "image/png",
+            purpose: "maskable"
+          },
+          {
+            src: "public/icons/manifest-icon-512.maskable.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "public/icons/manifest-icon-512.maskable.png",
+            sizes: "512x512",
             type: "image/png",
             purpose: "maskable"
           }

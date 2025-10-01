@@ -1,7 +1,11 @@
 <script>
   import { Button } from "$lib/components/ui/button";
-  import { goBackInHistory, navigateTo, VIEW_SETTINGS } from "$lib/stores";
+  import { jumpToView, VIEW_SETTINGS } from "$lib/stores";
   import IconChevronLeft from "~icons/bxs/chevron-left";
+
+  function closeSubView() {
+    jumpToView(VIEW_SETTINGS);
+  }
 </script>
 
 <div
@@ -11,7 +15,7 @@
     disabled={false}
     variant="ghost"
     class="py-2 px-3 text-yellow-400 min-w-10 flex items-center justify-center"
-    onclick={() => navigateTo(VIEW_SETTINGS)}
+    onclick={closeSubView}
     ><IconChevronLeft />
     <p class="text-sm">Settings</p>
   </Button>
