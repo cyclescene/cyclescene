@@ -14,9 +14,7 @@
   import { STARTING_LAT, STARTING_LON } from "$lib/config";
 
   const ORIGINAL_MAP_ZOOM = 12;
-
-  let mapCenter = [STARTING_LAT, STARTING_LON];
-  let mapZoom = ORIGINAL_MAP_ZOOM;
+  const SINGLE_RIDE_ZOOM = 15.5;
 
   export let rides = [];
   export let noAddressRides = [];
@@ -45,34 +43,53 @@
   let sveafletMapInstance;
 
   function fitAllMarkers() {
-    if (sveafletMapInstance && groupedLocations.length > 1) {
-      if (groupedLocations.length == 1) {
-        const singleLocation = groupedLocations[0];
-        sveafletMapInstance.setView(
-          L.LatLngBounds(singleLocation.lat, singleLocation.lng),
-          ORIGINAL_MAP_ZOOM,
-          { animate: true, duration: 0.8 },
-        );
-      } else {
-        const bounds = new L.LatLngBounds();
+    const locations = groupedLocations;
+    console.log(locations);
 
-        groupedLocations.forEach((group) => {
-          bounds.extend(L.latLng(group.lat, group.lng));
-        });
-
-        sveafletMapInstance.fitBounds(bounds, {
-          padding: [60, 60],
+    // if no rides happening that day set the map zoom to the default location
+    if (locations.length === 0) {
+      sveafletMapInstance.setView(
+        [STARTING_LAT, STARTING_LON],
+        ORIGINAL_MAP_ZOOM,
+        {
           animate: true,
           duration: 0.8,
-        });
-      }
-    } else if (sveafletMapInstance && groupedLocations.length == 1) {
-      mapCenter = [STARTING_LAT, STARTING_LON];
-      mapZoom = ORIGINAL_MAP_ZOOM;
+        },
+      );
+      return;
     }
+
+    // if there is only one ride close in on it
+    if (locations.length === 1) {
+      const singleLocation = locations[0];
+
+      sveafletMapInstance.setView(
+        [singleLocation.lat, singleLocation.lng],
+        SINGLE_RIDE_ZOOM,
+        {
+          animate: true,
+          duration: 0.8,
+        },
+      );
+      return;
+    }
+
+    // when there are many rides happening on a day create a bounds uisng location details and
+    // display them all within the map
+    const bounds = new L.LatLngBounds();
+
+    locations.forEach((group) => {
+      bounds.extend(L.latLng(group.lat, group.lng));
+    });
+
+    sveafletMapInstance.fitBounds(bounds, {
+      padding: [60, 60],
+      animate: true,
+      duration: 0.8,
+    });
   }
 
-  $: if (groupedLocations) {
+  $: if (sveafletMapInstance && groupedLocations) {
     fitAllMarkers();
   }
 
@@ -86,10 +103,14 @@
     mapViewStore.showEventCards(true);
     mapViewStore.showOtherRides(false);
     if (ridesAtLocation.length > 0) {
-      mapCenter = [
-        ridesAtLocation[0].lat.Float64,
-        ridesAtLocation[0].lon.Float64,
-      ];
+      sveafletMapInstance.setView(
+        [ridesAtLocation[0].lat.Float64, ridesAtLocation[0].lon.Float64],
+        SINGLE_RIDE_ZOOM,
+        {
+          animate: true,
+          duration: 0.8,
+        },
+      );
     }
   }
 
@@ -121,8 +142,6 @@
   <Map
     bind:instance={sveafletMapInstance}
     options={{
-      center: mapCenter,
-      zoom: mapZoom,
       zoomControl: false,
     }}
     onclick={handleCardClose}

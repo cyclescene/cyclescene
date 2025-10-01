@@ -1,6 +1,7 @@
 const CONFIG = [
   {
     "city-code": "pdx",
+    "city-name": "Portland",
     "starting-coords": {
       "lat": 45.515232,
       "lon": -122.6783853
@@ -8,6 +9,7 @@ const CONFIG = [
   },
   {
     "city-code": "slc",
+    "city-name": "Salt Lake City",
     "starting-coords": {
       "lat": 40.76078,
       "lon": -111.89105
