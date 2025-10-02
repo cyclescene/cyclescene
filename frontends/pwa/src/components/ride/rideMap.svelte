@@ -1,21 +1,16 @@
 <script lang="ts">
   import { TILE_URLS } from "$lib/stores";
   import { mode } from "mode-watcher";
-  import {
-    GlobeControl,
-    MapLibre,
-    NavigationControl,
-    ScaleControl,
-  } from "svelte-maplibre-gl";
+  import { MapLibre } from "svelte-maplibre-gl";
 
-  export let ride;
+  const { ride } = $props();
 
   const RIDE_COORDS = {
     lat: ride.lat?.Float64,
     lon: ride.lon?.Float64,
   };
 
-  console.log(`${TILE_URLS.dark}`);
+  let source = $derived(TILE_URLS[mode.current]);
 </script>
 
 <MapLibre
@@ -27,7 +22,8 @@
   scrollZoom={false}
   touchZoomRotate={false}
   boxZoom={false}
-  style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+  attributionControl={false}
+  style={source}
 ></MapLibre>
 <!-- <Map options={rideMapOptions}> -->
 <!--   {#if mode.current === "dark"} -->
