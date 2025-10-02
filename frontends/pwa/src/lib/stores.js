@@ -479,7 +479,7 @@ function createMapViewStore() {
   const { subscribe, update } = writable({
     eventCardsVisible: false,
     otherRidesVisible: false,
-    selectedEvents: [],
+    selectedEvent: null,
     otherRides: []
   })
 
@@ -497,18 +497,16 @@ function createMapViewStore() {
         otherRidesVisible: bool
       }))
     },
-    setSelectedRides: (rides) => {
-      if (rides.length > 0) {
-        update(store => ({
-          ...store,
-          selectedEvents: rides
-        }))
-      }
+    setSelectedRide: (ride) => {
+      update(store => ({
+        ...store,
+        selectedEvent: ride
+      }))
     },
     clearSelectedRides: () => {
       update(store => ({
         ...store,
-        selectedEvents: []
+        selectedEvent: null
       }))
     },
     setOtherRides: (rides) => {

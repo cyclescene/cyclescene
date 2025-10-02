@@ -52,7 +52,7 @@
   }
 </script>
 
-<div class="flex justify-center items-center p-2.5 z-[500]">
+<div class="flex justify-center items-center p-2.5 z-[1000]">
   <Toaster
     position="top-center"
     theme={mode.current}

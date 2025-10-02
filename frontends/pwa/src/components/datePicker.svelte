@@ -16,7 +16,7 @@
   // Function to navigate between days
   function changeDay(offset) {
     mapViewStore.clearSelectedRides();
-    mapViewStore.setSelectedRides(false);
+    mapViewStore.setSelectedRide(false);
     if (offset > 0) {
       dateStore.addDays(offset);
     } else if (offset < 0) {

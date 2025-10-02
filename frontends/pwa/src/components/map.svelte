@@ -7,24 +7,102 @@
   import LocationCards from "./locationCards.svelte";
   import Button from "$lib/components/ui/button/button.svelte";
   import RecenterIcon from "~icons/material-symbols-light/recenter-rounded";
-  import { mapViewStore, TILE_URLS } from "$lib/stores";
+  import { allRides, mapViewStore, TILE_URLS } from "$lib/stores";
   import { mode } from "mode-watcher";
   import { STARTING_LAT, STARTING_LON } from "$lib/config";
+  import MapMarker from "./mapMarker.svelte";
+  import { onDestroy } from "svelte";
 
   const ORIGINAL_MAP_ZOOM = 12;
+  const COLLISION_THRESHOLD_PIXELS = 50;
   const SINGLE_RIDE_ZOOM = 15.5;
 
-  export let rides = [];
   export let noAddressRides = [];
 
   // sveaflet map logic
   let sveafletMapInstance;
+  let leafletMarkers = {};
+  // --- COLLISION LOGIC FUNCTION ---
+  function checkLabelCollisions() {
+    const map = sveafletMapInstance;
+
+    // Convert the object values into a simple array for iteration
+    const markerArray = Object.values(leafletMarkers || {});
+    console.log(markerArray);
+
+    // Safety check: Exit if the map is not ready or has too few markers
+    if (!map || markerArray.length < 2) {
+      // Run initial cleanup here to ensure any single marker is fully visible
+      markerArray.forEach((marker) => {
+        const element = marker.getElement();
+        if (element) {
+          element.classList.remove("marker-hidden-label");
+        }
+      });
+      return;
+    }
+
+    // 1. Initial Visibility Cleanup (Must be run at the start to clear old hidden state)
+    // We make all labels visible *before* starting the new collision check.
+    markerArray.forEach((marker) => {
+      const element = marker.getElement();
+      // CRITICAL CHECK: Only attempt to manipulate the DOM if the element exists
+      if (element) {
+        element.classList.remove("marker-hidden-label");
+      }
+    });
+
+    // 2. Iterate and check for overlaps (Loop runs over the temporary array)
+    for (let i = 0; i < markerArray.length; i++) {
+      const markerA = markerArray[i];
+      const elementA = markerA.getElement();
+
+      // CRITICAL CHECK: Skip if elementA is not attached to the DOM (due to Leaflet updates)
+      if (!elementA) continue;
+
+      // Convert Marker A's geographic location to a pixel coordinate on the screen
+      const pointAPixel = map.latLngToContainerPoint(markerA.getLatLng());
+
+      for (let j = i + 1; j < markerArray.length; j++) {
+        const markerB = markerArray[j];
+        const elementB = markerB.getElement();
+
+        // CRITICAL CHECK: Skip if elementB is not attached to the DOM
+        if (!elementB) continue;
+
+        const pointBPixel = map.latLngToContainerPoint(markerB.getLatLng());
+
+        // Calculate the distance between the two points in pixels
+        const distance = pointAPixel.distanceTo(pointBPixel);
+
+        if (distance < COLLISION_THRESHOLD_PIXELS) {
+          // COLLISION FOUND: Apply "Neither Shall Speak" rule
+
+          // 1. Hide the label of Marker A (the winner)
+          elementA.classList.add("marker-hidden-label");
+
+          // 2. Hide the label of Marker B (the loser)
+          elementB.classList.add("marker-hidden-label");
+        }
+      }
+    }
+  }
+
+  function debounce(func, delay) {
+    let timeoutId;
+    return function (...args) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
+  }
+
+  const debouncedCheckLabelCollisions = debounce(checkLabelCollisions, 50);
 
   function fitAllMarkers() {
-    const locations = rides;
+    const rides = $allRides;
 
     // if no rides happening that day set the map zoom to the default location
-    if (locations.length === 0) {
+    if (rides.length === 0) {
       sveafletMapInstance.setView(
         [STARTING_LAT, STARTING_LON],
         ORIGINAL_MAP_ZOOM,
@@ -37,8 +115,8 @@
     }
 
     // if there is only one ride close in on it
-    if (locations.length === 1) {
-      const singleLocation = locations[0];
+    if (rides.length === 1) {
+      const singleLocation = rides[0];
 
       sveafletMapInstance.setView(
         [singleLocation.lat?.Float64, singleLocation.lon.Float64],
@@ -55,7 +133,7 @@
     // display them all within the map
     const bounds = new L.LatLngBounds();
 
-    locations.forEach((ride) => {
+    rides.forEach((ride) => {
       bounds.extend(L.latLng(ride.lat?.Float64, ride.lon?.Float64));
     });
 
@@ -66,8 +144,9 @@
     });
   }
 
-  $: if (sveafletMapInstance) {
+  $: if (sveafletMapInstance && $allRides) {
     fitAllMarkers();
+    debouncedCheckLabelCollisions();
   }
 
   const tileLayerOptions = {
@@ -75,20 +154,36 @@
       "Map tiles by Carto, under CC BY 3.0. Data by OpenStreetMap, under ODbL.",
   };
 
-  function handleMarkerClick(ridesAtLocation) {
-    mapViewStore.setSelectedRides(ridesAtLocation);
+  function handleMarkerClick(ride) {
+    console.log(ride);
+    mapViewStore.setSelectedRide(ride);
     mapViewStore.showEventCards(true);
     mapViewStore.showOtherRides(false);
-    if (ridesAtLocation.length > 0) {
-      sveafletMapInstance.setView(
-        [ridesAtLocation[0].lat.Float64, ridesAtLocation[0].lon.Float64],
-        SINGLE_RIDE_ZOOM,
-        {
-          animate: true,
-          duration: 0.8,
-        },
-      );
-    }
+    sveafletMapInstance.setView(
+      [ride.lat.Float64, ride.lon.Float64],
+      SINGLE_RIDE_ZOOM,
+      {
+        animate: true,
+        duration: 0.8,
+      },
+    );
+  }
+
+  function setMarkerInstance(rideId, markerInstance) {
+    leafletMarkers[rideId] = markerInstance;
+  }
+
+  $: if (sveafletMapInstance) {
+    const map = sveafletMapInstance;
+    // Listen to map stop events
+    map.on("zoomend", debouncedCheckLabelCollisions);
+    map.on("moveend", debouncedCheckLabelCollisions);
+
+    // Ensure cleanup (needed for non-SvelteKit apps)
+    onDestroy(() => {
+      map.off("zoomend", checkLabelCollisions);
+      map.off("moveend", checkLabelCollisions);
+    });
   }
 
   function handleRecenter() {
@@ -128,24 +223,13 @@
     {:else}
       <TileLayer url={TILE_URLS.light} options={tileLayerOptions} />
     {/if}
-    {#each rides as ride (ride.id)}
-      <Marker
-        latLng={[ride.lat?.Float64, ride.lon?.Float64]}
-        onclick={() => handleMarkerClick(ride.rides)}
+    {#each $allRides as ride (ride.id)}
+      <MapMarker
+        mapInstance={sveafletMapInstance}
+        {ride}
+        onMarkerClick={handleMarkerClick}
+        onSetInstance={(instance) => setMarkerInstance(ride.id, instance)}
       />
-      <Tooltip
-        latLng={[ride.lat?.Float64, ride.lon?.Float64]}
-        options={{
-          permanent: true,
-          direction: "bottom",
-          className: "tool-tip",
-          offset: [3, 10],
-        }}
-      >
-        <p>
-          {ride.title}
-        </p>
-      </Tooltip>
     {/each}
   </Map>
   <Button
@@ -219,5 +303,14 @@
     ) {
     content: none !important;
     border-width: 0 !important;
+  }
+
+  :global(.marker-hidden-label .marker-label) {
+    opacity: 0 !important;
+  }
+
+  /* Ensure the pin remains visible when the label is hidden */
+  :global(.marker-hidden-label .marker-icon-pin) {
+    opacity: 1 !important;
   }
 </style>
