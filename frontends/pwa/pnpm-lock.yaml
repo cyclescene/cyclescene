@@ -45,6 +45,9 @@ importers:
       bits-ui:
         specifier: ^2.11.4
         version: 2.11.4(@internationalized/date@3.9.0)(svelte@5.38.8)
+      maplibre-gl:
+        specifier: ^5.8.0
+        version: 5.8.0
       mode-watcher:
         specifier: ^1.1.0
         version: 1.1.0(svelte@5.38.8)

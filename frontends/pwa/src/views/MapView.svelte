@@ -1,6 +1,6 @@
 <script>
-  import { rides, filteredRides, filteredNoAddress } from "../lib/stores.js";
+  import { filteredRides, filteredNoAddress } from "../lib/stores.js";
   import MapComponent from "../components/map/MapComponent.svelte";
 </script>
 
-<MapComponent />
+<MapComponent rides={$filteredRides} otherRides={$filteredNoAddress} />

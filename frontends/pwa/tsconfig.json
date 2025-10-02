@@ -7,6 +7,12 @@
     "node_modules/*"
   ],
   "compilerOptions": {
+    // --- ADD/UPDATE THESE LINES ---
+    "moduleResolution": "bundler",
+    "module": "esnext", // Often required when using "bundler"
+    "allowSyntheticDefaultImports": true, // Often helpful for Svelte/TS/Vite projects
+    "esModuleInterop": true,
+    // -----------------------------
     "paths": {
       "$lib": [
         "./src/lib"

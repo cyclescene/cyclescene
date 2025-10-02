@@ -55,6 +55,7 @@ const SUB_VIEWS_SET = new SvelteSet(SUB_VIEWS)
 export const TILE_URLS = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+
 };
 
 
