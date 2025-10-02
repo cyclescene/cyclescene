@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import Button from "$lib/components/ui/button/button.svelte";
   import * as Card from "$lib/components/ui/card";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
@@ -16,11 +16,11 @@
   >
     <ScrollArea class="h-full w-full" scrollbarYClasses={`hidden`}>
       <div class=" flex flex-col gap-5">
-        <div
-          class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl"
-        >
-          <RideMap ride={$currentRide} />
-        </div>
+        <!-- <div -->
+        <!--   class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl" -->
+        <!-- > -->
+        <RideMap ride={$currentRide} />
+        <!-- </div> -->
         <h2 class="text-3xl">{$currentRide.title}</h2>
         <p>{$currentRide.newsflash?.String}</p>
         <RideLabels ride={$currentRide} />

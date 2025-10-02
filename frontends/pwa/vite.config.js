@@ -6,9 +6,9 @@ import Icons from "unplugin-icons/vite"
 import path from "path"
 import { ngrok } from 'vite-plugin-ngrok';
 
-
 // https://vite.dev/config/
 export default defineConfig({
+
   server: {
     allowedHosts: true
 
