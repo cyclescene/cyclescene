@@ -1,8 +1,6 @@
 <script>
-  import { Map, TileLayer, Marker, Popup } from "sveaflet";
+  import { Map, TileLayer, Marker, Tooltip } from "sveaflet";
   import "leaflet/dist/leaflet.css";
-
-  import { SvelteMap } from "svelte/reactivity";
 
   import L from "leaflet";
   import RidesNotShown from "./ride/ridesNotShown.svelte";
@@ -19,31 +17,11 @@
   export let rides = [];
   export let noAddressRides = [];
 
-  let groupedLocations = [];
-
-  $: {
-    let ridesByLocation = new SvelteMap();
-    rides.forEach((ride) => {
-      const key = `${ride.lat.Float64},${ride.lon.Float64}`;
-      if (!ridesByLocation.has(key)) {
-        ridesByLocation.set(key, {
-          venue: ride.venue.String,
-          lat: ride.lat.Float64,
-          lng: ride.lon.Float64,
-          rides: [],
-        });
-      }
-      ridesByLocation.get(key).rides.push(ride);
-    });
-
-    groupedLocations = Array.from(ridesByLocation.values());
-  }
-
   // sveaflet map logic
   let sveafletMapInstance;
 
   function fitAllMarkers() {
-    const locations = groupedLocations;
+    const locations = rides;
 
     // if no rides happening that day set the map zoom to the default location
     if (locations.length === 0) {
@@ -63,7 +41,7 @@
       const singleLocation = locations[0];
 
       sveafletMapInstance.setView(
-        [singleLocation.lat, singleLocation.lng],
+        [singleLocation.lat?.Float64, singleLocation.lon.Float64],
         SINGLE_RIDE_ZOOM,
         {
           animate: true,
@@ -77,8 +55,8 @@
     // display them all within the map
     const bounds = new L.LatLngBounds();
 
-    locations.forEach((group) => {
-      bounds.extend(L.latLng(group.lat, group.lng));
+    locations.forEach((ride) => {
+      bounds.extend(L.latLng(ride.lat?.Float64, ride.lon?.Float64));
     });
 
     sveafletMapInstance.fitBounds(bounds, {
@@ -88,7 +66,7 @@
     });
   }
 
-  $: if (sveafletMapInstance && groupedLocations) {
+  $: if (sveafletMapInstance) {
     fitAllMarkers();
   }
 
@@ -150,25 +128,30 @@
     {:else}
       <TileLayer url={TILE_URLS.light} options={tileLayerOptions} />
     {/if}
-    {#each groupedLocations as group (group.lat + "," + group.lng)}
+    {#each rides as ride (ride.id)}
       <Marker
-        latLng={[group.lat, group.lng]}
-        onclick={() => handleMarkerClick(group.rides)}
+        latLng={[ride.lat?.Float64, ride.lon?.Float64]}
+        onclick={() => handleMarkerClick(ride.rides)}
+      />
+      <Tooltip
+        latLng={[ride.lat?.Float64, ride.lon?.Float64]}
+        options={{
+          permanent: true,
+          direction: "bottom",
+          className: "tool-tip",
+          offset: [3, 10],
+        }}
       >
-        <Popup>
-          <strong
-            >{group.venue} - {group.rides.length} ride{group.rides.length !== 1
-              ? "s"
-              : ""} starting here</strong
-          >
-        </Popup>
-      </Marker>
+        <p>
+          {ride.title}
+        </p>
+      </Tooltip>
     {/each}
   </Map>
   <Button
     disabled={false}
     class={`absolute top-[85px] h-10 w-10 z-[1000] right-2.5`}
-    variant="ghost"
+    variant="secondary"
     onclick={handleRecenter}
   >
     <RecenterIcon style="width: 30px; height: 30px;" />
@@ -180,23 +163,61 @@
 <RidesNotShown />
 
 <style>
-  :global(.map-container .leaflet-tooltip) {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    font-weight: bold !important;
-    color: #000 !important;
-    text-shadow:
-      1px 1px 2px white,
-      -1px -1px 2px white,
-      1px -1px 2px white,
-      -1px 1px 2px white !important;
-  }
-
   .map-container {
     height: calc(100% - 115px);
     width: 100%;
     margin-top: 60px;
     margin-bottom: 50px;
+  }
+
+  /* 1. Target the Outer Tooltip (.tool-tip) */
+  :global(.map-container .leaflet-tooltip-pane .leaflet-tooltip.tool-tip) {
+    /* Set the maximum width the ENTIRE container is allowed to grow to */
+    white-space: normal !important;
+    max-width: 200px !important; /* Adjusted slightly lower for better mobile fit */
+    width: auto !important;
+
+    /* Transparency and box removal */
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 2. Target the Leaflet Content Wrapper (.leaflet-tooltip-content) */
+  /* This is the inner Leaflet-generated div that often holds the hidden 'nowrap' */
+  :global(.map-container .leaflet-tooltip-bottom) {
+    white-space: normal !important; /* CRITICAL: Must be normal */
+    max-width: 150px !important; /* This is the desired wrapping width */
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-align: center !important; /* Center the text block itself */
+  }
+
+  /* 3. Target your <p> Tag (The actual content) */
+  /* This is the final container before the text */
+  :global(.map-container .leaflet-tooltip-pane .leaflet-tooltip.tool-tip p) {
+    white-space: normal !important;
+    width: 200px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+
+    /* Text appearance styles */
+    color: var(--color-foreground);
+    font-weight: 700; /* Add bold styling here since <strong> was removed */
+    line-height: 1.2;
+    font-size: 10px;
+  }
+
+  /* 4. Hide the Arrow */
+  :global(
+      .map-container
+        .leaflet-tooltip-pane
+        .leaflet-tooltip-bottom.tool-tip::before
+    ) {
+    content: none !important;
+    border-width: 0 !important;
   }
 </style>

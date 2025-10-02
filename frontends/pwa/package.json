@@ -29,6 +29,7 @@
     "date-fns": "^4.1.0",
     "idb": "^8.0.3",
     "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3",
     "sveaflet": "^0.1.4",
     "svelte-leafletjs": "^2.0.0",
     "tailwind-merge": "^3.3.1",
