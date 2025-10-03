@@ -1,5 +1,8 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
+  "files": [
+    ".src/ambient-imports.d.ts"
+  ],
   "include": [
     "src/**/*"
   ],

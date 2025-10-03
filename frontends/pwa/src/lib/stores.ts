@@ -1,10 +1,13 @@
-import { parseDate } from "@internationalized/date";
+import { CalendarDate, parseDate } from "@internationalized/date";
+import { LngLatBounds, type Map } from "maplibre-gl"
 import { getPastRides, getUpcomingRides } from "./api";
 import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
+import { SvelteMap } from "svelte/reactivity";
 import { STARTING_LAT, STARTING_LON } from "./config";
+import { type ValidatedRide, type RideData } from "./types";
+import type * as GeoJSON from "geojson";
 
 
 
@@ -48,20 +51,19 @@ export const SUB_VIEWS = [
   SUB_VIEW_CONTACT,
 ]
 
-const SUB_VIEWS_SET = new SvelteSet(SUB_VIEWS)
-
-
-
 export const TILE_URLS = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 
 };
 
-
-
 function createRidesStore() {
-  const { subscribe, set, update } = writable({
+  const { subscribe, set, update } = writable<{
+    loading: boolean,
+    data: RideData[],
+    error: String | null
+
+  }>({
     loading: true,
     data: [],
     error: null
@@ -99,7 +101,12 @@ function createRidesStore() {
 }
 
 function createSavedRideStore() {
-  const { subscribe, set } = writable({
+  const { subscribe, set } = writable<{
+    loading: boolean,
+    data: RideData[],
+    error: String | null
+
+  }>({
     loading: true,
     data: [],
     error: null
@@ -115,7 +122,7 @@ function createSavedRideStore() {
         set({ loading: false, data: [], error: "Could not load saved rides" })
       }
     },
-    saveRide: async (ride) => {
+    saveRide: async (ride: RideData) => {
       try {
         await addSavedRide(ride)
         const savedRides = await getAllSavedRides()
@@ -125,7 +132,7 @@ function createSavedRideStore() {
         set({ loading: false, data: [], error: "Could not load saved rides" })
       }
     },
-    deleteRide: async (rideID) => {
+    deleteRide: async (rideID: String) => {
       try {
         await deleteSavedRide(rideID)
         const savedRides = await getAllSavedRides()
@@ -135,15 +142,12 @@ function createSavedRideStore() {
       }
 
     },
-    isRideSaved: async (rideID) => {
+    isRideSaved: async (rideID: String) => {
       try {
         const exists = await savedRideExists(rideID)
         return exists
       } catch (e) {
-
-
       }
-
     }
   }
 }
@@ -164,8 +168,12 @@ export const allSavedRides = derived(
 export const savedRidesGroupedByDate = derived(
   [savedRidesStore],
   ([$savedRides]) => {
-    let ridesByDate = new SvelteMap()
-    if (!$savedRides.data && $savedRides.data.length === 0) {
+    let ridesByDate = new SvelteMap<string, {
+      date: CalendarDate
+      rides: RideData[]
+    }>()
+    const numOfRides = $savedRides.data.length
+    if (!$savedRides.data && numOfRides === 0) {
       return []
     }
     $savedRides.data.forEach((ride) => {
@@ -177,7 +185,7 @@ export const savedRidesGroupedByDate = derived(
           rides: []
         })
       }
-      ridesByDate.get(key).rides.push(ride);
+      ridesByDate.get(key)!.rides.push(ride);
     });
     return Array.from(ridesByDate.values()).sort((a, b) => a.date.compare(b.date));
   }
@@ -187,8 +195,7 @@ export const selectedSaveRidesNagivationDate = writable(today(getLocalTimeZone()
 export const allSavedRidesNavigationDates = derived(
   [savedRidesGroupedByDate],
   ([$savedRidesGroupedByDate]) => {
-    const uniqueDatesMap = new SvelteMap()
-
+    const uniqueDatesMap = new SvelteMap<string, CalendarDate>()
     $savedRidesGroupedByDate.forEach(group => {
       uniqueDatesMap.set(group.date.toString(), group.date)
     })
@@ -216,8 +223,8 @@ export const savedRidesForSelectedDay = derived(
 
 // NAVIGATION STORE
 
-export const viewStack = writable([VIEW_MAP])
-export const activeView = writable(VIEW_MAP)
+export const viewStack = writable<string[]>([VIEW_MAP])
+export const activeView = writable<string>(VIEW_MAP)
 
 viewStack.subscribe(stack => {
   if (stack.length > 0) {
@@ -229,7 +236,7 @@ viewStack.subscribe(stack => {
 })
 
 // sets the next view on top of a stack to be able to return to the view a user was before
-export function navigateTo(newViewIdentifier, options = { force: false }) {
+export function navigateTo(newViewIdentifier: string, options = { force: false }) {
   viewStack.update(stack => {
     if (!options.force && stack[stack.length - 1] === newViewIdentifier) {
       return stack
@@ -240,7 +247,7 @@ export function navigateTo(newViewIdentifier, options = { force: false }) {
 
 }
 
-export function jumpToView(targetViewIdentifier) {
+export function jumpToView(targetViewIdentifier: string) {
   viewStack.update(stack => {
     const index = stack.lastIndexOf(targetViewIdentifier)
     if (index !== -1) {
@@ -265,14 +272,14 @@ export function goBackInHistory() {
 // DATE STORE
 
 const initialDate = today(getLocalTimeZone())
-export const currentDate = writable(initialDate)
+export const currentDate = writable<CalendarDate>(initialDate)
 
 export const dateStore = {
   subscribe: currentDate.subscribe,
   setToday: () => {
     currentDate.set(today(getLocalTimeZone()))
   },
-  addDays: (offset) => {
+  addDays: (offset: number) => {
     currentDate.update((currentStoredDate) => {
       if (!currentStoredDate) {
         console.error("dateStore.addDays: current store was undefined/null. " +
@@ -282,7 +289,7 @@ export const dateStore = {
       return currentStoredDate.add({ days: offset })
     })
   },
-  subtractDays: (offset) => {
+  subtractDays: (offset: number) => {
     currentDate.update((currentStoredDate) => {
       if (!currentStoredDate) {
         console.error("dateStore.addDays: current store was undefined/null. " +
@@ -292,7 +299,7 @@ export const dateStore = {
       return currentStoredDate.subtract({ days: offset })
     })
   },
-  setSpecificDate: (date) => {
+  setSpecificDate: (date: CalendarDate) => {
     currentDate.set(date)
   }
 }
@@ -331,11 +338,11 @@ export const formattedDate = derived([currentDate], ([$currentDate]) => {
 
 // CURRENT RIDE STORE
 const initialRideState = null
-export const currentRide = writable(initialRideState)
+export const currentRide = writable<RideData | null>(initialRideState)
 
 export const currentRideStore = {
   subscribe: currentRide.subscribe,
-  setRide: function(ride) {
+  setRide: function(ride: RideData) {
     currentRide.set(ride)
   },
   getRide: function() {
@@ -476,41 +483,109 @@ export const allUpcomingCovidSafetyRides = derived([rides], ([$rides]) => {
 
 
 // MAP STORE
-function createMapViewStore() {
-  const { subscribe, update } = writable({
-    eventCardsVisible: false,
-    otherRidesVisible: false,
-    selectedEvent: null,
-    otherRides: []
-  })
+//
+interface MapViewStore {
+  eventCardsVisible: boolean,
+  otherRidesVisible: boolean,
+  selectedEvent?: RideData | null,
+  primaryRides: RideData[],
+  otherRides: RideData[]
+}
+//
+const rawMapStore = writable<MapViewStore>()
+
+export const validRides = derived(rawMapStore, ($state) => {
+  return $state.primaryRides.filter(ride => ride.lon.Valid && ride.lat.Valid && !isNaN(ride.lat.Float64 as number) && !isNaN(ride.lon.Float64 as number)).map<ValidatedRide>(ride => ({
+    id: ride.id,
+    name: ride.title,
+    lat: ride.lat.Float64,
+    lng: ride.lon.Float64
+  }))
+})
+
+export const rideGeoJSON = derived(
+  validRides, ($rides) => {
+    const geoJson = {
+      type: "FeatureCollection",
+      features: $rides.map(coord => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: [coord.lng, coord.lat]
+        },
+        properties: {
+          id: coord.id,
+          name: coord.name
+        }
+      }))
+    }
+
+    return geoJson as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
+  }
+)
+
+export const STARTING_ZOOM = 12
+const SINGLE_RIDE_ZOOM = 16
+
+function createMapStore() {
+  const { subscribe, update } = rawMapStore
+
+  const fitMaptoRides = (map: Map, coords: ValidatedRide[]) => {
+    if (!map || !coords) return;
+
+    if (coords.length === 0) {
+      map.flyTo({
+        center: [STARTING_LON, STARTING_LAT],
+        zoom: STARTING_ZOOM,
+        essential: true,
+        duration: 800,
+      });
+      return;
+    }
+
+    if (coords.length === 1) {
+      map.flyTo({
+        center: coords[0],
+        zoom: SINGLE_RIDE_ZOOM,
+        essential: true,
+        duration: 800,
+      });
+
+      return;
+    }
+
+    const bounds = new LngLatBounds();
+    coords.forEach((coord) => bounds.extend(coord));
+    map.fitBounds(bounds, { padding: 100, duration: 800 });
+  }
 
   return {
     subscribe: subscribe,
-    showEventCards: (bool) => {
+    showEventCards: (bool: boolean) => {
       update(store => ({
         ...store,
         eventCardsVisible: bool
       }))
     },
-    showOtherRides: (bool) => {
+    showOtherRides: (bool: boolean) => {
       update(store => ({
         ...store,
         otherRidesVisible: bool
       }))
     },
-    setSelectedRide: (ride) => {
+    setSelectedRide: (ride: RideData) => {
       update(store => ({
         ...store,
         selectedEvent: ride
       }))
     },
-    clearSelectedRides: () => {
+    clearSelectedRide: () => {
       update(store => ({
         ...store,
         selectedEvent: null
       }))
     },
-    setOtherRides: (rides) => {
+    setOtherRides: (rides: RideData[]) => {
       update(store => ({
         ...store,
         otherRides: rides
@@ -521,8 +596,18 @@ function createMapViewStore() {
         ...store,
         otherRides: []
       }))
+    },
+    setPrimaryRides: (rides: RideData[]) => {
+      update(store => ({
+        ...store,
+        primaryRides: rides
+      }))
+    },
+    fitMap: (mapInstance: Map) => {
+      const currentValidCoords = get(validRides)
+      fitMaptoRides(mapInstance, currentValidCoords)
     }
   }
 }
 
-export const mapViewStore = createMapViewStore()
+export const mapStore = createMapStore()

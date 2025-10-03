@@ -42,6 +42,9 @@ importers:
       '@tsconfig/svelte':
         specifier: ^5.0.5
         version: 5.0.5
+      '@types/geojson':
+        specifier: ^7946.0.16
+        version: 7946.0.16
       bits-ui:
         specifier: ^2.11.4
         version: 2.11.4(@internationalized/date@3.9.0)(svelte@5.38.8)
