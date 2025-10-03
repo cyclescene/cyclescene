@@ -12,7 +12,7 @@
 
 {#if $currentRide}
   <div
-    class="absolute top-[60px] bottom-[75px] min-h-[calc(100vh-115px)] left-0 w-full p-5 overflow-hidden z-50"
+    class="absolute top-0 bottom-[75px] min-h-[calc(100vh-115px)] left-0 w-full p-5 overflow-hidden z-50"
   >
     <ScrollArea class="h-full w-full" scrollbarYClasses={`hidden`}>
       <div class=" flex flex-col gap-5">

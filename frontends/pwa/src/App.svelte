@@ -103,31 +103,27 @@
   $: isMapVisible = $activeView === VIEW_MAP;
 </script>
 
-<main class="flex flex-col min-h[100vh]">
+<main class="flex flex-col max-h[100vh]">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
-  <div class="shrink relative">
-    <header class="shrink">
-      <svelte:component this={ActiveHeaderComponent} />
-    </header>
-  </div>
+  <header class="shrink">
+    <svelte:component this={ActiveHeaderComponent} />
+  </header>
 
-  <section class="grow">
-    <div class="map-view-container" class:hidden={!isMapVisible}>
+  <section class="grow view-container">
+    <div class:hidden={!isMapVisible}>
       <MapView />
     </div>
 
     {#if !isMapVisible && ActiveComponent}
-      <div class="map-view-container">
+      <div class=" view-container">
         <svelte:component this={ActiveComponent} />
       </div>
     {/if}
   </section>
 
-  <div class="shrink">
-    <footer>
-      <NavigationBar />
-    </footer>
-  </div>
+  <footer class="shrink">
+    <NavigationBar />
+  </footer>
 </main>
 
 <style>
@@ -158,6 +154,9 @@
     z-index: 100;
   }
 
+  section {
+    --section-height: call(100vh - var(--header-height) - var(--footer-height));
+  }
   .hidden {
     display: none;
   }
@@ -170,6 +169,11 @@
     right: 0;
     overflow-y: auto;
     z-index: 0;
+  }
+
+  .view-container {
+    position: relative;
+    /* margin-top: -60px; */
   }
 
   footer {

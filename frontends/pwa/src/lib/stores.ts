@@ -1,5 +1,5 @@
 import { CalendarDate, parseDate } from "@internationalized/date";
-import { LngLatBounds, type Map } from "maplibre-gl"
+import { LngLatBounds, type LngLatLike, type Map } from "maplibre-gl"
 import { getPastRides, getUpcomingRides } from "./api";
 import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
@@ -488,23 +488,32 @@ interface MapViewStore {
   eventCardsVisible: boolean,
   otherRidesVisible: boolean,
   selectedEvent?: RideData | null,
+  selectedEventCoords: LngLatLike | null
   primaryRides: RideData[],
   otherRides: RideData[]
 }
 //
-const rawMapStore = writable<MapViewStore>()
+const rawMapStore = writable<MapViewStore>({
+  eventCardsVisible: false,
+  otherRidesVisible: false,
+  selectedEvent: null,
+  selectedEventCoords: null,
+  primaryRides: [],
+  otherRides: []
+})
 
 export const validRides = derived(rawMapStore, ($state) => {
   return $state.primaryRides.filter(ride => ride.lon.Valid && ride.lat.Valid && !isNaN(ride.lat.Float64 as number) && !isNaN(ride.lon.Float64 as number)).map<ValidatedRide>(ride => ({
     id: ride.id,
     name: ride.title,
-    lat: ride.lat.Float64,
-    lng: ride.lon.Float64
+    lat: ride.lat.Float64 as number,
+    lng: ride.lon.Float64 as number
   }))
 })
 
 export const rideGeoJSON = derived(
   validRides, ($rides) => {
+
     const geoJson = {
       type: "FeatureCollection",
       features: $rides.map(coord => ({
@@ -525,7 +534,8 @@ export const rideGeoJSON = derived(
 )
 
 export const STARTING_ZOOM = 12
-const SINGLE_RIDE_ZOOM = 16
+export const SINGLE_RIDE_ZOOM = 16
+
 
 function createMapStore() {
   const { subscribe, update } = rawMapStore
@@ -553,6 +563,7 @@ function createMapStore() {
 
       return;
     }
+
 
     const bounds = new LngLatBounds();
     coords.forEach((coord) => bounds.extend(coord));
@@ -603,11 +614,39 @@ function createMapStore() {
         primaryRides: rides
       }))
     },
+    getRideById: (rideId: string) => {
+      const rides = get(mapStore).primaryRides
+
+      return rides.filter(ride => ride.id === rideId)[0]
+
+    },
     fitMap: (mapInstance: Map) => {
+      if (get(rawMapStore).selectedEvent) {
+        return
+      }
       const currentValidCoords = get(validRides)
+
       fitMaptoRides(mapInstance, currentValidCoords)
+    },
+    flyToSelected: (mapInstance: Map) => {
+      if (!mapInstance) return
+
+      update(store => ({ ...store, isPreformingSpecificAction: true }))
+      const selected = get(mapStore).selectedEvent
+
+      if (selected) {
+        const coords: LngLatLike = [selected.lon.Float64 as number, selected.lat.Float64 as number]
+        mapInstance.flyTo({
+          zoom: SINGLE_RIDE_ZOOM,
+          center: coords,
+          duration: 900,
+          essential: true
+        })
+      }
     }
   }
 }
+
+export const selectedRideId = derived(rawMapStore, ($state) => $state.selectedEvent?.id || "")
 
 export const mapStore = createMapStore()

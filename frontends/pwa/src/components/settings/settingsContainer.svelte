@@ -20,7 +20,7 @@
 </script>
 
 <div
-  class="absolute top-[60px] bottom-[55px] min-h-[calc(100vh_-_135px)] w-full p-5"
+  class="absolute top-0 bottom-[55px] min-h-[calc(100vh_-_135px)] w-full p-5"
 >
   <ScrollArea class={`relative`} scrollbarYClasses={`hidden`}>
     <div class="h-[calc(100vh_-_140px)] flex flex-col gap-4">
