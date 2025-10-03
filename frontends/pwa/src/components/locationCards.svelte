@@ -1,17 +1,17 @@
 <script lang="ts">
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-  import { mapStore } from "$lib/stores";
+  import { currentRide, mapStore } from "$lib/stores";
   import type { RideData } from "$lib/types";
   import Card from "./card.svelte";
 
-  let ride = $state<RideData | null>();
+  let ride = $state<RideData>();
 
   $effect(() => {
-    ride = $mapStore.selectedEvent;
+    ride = $currentRide;
   });
 </script>
 
-{#if $mapStore.eventCardsVisible && $mapStore.selectedEvent}
+{#if $mapStore.showCurrentRide && $currentRide}
   <div
     class="absolute bottom-[-20px] mb-14 left-0 w-full bg-transparent py-0 px-5 z-[1000]"
   >

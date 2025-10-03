@@ -1,7 +1,12 @@
 <script>
   import Button from "$lib/components/ui/button/button.svelte";
   import Calendar from "$lib/components/ui/calendar/calendar.svelte";
-  import { dateStore, goBackInHistory } from "$lib/stores";
+  import {
+    currentRideStore,
+    dateStore,
+    goBackInHistory,
+    mapStore,
+  } from "$lib/stores";
   import { getLocalTimeZone, today } from "@internationalized/date";
 
   const todaysDate = today(getLocalTimeZone());
@@ -9,6 +14,8 @@
 
   $effect(() => {
     dateStore.setSpecificDate(value);
+    currentRideStore.clearRide();
+    mapStore.showCurrentRide(false);
     goBackInHistory();
   });
 
@@ -19,7 +26,7 @@
 </script>
 
 <div
-  class="absolute top-[60px] bottom-[75px] min-h-[calc(100vh_-_115px)] w-full p-5 flex flex-col items-center justify-center"
+  class="date-picker absolute top-0 bottom-[75px] min-h-[calc(100vh_-_115px)] w-full p-5 flex flex-col items-center justify-center z-[1000]"
 >
   <Calendar bind:value class="p-5 rounded-xl text-2xl" />
 

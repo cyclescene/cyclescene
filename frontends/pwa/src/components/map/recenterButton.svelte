@@ -1,6 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/ui/button/button.svelte";
-  import { mapStore } from "$lib/stores";
+  import { currentRideStore, mapStore } from "$lib/stores";
   import type { Map } from "maplibre-gl";
   import ZoomOutIcon from "~icons/material-symbols/zoom-out-map-rounded";
 
@@ -8,7 +8,9 @@
 
   function handleRecenter() {
     if (map) {
-      mapStore.clearSelectedRide();
+      currentRideStore.clearRide();
+      mapStore.showCurrentRide(false);
+      mapStore.fitMap(map);
     }
   }
 </script>

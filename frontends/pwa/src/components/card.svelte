@@ -29,7 +29,7 @@
       "cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2, focus-visible:ring-ring focus-visible:ring-offset-2 gap-1",
     )}
     onclick={() => onCardClick(ride)}
-    on:keydown={(e) => onCardClick(ride)}
+    on:keydown={() => onCardClick(ride)}
   >
     <Card.Header class="">
       <Card.Title class={`${ride.cancelled ? "line-through" : ""} text-xl`}

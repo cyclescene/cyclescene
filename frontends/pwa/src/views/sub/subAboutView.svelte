@@ -7,7 +7,7 @@
 <!--          ABOUT SECTION START                   -->
 <!-- ============================================== -->
 <div
-  class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 absolute top-[60px] bottom-[75px] min-h-[calc(100vh_-_115px)]"
+  class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 absolute top-0 bottom-[55px] min-h-[calc(100vh_-_115px)]"
 >
   <ScrollArea class="relative" scrollbarYClasses={`hidden`}>
     <section class="space-y-6 h-[calc(100vh_-_160px)] flex flex-col gap-2">

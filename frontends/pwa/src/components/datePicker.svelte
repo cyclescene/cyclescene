@@ -8,6 +8,8 @@
     activeView,
     goBackInHistory,
     mapStore,
+    currentRideStore,
+    validRides,
   } from "../lib/stores";
 
   import IconChevronRight from "~icons/bxs/chevron-right";
@@ -15,8 +17,8 @@
 
   // Function to navigate between days
   function changeDay(offset) {
-    mapStore.clearSelectedRide();
-    mapStore.setSelectedRide(false);
+    currentRideStore.clearRide();
+    mapStore.showCurrentRide(false);
     if (offset > 0) {
       dateStore.addDays(offset);
     } else if (offset < 0) {
@@ -27,6 +29,7 @@
   function openDatePicker() {
     if ($activeView != VIEW_DATE_PICKER) {
       navigateTo(VIEW_DATE_PICKER);
+      console.log($activeView);
     } else {
       goBackInHistory();
     }

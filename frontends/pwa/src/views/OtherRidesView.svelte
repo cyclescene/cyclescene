@@ -1,6 +1,6 @@
 <script>
-    import { filteredNoAddress } from "../lib/stores";
-    import ListView from "./ListView.svelte";
+  import { ridesWithoutLocations } from "../lib/stores";
+  import ListView from "./ListView.svelte";
 </script>
 
-<ListView rides={$filteredNoAddress} />
+<ListView rides={$ridesWithoutLocations} />

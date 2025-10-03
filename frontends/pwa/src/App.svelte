@@ -87,7 +87,6 @@
     [VIEW_RIDE_DETAILS]: RideView,
     [VIEW_SAVED]: SavedView,
     [VIEW_SETTINGS]: SettingsView,
-    [VIEW_DATE_PICKER]: DatePickerView,
     [SUB_VIEW_APPEARANCE]: SubAppearanceView,
     [SUB_VIEW_TERMS_OF_USE]: SubTermsOfServiceView,
     [SUB_VIEW_PRIVACY_POLICY]: SubPrivacyPolicyView,
@@ -101,6 +100,7 @@
 
   $: ActiveComponent = viewMap[$activeView];
   $: isMapVisible = $activeView === VIEW_MAP;
+  $: isDatePickerVisible = $activeView === VIEW_DATE_PICKER;
 </script>
 
 <main class="flex flex-col max-h[100vh]">
@@ -112,6 +112,10 @@
   <section class="grow view-container">
     <div class:hidden={!isMapVisible}>
       <MapView />
+    </div>
+
+    <div class:hidden={!isDatePickerVisible}>
+      <DatePickerView />
     </div>
 
     {#if !isMapVisible && ActiveComponent}

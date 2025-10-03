@@ -346,8 +346,8 @@ export const currentRideStore = {
     currentRide.set(ride)
   },
   getRide: function() {
-    if (currentRide == initialRideState) {
-      return null
+    if (get(currentRide) === initialRideState) {
+      return initialRideState
     } else {
       return get(currentRide)
     }
@@ -360,7 +360,7 @@ export const currentRideStore = {
 
 // ALL RIDES STORE
 export const rides = createRidesStore()
-export const filteredNoAddress = derived(
+export const ridesWithoutLocations = derived(
   [rides, currentDate],
   ([$rides, $currentDate]) => {
     if (!$rides || !$rides.data || !$currentDate) {
@@ -388,7 +388,7 @@ export const filteredNoAddress = derived(
   }
 )
 
-export const filteredRides = derived(
+export const ridesWithLocations = derived(
   [rides, currentDate],
   ([$rides, $currentDate]) => {
     if (!$rides || !$rides.data || !$currentDate) {
@@ -413,7 +413,7 @@ export const filteredRides = derived(
   }
 );
 
-export const allRides = derived(
+export const todaysRides = derived(
   [rides, currentDate],
   ([$rides, $currentDate]) => {
     if (!$rides || !$rides.data || !$currentDate) {
@@ -485,25 +485,17 @@ export const allUpcomingCovidSafetyRides = derived([rides], ([$rides]) => {
 // MAP STORE
 //
 interface MapViewStore {
-  eventCardsVisible: boolean,
-  otherRidesVisible: boolean,
-  selectedEvent?: RideData | null,
-  selectedEventCoords: LngLatLike | null
-  primaryRides: RideData[],
-  otherRides: RideData[]
+  showCurrentRide: boolean
+  showNoLocationRideCard: boolean
 }
 //
 const rawMapStore = writable<MapViewStore>({
-  eventCardsVisible: false,
-  otherRidesVisible: false,
-  selectedEvent: null,
-  selectedEventCoords: null,
-  primaryRides: [],
-  otherRides: []
+  showCurrentRide: false,
+  showNoLocationRideCard: false
 })
 
-export const validRides = derived(rawMapStore, ($state) => {
-  return $state.primaryRides.filter(ride => ride.lon.Valid && ride.lat.Valid && !isNaN(ride.lat.Float64 as number) && !isNaN(ride.lon.Float64 as number)).map<ValidatedRide>(ride => ({
+export const validRides = derived([ridesWithLocations], ([$rides]) => {
+  return $rides.filter(ride => ride.lon.Valid && ride.lat.Valid && !isNaN(ride.lat.Float64 as number) && !isNaN(ride.lon.Float64 as number)).map<ValidatedRide>(ride => ({
     id: ride.id,
     name: ride.title,
     lat: ride.lat.Float64 as number,
@@ -513,7 +505,6 @@ export const validRides = derived(rawMapStore, ($state) => {
 
 export const rideGeoJSON = derived(
   validRides, ($rides) => {
-
     const geoJson = {
       type: "FeatureCollection",
       features: $rides.map(coord => ({
@@ -548,7 +539,7 @@ function createMapStore() {
         center: [STARTING_LON, STARTING_LAT],
         zoom: STARTING_ZOOM,
         essential: true,
-        duration: 800,
+        duration: 1000,
       });
       return;
     }
@@ -558,12 +549,11 @@ function createMapStore() {
         center: coords[0],
         zoom: SINGLE_RIDE_ZOOM,
         essential: true,
-        duration: 800,
+        duration: 1000,
       });
 
       return;
     }
-
 
     const bounds = new LngLatBounds();
     coords.forEach((coord) => bounds.extend(coord));
@@ -572,67 +562,40 @@ function createMapStore() {
 
   return {
     subscribe: subscribe,
-    showEventCards: (bool: boolean) => {
+    showCurrentRide: (bool: boolean) => {
       update(store => ({
         ...store,
-        eventCardsVisible: bool
+        showCurrentRide: bool
       }))
     },
-    showOtherRides: (bool: boolean) => {
+    showNoLoacttionsRides: (bool: boolean) => {
       update(store => ({
         ...store,
-        otherRidesVisible: bool
-      }))
-    },
-    setSelectedRide: (ride: RideData) => {
-      update(store => ({
-        ...store,
-        selectedEvent: ride
-      }))
-    },
-    clearSelectedRide: () => {
-      update(store => ({
-        ...store,
-        selectedEvent: null
-      }))
-    },
-    setOtherRides: (rides: RideData[]) => {
-      update(store => ({
-        ...store,
-        otherRides: rides
-      }))
-    },
-    clearOtherRides: () => {
-      update(store => ({
-        ...store,
-        otherRides: []
-      }))
-    },
-    setPrimaryRides: (rides: RideData[]) => {
-      update(store => ({
-        ...store,
-        primaryRides: rides
+        showNoLocationRideCard: bool
       }))
     },
     getRideById: (rideId: string) => {
-      const rides = get(mapStore).primaryRides
-
-      return rides.filter(ride => ride.id === rideId)[0]
-
+      return get(todaysRides).filter(ride => ride.id === rideId)[0]
     },
     fitMap: (mapInstance: Map) => {
-      if (get(rawMapStore).selectedEvent) {
-        return
-      }
       const currentValidCoords = get(validRides)
 
-      fitMaptoRides(mapInstance, currentValidCoords)
+      if (currentValidCoords.length === 0) {
+        fitMaptoRides(mapInstance, currentValidCoords)
+      }
+      setTimeout(
+        () => {
+          fitMaptoRides(mapInstance, currentValidCoords)
+        }, 50
+      )
     },
     flyToSelected: (mapInstance: Map) => {
       if (!mapInstance) return
 
       update(store => ({ ...store, isPreformingSpecificAction: true }))
-      const selected = get(mapStore).selectedEvent
+      const selected = get(currentRide)
+      console.log(selected);
+
 
       if (selected) {
         const coords: LngLatLike = [selected.lon.Float64 as number, selected.lat.Float64 as number]
@@ -647,6 +610,6 @@ function createMapStore() {
   }
 }
 
-export const selectedRideId = derived(rawMapStore, ($state) => $state.selectedEvent?.id || "")
+export const selectedRideId = derived(currentRide, ($ride) => $ride && $ride.id || "")
 
 export const mapStore = createMapStore()
