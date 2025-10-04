@@ -42,8 +42,25 @@ type Shift2BikeEvent struct {
 	Newsflash     any    `json:"newsflash"`
 	Status        string `json:"status"`
 	Endtime       string `json:"endtime"`
+
+	/// Location details
+	LocationID int      `json:"-"`
+	Location   Location `json:"-"`
+
+	/// Sourced From details
+	SourcedFrom string `json:"sourcedFrom"`
 }
 
 type Shift2BikeEvents struct {
 	Events []Shift2BikeEvent `json:"events"`
+}
+
+type Location struct {
+	ID             int     `json:"-"`
+	Address        string  `json:"address"`
+	Latitude       float64 `json:"lat"`
+	Longitude      float64 `json:"lng"`
+	Venue          string  `json:"venue"`
+	Details        string  `json:"details"`
+	NeedsGeocoding bool    `json:"-"`
 }

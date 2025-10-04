@@ -48,6 +48,8 @@ func main() {
 
 	////// READY TO START /////////////////////////
 
+	// get all previously saved locations from DB
+
 	// get upcoming Rides
 	shift2BikesEvents, err := scraperhelpers.GetRides()
 	if err != nil {
@@ -55,6 +57,28 @@ func main() {
 	}
 
 	for _, event := range shift2BikesEvents.Events {
-		fmt.Printf("Address: %s Venue: %s Location Details: %s\n", event.Address, event.Venue, event.Locdetails)
+		location := scraperhelpers.CreateLocationFromEvent(&event)
+		if !location.NeedsGeocoding {
+			fmt.Printf("SKIP: Lat: %v, Lng: %v\n", location.Latitude, location.Longitude)
+		}
+		geocodeQuery := scraperhelpers.CreateGeoCodingQuery(&location)
+		if location.NeedsGeocoding {
+			if location.Address == "" && location.Venue == "" {
+				fmt.Println("FALLBACK to default Portland Coords")
+			} else {
+				fmt.Printf("GEOCODE: %s\n", geocodeQuery)
+			}
+		}
 	}
+
+	// parse Starting location
+
+	// check if location has been saved prevoiusly
+
+	// store locations if they are new
+
+	// store ride information
+
+	/////// DONE ///////////////////////////
+
 }
