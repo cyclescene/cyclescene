@@ -10,7 +10,7 @@ import (
 )
 
 var coordinatesRegex = regexp.MustCompile(
-	`(-?\d{2,3}\.\d+)\s*[°\s]*[NnSs]?[,\s]+(-?\d{2,3}\.\d+)\s*[°\s]*[EeWw]?`,
+	`(-?\d+\.\d+)\s*[°\s]*[NnSs]?[,\s]+(-?\d+\.\d+)\s*[°\s]*[EeWw]?`,
 )
 
 func isValidPortlandCoordinate(lat float64, lng float64) bool {
