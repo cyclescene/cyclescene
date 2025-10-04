@@ -9,7 +9,6 @@
     goBackInHistory,
     mapStore,
     currentRideStore,
-    validRides,
   } from "../lib/stores";
 
   import IconChevronRight from "~icons/bxs/chevron-right";
