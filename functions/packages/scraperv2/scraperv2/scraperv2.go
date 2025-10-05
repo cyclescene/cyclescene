@@ -4,13 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"strings"
-
-	"github.com/joho/godotenv"
-	scraperhelpers "github.com/spacesedan/cyclescene/lib/scraper-helpers"
+	//
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	"golang.org/x/exp/slog"
+	scraperhelpers "scraperv2/lib/scraper-helpers"
 )
 
 const (
@@ -20,12 +19,7 @@ const (
 	EVENT_SOURCE   = "Shift2Bikes"
 )
 
-func main() {
-	// Load Envs (dev)
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
+func Main() {
 	// Check for ENV variables
 	// DB Vars
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_DB_RW_TOKEN") == "" {
@@ -36,12 +30,12 @@ func main() {
 	if os.Getenv("GOOGLE_GEOCODING_API_KEY") == "" {
 		log.Fatal("FATAL: GOOGLE_GEOCODING_API_KEY not properly set")
 	}
-
-	// set up logger
+	//
+	// // set up logger
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 	})))
-
+	//
 	// connect to DB(Turso)
 	dbURL := os.Getenv("TURSO_DB_URL")
 	authToken := os.Getenv("TURSO_DB_RW_TOKEN")
@@ -143,6 +137,6 @@ func main() {
 
 	}
 
-	/////// DONE ///////////////////////////
+	///// DONE ///////////////////////////
 
 }

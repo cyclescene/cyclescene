@@ -2,7 +2,7 @@ package scraperhelpers
 
 import (
 	"fmt"
-	"log/slog"
+	"golang.org/x/exp/slog"
 	"math"
 	"regexp"
 	"strconv"

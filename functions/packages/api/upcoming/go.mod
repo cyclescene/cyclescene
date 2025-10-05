@@ -1,4 +1,4 @@
-module spacesedan/bike-bae/api/upcoming
+module github.com/spacesedan/cyclescene/api/upcoming
 
 go 1.20
 
