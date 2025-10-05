@@ -2,10 +2,12 @@ package scraperhelpers
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"golang.org/x/oauth2/google"
@@ -13,6 +15,15 @@ import (
 
 const saCredentialsKey = "GOOGLE_SA_CREDENTIALS"
 const addressScope = "https://www.googleapis.com/auth/maps-platform.geocode.address"
+const (
+	// Portland Bounding Box
+	// SW Corner
+	PDX_SW_LAT = 45.0
+	PDX_SW_LNG = -123.0
+	// NE Corner
+	PDX_NE_LAT = 46.0
+	PDX_NE_LNG = -121.5
+)
 
 var authenticatedClient *http.Client
 
@@ -21,11 +32,15 @@ func getAuthenticatedClient(ctx context.Context) (*http.Client, error) {
 		return authenticatedClient, nil
 	}
 
-	credsJSON := os.Getenv(saCredentialsKey)
-	if credsJSON == "" {
+	credsB64 := os.Getenv(saCredentialsKey)
+	if credsB64 == "" {
 		return nil, fmt.Errorf("FATAL: Google Service Account credentials not found is %s", saCredentialsKey)
 	}
 
+	credsJSON, err := base64.StdEncoding.DecodeString(credsB64)
+	if err != nil {
+		return nil, fmt.Errorf("FATAL: failed to decode Base64 credentials %w", err)
+	}
 	creds, err := google.JWTConfigFromJSON([]byte(credsJSON), addressScope)
 	if err != nil {
 
@@ -53,7 +68,13 @@ func GeocodeQuery(query string) (float64, float64, error) {
 	}
 
 	q := req.URL.Query()
-	q.Add("regionCode", "us")
+	q.Add("regionCode", "US")
+
+	q.Add("locationBias.rectangle.low.latitude", strconv.FormatFloat(PDX_SW_LAT, 'f', -1, 64))
+	q.Add("locationBias.rectangle.low.longitude", strconv.FormatFloat(PDX_SW_LNG, 'f', -1, 64))
+	q.Add("locationBias.rectangle.high.latitude", strconv.FormatFloat(PDX_NE_LAT, 'f', -1, 64))
+	q.Add("locationBias.rectangle.high.longitude", strconv.FormatFloat(PDX_NE_LNG, 'f', -1, 64))
+
 	req.URL.RawQuery = q.Encode()
 
 	res, err := client.Do(req)
@@ -63,7 +84,6 @@ func GeocodeQuery(query string) (float64, float64, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		// fmt.Println(string(bodyBytes))
 		return 0.0, 0.0, fmt.Errorf("Google Geocoding API returned non-OK status code %d", res.StatusCode)
 	}
 

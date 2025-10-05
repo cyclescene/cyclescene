@@ -42,6 +42,7 @@ func CreateTables(db *sql.DB) error {
         webname TEXT,
         weburl TEXT,
 	
+				citycode TEXT NOT NULL,
 				ridesource TEXT NOT NULL,
         source_data TEXT NOT NULL
     );`
@@ -59,6 +60,31 @@ func CreateTables(db *sql.DB) error {
 	}
 
 	if _, err := db.Exec(createGeocodeCacheTableSQL); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func CreateTableIndexes(db *sql.DB) error {
+	createCityCodeIndexSQL := `
+	CREATE INDEX IF NOT EXISTS citycode_index ON rides (citycode);`
+
+	createDateIndexSQL := `
+	CREATE INDEX IF NOT EXISTS date_index ON rides (date);`
+
+	createGeocodeKeyIndexSQL := `
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_geocode_key on geocode_cache (location_key)`
+
+	if _, err := db.Exec(createCityCodeIndexSQL); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(createDateIndexSQL); err != nil {
+		return err
+	}
+
+	if _, err := db.Exec(createGeocodeKeyIndexSQL); err != nil {
 		return err
 	}
 
@@ -190,10 +216,11 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 						timedetails,
 						webname,
 						weburl,
+						citycode,
 						ridesource,
 						source_data
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(composite_event_id) DO UPDATE SET
             id=excluded.id,
             address=excluded.address,
@@ -220,6 +247,7 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
             venue=excluded.venue,
             webname=excluded.webname,
             weburl=excluded.weburl,
+						citycode=excluded.citycode,
 						ridesource=excluded.ridesource,
             source_data=excluded.source_data;
         `)
@@ -279,6 +307,7 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 			ride.Timedetails,
 			ride.Webname,
 			ride.Weburl,
+			ride.CityCode,
 			ride.SourcedFrom,
 			string(sourceData),
 		)

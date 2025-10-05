@@ -3,6 +3,7 @@ package scraperhelpers
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -19,7 +20,7 @@ func buildShift2BikesURLUpcoming() (string, error) {
 	year, month, day := nowInPortland.Date()
 	startDate := time.Date(year, month, day, 0, 0, 0, 0, location)
 
-	endDate := startDate.AddDate(0, 0, 90)
+	endDate := startDate.AddDate(0, 0, 99)
 
 	formattedStartDate := startDate.Format(time.RFC3339)
 	formattedEndDate := endDate.Format(time.RFC3339)
@@ -48,7 +49,7 @@ func buildShift2BikesURLPast() (string, error) {
 	year, month, day := nowInPortland.Date()
 	startDate := time.Date(year, month, day, 0, 0, 0, 0, location)
 
-	endDate := startDate.AddDate(0, 0, -90)
+	endDate := startDate.AddDate(0, 0, -99)
 
 	formattedStartDate := startDate.Format(time.RFC3339)
 	formattedEndDate := endDate.Format(time.RFC3339)
@@ -66,7 +67,7 @@ func buildShift2BikesURLPast() (string, error) {
 	return finalURL.String(), nil
 }
 
-func fetchAndDecode(url string, target interface{}) error {
+func fetchAndDecode(url string, target any) error {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 
 	client := &http.Client{}
@@ -84,6 +85,7 @@ func fetchAndDecode(url string, target interface{}) error {
 func getPastRides(events *Shift2BikeEvents) error {
 	url, err := buildShift2BikesURLPast()
 	if err != nil {
+		slog.Error("shift2Bikes API request failed", "url", url, "error", err.Error())
 		return err
 	}
 	return fetchAndDecode(url, &events)
@@ -92,6 +94,7 @@ func getPastRides(events *Shift2BikeEvents) error {
 func getUpcomingRides(events *Shift2BikeEvents) error {
 	url, err := buildShift2BikesURLUpcoming()
 	if err != nil {
+		slog.Error("shift2Bikes API request failed", "url", url, "error", err.Error())
 		return err
 	}
 	return fetchAndDecode(url, &events)

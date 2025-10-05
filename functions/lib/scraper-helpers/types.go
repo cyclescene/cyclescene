@@ -48,7 +48,8 @@ type Shift2BikeEvent struct {
 	Location   Location `json:"-"`
 
 	/// Sourced From details
-	SourcedFrom string `json:"sourcedFrom"`
+	SourcedFrom string `json:"sourcedfrom"`
+	CityCode    string `json:"citycode"`
 }
 
 type Shift2BikeEvents struct {

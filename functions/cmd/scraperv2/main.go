@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/joho/godotenv"
-	scraperhelpers "github.com/spacesedan/cyclescene/lib/scraper-helpers"
+	scraperhelpers "github.com/spacesedan/cyclescene/functions/lib/scraper-helpers"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
@@ -18,14 +18,11 @@ const (
 	FALLBACK_LNG   = -122.676483
 	FALLBACK_QUERY = "fallback"
 	EVENT_SOURCE   = "Shift2Bikes"
+	PDX_CITY_CODE  = "pdx"
 )
 
 func main() {
-	// Load Envs (dev)
-	if err := godotenv.Load(); err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
-	}
-
+	_ = godotenv.Load()
 	// Check for ENV variables
 	// DB Vars
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_DB_RW_TOKEN") == "" {
@@ -36,12 +33,12 @@ func main() {
 	if os.Getenv("GOOGLE_GEOCODING_API_KEY") == "" {
 		log.Fatal("FATAL: GOOGLE_GEOCODING_API_KEY not properly set")
 	}
-
-	// set up logger
+	//
+	// // set up logger
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 	})))
-
+	//
 	// connect to DB(Turso)
 	dbURL := os.Getenv("TURSO_DB_URL")
 	authToken := os.Getenv("TURSO_DB_RW_TOKEN")
@@ -55,7 +52,11 @@ func main() {
 	defer db.Close()
 
 	if err := scraperhelpers.CreateTables(db); err != nil {
-		log.Fatal("failed to create tables check turdo credentials")
+		log.Fatal("failed to create tables")
+	}
+
+	if err := scraperhelpers.CreateTableIndexes(db); err != nil {
+		log.Fatal("failed to create table indexes")
 	}
 
 	////// READY TO START /////////////////////////
@@ -69,19 +70,23 @@ func main() {
 	// get upcoming Rides
 	shift2BikesEvents, err := scraperhelpers.GetRides()
 	if err != nil {
-		fmt.Println("POOP")
+		fmt.Println("failed to get ride data")
 	}
 
 	var rideLocations []scraperhelpers.Location
 	for i := range shift2BikesEvents.Events {
 		event := &shift2BikesEvents.Events[i]
 		event.SourcedFrom = EVENT_SOURCE
+		event.CityCode = PDX_CITY_CODE
+
 		// parse Starting location
 		location := scraperhelpers.CreateLocationFromEvent(event)
 		geocodeQuery := scraperhelpers.CreateGeoCodingQuery(&location)
+		normalizedQuery := strings.ToLower(geocodeQuery)
 
 		location.Query = geocodeQuery
 
+		// locations where coords were avialable in the ride data
 		if !location.NeedsGeocoding {
 			event.Location = location
 			fmt.Printf("SKIP: Lat: %v, Lng: %v\n", location.Latitude, location.Longitude)
@@ -100,7 +105,9 @@ func main() {
 		}
 
 		// check cache for location
-		if cachedLoc, found := geocodeCache[strings.ToLower(geocodeQuery)]; found {
+		var cachedLoc scraperhelpers.GeoCodeCached
+		var found bool
+		if cachedLoc, found = geocodeCache[normalizedQuery]; found {
 			location.Latitude = cachedLoc.Latitude
 			location.Longitude = cachedLoc.Longitude
 			location.NeedsGeocoding = false
@@ -108,7 +115,6 @@ func main() {
 			fmt.Printf("SKIP (CACHE): %s\n", geocodeQuery)
 			continue
 		}
-
 		// make request to geocode API for location
 		fmt.Printf("GEOCODE: %s\n", geocodeQuery)
 
@@ -127,22 +133,29 @@ func main() {
 		location.Longitude = lng
 		location.NeedsGeocoding = false
 		event.Location = location
+
+		// prevent from running geocode API twice in the same run
+		geocodeCache[normalizedQuery] = scraperhelpers.GeoCodeCached{
+			Query:     normalizedQuery,
+			Latitude:  location.Latitude,
+			Longitude: location.Longitude,
+		}
+
+		// append any starting location that need to be geocoded
 		rideLocations = append(rideLocations, location)
 	}
 
 	// Get Locations ready to upsert into db
 	if err = scraperhelpers.BulkUpsertGeocodeData(db, rideLocations); err != nil {
-		slog.Error("unable to builk upsert ride locations", "locations_len", len(rideLocations), "error", err.Error())
-		panic(err)
+		slog.Error("unable to bulk upsert ride locations", "locations_len", len(rideLocations), "error", err.Error())
+		log.Fatalf("unable to bulk upsert ride locations: %v", err)
 	}
 
 	// store ride information
 	if err = scraperhelpers.BulkUpsertRideData(db, shift2BikesEvents.Events); err != nil {
-		slog.Error("unable to builk upsert ride data", "locations_len", len(rideLocations), "error", err.Error())
-		panic(err)
+		slog.Error("unable to bulk upsert ride data", "locations_len", len(rideLocations), "error", err.Error())
+		log.Fatalf("unable to bulk upsert ride data: %v", err)
 
 	}
-
-	/////// DONE ///////////////////////////
 
 }
