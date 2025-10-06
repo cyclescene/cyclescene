@@ -6,11 +6,9 @@
   export let rides = [];
 </script>
 
-<div
-  class="absolute top-0 bottom-[45px] min-h-[calc(100vh_-_115px)] w-full p-5"
->
+<div class="absolute top-0 bottom-[45px] scroll-area w-full p-5">
   <ScrollArea class={`relative`} scrollbarYClasses={"hidden"}>
-    <div class="h-[calc(100vh_-_115px)] flex flex-col gap-2">
+    <div class="scroll-area flex flex-col gap-2">
       {#if rides && rides.length > 0}
         {#each rides as ride (ride.id)}
           <Card {ride} />
@@ -23,3 +21,9 @@
     </div>
   </ScrollArea>
 </div>
+
+<style>
+  .scroll-area {
+    height: calc(100vh - var(--header-height) - var(--footer-height) - 40px);
+  }
+</style>

@@ -41,7 +41,7 @@
   }
 </script>
 
-<div class="w-full h-full flex justify-evenly">
+<div class="w-full h-full bg-background flex items-center justify-evenly z-[5]">
   {#each controls as view (view.name)}
     <Button
       disabled={false}

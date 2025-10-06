@@ -8,6 +8,7 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 import { STARTING_LAT, STARTING_LNG } from "./config";
 import { type ValidatedRide, type RideData } from "./types";
 import type * as GeoJSON from "geojson";
+import { formatDate } from "./utils";
 
 
 
@@ -100,13 +101,15 @@ function createRidesStore() {
   }
 }
 
-function createSavedRideStore() {
-  const { subscribe, set } = writable<{
-    loading: boolean,
-    data: RideData[],
-    error: String | null
 
-  }>({
+interface SavedRideStore {
+  loading: boolean;
+  data: RideData[];
+  error: string | null
+}
+
+function createSavedRideStore() {
+  const { subscribe, set } = writable<SavedRideStore>({
     loading: true,
     data: [],
     error: null
@@ -153,9 +156,10 @@ function createSavedRideStore() {
 }
 
 export const savedRidesStore = createSavedRideStore()
+
 export const allSavedRides = derived(
-  [savedRidesStore],
-  ([$savedRides]) => {
+  savedRidesStore,
+  ($savedRides) => {
     if (!$savedRides || !$savedRides.data) {
       return [];
     }
@@ -164,6 +168,29 @@ export const allSavedRides = derived(
     return $savedRides.data
   }
 )
+
+export const savedRidesSplitByPastAndUpcoming = derived(allSavedRides, ($rides) => {
+  const rides: { upcoming: RideData[]; past: RideData[] } = { upcoming: [], past: [] }
+
+  const todaysDate = today(getLocalTimeZone())
+
+  for (let i = 0; i < $rides.length; i++) {
+    const ride = $rides[i]
+    const rideDate = parseDate(ride.date)
+
+
+    if (todaysDate.compare(rideDate) <= 0) {
+      console.log("Past?");
+      rides.upcoming.push(ride)
+    } else {
+      console.log("UPCOMING");
+      rides.past.push(ride)
+    }
+  }
+
+  return rides
+})
+
 
 export const savedRidesGroupedByDate = derived(
   [savedRidesStore],

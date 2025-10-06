@@ -12,7 +12,6 @@
   import RideLayers from "./rideLayers.svelte";
   import RecenterButton from "./recenterButton.svelte";
   import LocationCards from "../locationCards.svelte";
-  import OtherRidesView from "../../views/OtherRidesView.svelte";
   import RidesNotShown from "../ride/ridesNotShown.svelte";
 
   const SOURCE_ID = "ride-source";
@@ -73,7 +72,7 @@
 
 <MapLibre
   bind:map={mapInstance}
-  class="w-full h-[calc(100vh-115px)]"
+  class="w-full h-[calc(100vh-120px)]"
   style={source}
   onclick={handleMapClick}
   attributionControl={false}
@@ -94,6 +93,3 @@
   <RidesNotShown />
   <LocationCards />
 </MapLibre>
-
-<style>
-</style>

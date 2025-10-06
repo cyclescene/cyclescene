@@ -36,7 +36,7 @@
 </script>
 
 <div
-  class="flex gap-5 items-center justify-center p-2.5 border-b-[1px] relative z-[500]"
+  class="flex gap-5 items-center justify-center p-2.5 border-b-[1px] relative z-[5]"
 >
   <Button
     disabled={false}

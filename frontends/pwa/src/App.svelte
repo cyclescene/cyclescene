@@ -35,7 +35,7 @@
   import OtherRidesView from "./views/OtherRidesView.svelte";
   import RideView from "./views/RideView.svelte";
   import SavedView from "./views/SavedView.svelte";
-  import SavedRideTopBar from "./components/saved/savedRideTopBar.svelte";
+  import SavedTopBar from "./components/saved/savedTopbar.svelte";
   import { ModeWatcher } from "mode-watcher";
   import SettingsView from "./views/SettingsView.svelte";
   import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
@@ -61,7 +61,7 @@
     [VIEW_DATE_PICKER]: DatePicker,
     [VIEW_OTHER_RIDES]: RideDetailsTopBar,
     [VIEW_RIDE_DETAILS]: RideDetailsTopBar,
-    [VIEW_SAVED]: SavedRideTopBar,
+    [VIEW_SAVED]: SavedTopBar,
     [VIEW_SETTINGS]: SettingsTopBar,
   };
 
@@ -105,7 +105,7 @@
 
 <main class="flex flex-col max-h[100vh]">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
-  <header class="shrink">
+  <header class="shrink h-(--header-height)">
     <svelte:component this={ActiveHeaderComponent} />
   </header>
 
@@ -119,12 +119,11 @@
     </div>
 
     {#if !isMapVisible && ActiveComponent}
-      <div class=" view-container">
+      <div class="grow view-container">
         <svelte:component this={ActiveComponent} />
       </div>
     {/if}
   </section>
-
   <footer class="shrink">
     <NavigationBar />
   </footer>
@@ -154,38 +153,18 @@
   header {
     width: 100vw;
     height: var(--header-height);
-    top: 0;
-    z-index: 100;
   }
 
-  section {
-    --section-height: call(100vh - var(--header-height) - var(--footer-height));
-  }
   .hidden {
     display: none;
   }
 
-  .map-view-container {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    overflow-y: auto;
-    z-index: 0;
-  }
-
   .view-container {
     position: relative;
-    /* margin-top: -60px; */
   }
 
   footer {
     height: var(--footer-height);
     width: 100vw;
-    position: absolute;
-    height: var(--header-height);
-    bottom: 0;
-    z-index: 100;
   }
 </style>
