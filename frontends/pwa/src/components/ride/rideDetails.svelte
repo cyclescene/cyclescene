@@ -22,7 +22,7 @@
         <RideMap ride={$currentRide} />
         <!-- </div> -->
         <h2 class="text-3xl">{$currentRide.title}</h2>
-        <p>{$currentRide.newsflash?.String}</p>
+        <p>{$currentRide.newsflash}</p>
         <RideLabels ride={$currentRide} />
 
         <Card.Root>
@@ -39,7 +39,7 @@
           <Card.Header>
             <Card.Description>Meetup Location</Card.Description>
             <Card.Title class="text-2xl">
-              {$currentRide.venue?.String}</Card.Title
+              {$currentRide.venue}</Card.Title
             >
             <Card.Description>{$currentRide.address}</Card.Description>
             <Card.Description
@@ -49,37 +49,37 @@
             >
           </Card.Header>
 
-          {#if $currentRide.locdetails?.String != ""}
-            <Card.Footer>{$currentRide.locdetails?.String}</Card.Footer>
+          {#if $currentRide.locdetails != ""}
+            <Card.Footer>{$currentRide.locdetails}</Card.Footer>
           {/if}
         </Card.Root>
 
-        {#if $currentRide.image.String != ""}
+        {#if $currentRide.image != ""}
           <img
-            src={SHIFT2BIKES_URL + $currentRide.image.String}
+            src={SHIFT2BIKES_URL + $currentRide.image}
             alt={`Image for ${$currentRide.title} bike ride`}
           />
         {/if}
 
-        <p class="text-lg">{$currentRide.details?.String}</p>
+        <p class="text-lg">{$currentRide.details}</p>
         <Card.Root>
           <Card.Header>
-            <Card.Title>{$currentRide.organizer?.String}</Card.Title>
+            <Card.Title>{$currentRide.organizer}</Card.Title>
 
-            {#if $currentRide.email?.Valid}
+            {#if $currentRide.email}
               <Card.Title>
-                {$currentRide.email?.String}
+                {$currentRide.email}
               </Card.Title>
             {/if}
 
-            {#if $currentRide.weburl?.Valid && $currentRide.webname?.Valid}
+            {#if $currentRide.weburl && $currentRide.webname}
               <a
-                href={$currentRide.weburl?.String}
+                href={$currentRide.weburl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <Card.Title class="text-yellow-400 mt-1"
-                  >{$currentRide.webname?.String}</Card.Title
+                  >{$currentRide.webname}</Card.Title
                 >
               </a>
             {/if}

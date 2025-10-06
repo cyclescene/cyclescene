@@ -4,8 +4,8 @@ import { getPastRides, getUpcomingRides } from "./api";
 import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
-import { SvelteMap } from "svelte/reactivity";
-import { STARTING_LAT, STARTING_LON } from "./config";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
+import { STARTING_LAT, STARTING_LNG } from "./config";
 import { type ValidatedRide, type RideData } from "./types";
 import type * as GeoJSON from "geojson";
 
@@ -13,7 +13,7 @@ import type * as GeoJSON from "geojson";
 
 // Portland, OR coordinates
 const FALLBACK_LAT = STARTING_LAT
-const FALLBACK_LON = STARTING_LON
+const FALLBACK_LNG = STARTING_LNG
 
 // views
 export const VIEW_MAP = 'map'
@@ -370,14 +370,14 @@ export const ridesWithoutLocations = derived(
     return $rides.data.filter(ride => {
       const rideDate = parseDate(ride.date);
 
-      const lat = ride.lat?.Float64
-      const lon = ride.lon?.Float64
+      const lat = ride.lat
+      const lon = ride.lng
 
       // if lat, lon undefined, null or == 0 lets not show them on the map
       const isLatOrLonMissing = (lat === 0 || lat === undefined || lat === null || lon === 0 || lon === undefined || lon === null)
 
       // if lat, lon == the fallback lets also not show them on the map
-      const isFallbackCoords = (lat === FALLBACK_LAT && lon === FALLBACK_LON)
+      const isFallbackCoords = (lat === FALLBACK_LAT && lon === FALLBACK_LNG)
 
       const hasNoValidAddress = isLatOrLonMissing || isFallbackCoords
 
@@ -398,12 +398,12 @@ export const ridesWithLocations = derived(
     return $rides.data.filter(ride => {
       const rideDate = parseDate(ride.date);
 
-      const lat = ride.lat?.Float64
-      const lon = ride.lon?.Float64
+      const lat = ride.lat
+      const lon = ride.lng
 
       // if lat, lon are not valid lets not show them on the map
       const hasValidAddress = (
-        lat !== undefined && lat !== null && lat !== 0 && lon !== undefined && lon !== null && lon !== 0 && !(lat === FALLBACK_LAT && lon === FALLBACK_LON)
+        lat !== undefined && lat !== null && lat !== 0 && lon !== undefined && lon !== null && lon !== 0 && !(lat === FALLBACK_LAT && lon === FALLBACK_LNG)
       )
 
       const isSameDayAsCurrent = $currentDate.compare(rideDate) === 0
@@ -495,32 +495,48 @@ const rawMapStore = writable<MapViewStore>({
 })
 
 export const validRides = derived([ridesWithLocations], ([$rides]) => {
-  return $rides.filter(ride => ride.lon.Valid && ride.lat.Valid && !isNaN(ride.lat.Float64 as number) && !isNaN(ride.lon.Float64 as number)).map<ValidatedRide>(ride => ({
+  return $rides.filter(ride => !isNaN(ride.lat as number) && !isNaN(ride.lng as number)).map<ValidatedRide>(ride => ({
     id: ride.id,
     name: ride.title,
-    lat: ride.lat.Float64 as number,
-    lng: ride.lon.Float64 as number
+    lat: ride.lat as number,
+    lng: ride.lng as number
   }))
 })
 
 export const rideGeoJSON = derived(
   validRides, ($rides) => {
-    const geoJson = {
-      type: "FeatureCollection",
-      features: $rides.map(coord => ({
-        type: "Feature" as const,
-        geometry: {
-          type: "Point" as const,
-          coordinates: [coord.lng, coord.lat]
-        },
-        properties: {
-          id: coord.id,
-          name: coord.name
-        }
-      }))
+
+    const seenCoords: Record<string, number> = {}
+    const features = new Array($rides.length)
+
+    for (let i = 0; i < $rides.length; i++) {
+      const ride = $rides[i]
+      let lng = ride.lng
+      let lat = ride.lat
+
+      let key = `${lng}_${lat}`
+      let dupCount = seenCoords[key] ?? 0
+
+      if (dupCount > 0) {
+        const offset = dupCount * 0.0009
+        lat += offset
+        lng += offset
+        key = `${lng}_${lat}`
+      }
+
+      seenCoords[key] = dupCount + 1
+
+      features[i] = {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lng, lat] },
+        properties: { id: ride.id, name: ride.name }
+      }
     }
 
-    return geoJson as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
+    return {
+      type: "FeatureCollection",
+      features
+    } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
   }
 )
 
@@ -536,7 +552,7 @@ function createMapStore() {
 
     if (coords.length === 0) {
       map.flyTo({
-        center: [STARTING_LON, STARTING_LAT],
+        center: [STARTING_LNG, STARTING_LAT],
         zoom: STARTING_ZOOM,
         essential: true,
         duration: 1000,
@@ -568,7 +584,7 @@ function createMapStore() {
         showCurrentRide: bool
       }))
     },
-    showNoLoacttionsRides: (bool: boolean) => {
+    showNoLocationsRides: (bool: boolean) => {
       update(store => ({
         ...store,
         showNoLocationRideCard: bool
@@ -594,11 +610,10 @@ function createMapStore() {
 
       update(store => ({ ...store, isPreformingSpecificAction: true }))
       const selected = get(currentRide)
-      console.log(selected);
 
 
       if (selected) {
-        const coords: LngLatLike = [selected.lon.Float64 as number, selected.lat.Float64 as number]
+        const coords: LngLatLike = [selected.lng as number, selected.lat as number]
         mapInstance.flyTo({
           zoom: SINGLE_RIDE_ZOOM,
           center: coords,

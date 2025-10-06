@@ -62,7 +62,7 @@ func GeocodeQuery(query string) (float64, float64, error) {
 	baseURL := "https://geocode.googleapis.com/v4beta/geocode/address/"
 
 	var req *http.Request
-	req, err = http.NewRequest(http.MethodGet, baseURL+query, nil)
+	req, err = http.NewRequest(http.MethodGet, baseURL, nil)
 	if err != nil {
 		return 0.0, 0.0, err
 	}
@@ -70,10 +70,13 @@ func GeocodeQuery(query string) (float64, float64, error) {
 	q := req.URL.Query()
 	q.Add("regionCode", "US")
 
-	q.Add("locationBias.rectangle.low.latitude", strconv.FormatFloat(PDX_SW_LAT, 'f', -1, 64))
-	q.Add("locationBias.rectangle.low.longitude", strconv.FormatFloat(PDX_SW_LNG, 'f', -1, 64))
-	q.Add("locationBias.rectangle.high.latitude", strconv.FormatFloat(PDX_NE_LAT, 'f', -1, 64))
-	q.Add("locationBias.rectangle.high.longitude", strconv.FormatFloat(PDX_NE_LNG, 'f', -1, 64))
+	q.Add("locationBias.rectangle.low.latitude", strconv.FormatFloat(45.4325, 'f', -1, 64))
+	q.Add("locationBias.rectangle.low.longitude", strconv.FormatFloat(-122.8367, 'f', -1, 64))
+	q.Add("locationBias.rectangle.high.latitude", strconv.FormatFloat(45.7500, 'f', -1, 64))
+	q.Add("locationBias.rectangle.high.longitude", strconv.FormatFloat(-122.4702, 'f', -1, 64))
+	q.Add("address.addressLines", query)
+	q.Add("address.administrativeArea", "OR")
+	q.Add("address.locality", "Portland")
 
 	req.URL.RawQuery = q.Encode()
 
@@ -84,6 +87,8 @@ func GeocodeQuery(query string) (float64, float64, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
+		// bodyBtyes, _ := io.ReadAll(res.Body)
+		// fmt.Println(string(bodyBtyes))
 		return 0.0, 0.0, fmt.Errorf("Google Geocoding API returned non-OK status code %d", res.StatusCode)
 	}
 
@@ -108,6 +113,8 @@ func GeocodeQuery(query string) (float64, float64, error) {
 
 	lat := googleResponse.Results[0].Location.Latitude
 	lng := googleResponse.Results[0].Location.Longitude
+
+	fmt.Println(lat, lng)
 
 	return lat, lng, nil
 }

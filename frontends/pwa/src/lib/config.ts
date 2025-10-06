@@ -3,8 +3,8 @@ const CONFIG = [
     "city-code": "pdx",
     "city-name": "Portland",
     "starting-coords": {
-      "lat": 45.515232,
-      "lon": -122.6783853
+      "lat": 45.523064,
+      "lng": -122.676483
     }
   },
   {
@@ -12,7 +12,7 @@ const CONFIG = [
     "city-name": "Salt Lake City",
     "starting-coords": {
       "lat": 40.76078,
-      "lon": -111.89105
+      "lng": -111.89105
     }
   }
 ]
@@ -35,7 +35,7 @@ const CITY_DATA = (() => {
 
 export const CITY_CODE = CITY_DATA['city-code']
 export const STARTING_LAT = CITY_DATA['starting-coords'].lat
-export const STARTING_LON = CITY_DATA['starting-coords'].lon
+export const STARTING_LNG = CITY_DATA['starting-coords'].lng
 
 export const FULL_CITY_CONFIG = CITY_DATA
 

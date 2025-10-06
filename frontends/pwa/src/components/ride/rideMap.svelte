@@ -7,8 +7,8 @@
   const { ride } = $props();
 
   const RIDE_COORDS = {
-    lat: ride.lat?.Float64,
-    lon: ride.lon?.Float64,
+    lat: ride.lat,
+    lng: ride.lng,
   };
 
   const SOURCE_ID = "ride-source";

@@ -20,17 +20,13 @@
   const validRides = $derived(
     rides
       .filter(
-        (ride) =>
-          ride.lon.Valid &&
-          ride.lat.Valid &&
-          !isNaN(ride.lon.Float64 as number) &&
-          !isNaN(ride.lat.Float64 as number),
+        (ride) => !isNaN(ride.lng as number) && !isNaN(ride.lat as number),
       )
       .map<ValidatedRide>((ride) => ({
         id: ride.id,
         name: ride.title,
-        lat: ride.lat.Float64 as number,
-        lng: ride.lon.Float64 as number,
+        lat: ride.lat as number,
+        lng: ride.lng as number,
       })),
   );
 

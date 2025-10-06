@@ -34,7 +34,7 @@
         if (selectedRide) {
           currentRideStore.setRide(selectedRide);
           mapStore.showCurrentRide(true);
-          mapStore.showOtherRides(false);
+          mapStore.showNoLocationsRides(false);
           if (mapInstance) {
             mapStore.flyToSelected(mapInstance);
           }

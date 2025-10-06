@@ -9,10 +9,6 @@
   function onShowNotShown() {
     navigateTo(VIEW_OTHER_RIDES);
   }
-
-  $effect(() => {
-    console.log($ridesWithoutLocations);
-  });
 </script>
 
 {#if $mapStore.showNoLocationRideCard && $ridesWithoutLocations.length > 0}
