@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	scraperhelpers "github.com/spacesedan/cyclescene/functions/lib/scraper-helpers"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -22,7 +22,8 @@ const (
 )
 
 func main() {
-	_ = godotenv.Load()
+	// used in development
+	// _ = godotenv.Load()
 	// Check for ENV variables
 	// DB Vars
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_DB_RW_TOKEN") == "" {

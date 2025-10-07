@@ -15,10 +15,11 @@ var db *sql.DB
 
 func init() {
 	var err error
+	// Used while in development
 	// err = godotenv.Load()
-	if err != nil {
-		log.Fatalf("failed to read environment variables: %v", err)
-	}
+	// if err != nil {
+	// 	log.Fatalf("failed to read environment variables: %v", err)
+	// }
 	db, err = ConnectToDB()
 	if err != nil {
 		log.Fatalf("unable to connect to TursoDB: %v", err)

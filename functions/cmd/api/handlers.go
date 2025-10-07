@@ -5,18 +5,31 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"slices"
 
 	chi "github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 )
 
+var allowedDomains = []string{
+	"https://cyclescene.cc",
+	"https://www.cyclescene.cc",
+	"https://form.cyclescene.cc",
+	"https://pdx.cyclescene.cc",
+	"https://slc.cyclescene.cc",
+}
+
+func isAllowedOrigin(_ *http.Request, origin string) bool {
+	return slices.Contains(allowedDomains, origin)
+}
+
 func NewRideAPIRouter(db *sql.DB) http.Handler {
 	r := chi.NewMux()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
+		AllowOriginFunc:  isAllowedOrigin,
 		AllowedMethods:   []string{http.MethodGet},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},

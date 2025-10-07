@@ -103,7 +103,7 @@ func getUpcomingRides(db *sql.DB, cityCode string) ([]RideFromDB, error) {
 	todayStr := now.Format("2006-01-02")
 
 	query := `
-    SELECT id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+    SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
     FROM rides
     WHERE 
 			cityCode = ?
@@ -128,7 +128,7 @@ func getPastRides(db *sql.DB, cityCode string) ([]RideFromDB, error) {
 	sevenDaysAgoStr := sevenDaysAgo.Format("2006-01-02")
 
 	query := `
-    SELECT id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+    SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
     FROM rides
     WHERE 
 				cityCode = ?
