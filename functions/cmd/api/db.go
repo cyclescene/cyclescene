@@ -106,7 +106,7 @@ func getUpcomingRides(db *sql.DB, cityCode string) ([]RideFromDB, error) {
     SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
     FROM rides
     WHERE 
-			cityCode = ?
+			citycode = ?
 			AND
 			date >= ?
     ORDER BY date ASC, starttime ASC;`
@@ -131,9 +131,22 @@ func getPastRides(db *sql.DB, cityCode string) ([]RideFromDB, error) {
     SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
     FROM rides
     WHERE 
-				cityCode = ?
+				citycode = ?
 				AND
         date BETWEEN ? AND ?
     ORDER BY date DESC, starttime DESC;`
 	return scanRides(db, query, cityCode, sevenDaysAgoStr, todayStr)
+}
+
+func getRide(db *sql.DB, cityCode, rideId string) ([]RideFromDB, error) {
+
+	query := `
+    SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+    FROM rides
+    WHERE 
+				composite_event_id = ?
+				AND
+				citycode = ?;`
+
+	return scanRides(db, query, rideId, cityCode)
 }

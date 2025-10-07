@@ -2,15 +2,16 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import * as Card from "$lib/components/ui/card";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-  import { downloadCalendarFile } from "$lib/ics";
   import { currentRide } from "$lib/stores";
   import { formatDate, formatTime } from "$lib/utils";
   import RideLabels from "./rideLabels.svelte";
   import RideMap from "./rideMap.svelte";
 
-  const ride = $derived($currentRide);
-
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
+  const CITY_CODE = import.meta.env.VITE_CITY_CODE;
   const SHIFT2BIKES_URL = "https://www.shift2bikes.org/";
+
+  const ride = $derived($currentRide);
 
   function handleOpenNativeMapApp() {
     if (ride) {
@@ -19,9 +20,22 @@
     }
   }
 
-  function handleAddtoCalendar() {
+  async function handleAddtoCalendar() {
     if (ride) {
-      downloadCalendarFile(ride);
+      const url = `${API_BASE}/ics?id=${ride.id}&city=${CITY_CODE}`;
+      const res = await fetch(url);
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = "ride.ics";
+        link.click();
+
+        URL.revokeObjectURL(blobUrl);
+      }
     }
   }
 </script>
