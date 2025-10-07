@@ -2,8 +2,9 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import * as Card from "$lib/components/ui/card";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
+  import { downloadCalendarFile } from "$lib/ics";
   import { currentRide } from "$lib/stores";
-  import { formatDate, formatTime, formatToICS } from "$lib/utils";
+  import { formatDate, formatTime } from "$lib/utils";
   import RideLabels from "./rideLabels.svelte";
   import RideMap from "./rideMap.svelte";
 
@@ -18,85 +19,10 @@
     }
   }
 
-  function getRideDateTime(date: string, time: string): Date {
-    return new Date(`${date} ${time}`);
-  }
-
   function handleAddtoCalendar() {
-    // Safety check that the ride object is available
-    if (!ride) {
-      console.error("Cannot add to calendar: ride object is null.");
-      return;
+    if (ride) {
+      downloadCalendarFile(ride);
     }
-
-    // --- 1. Determine Start and End Times ---
-    const rideDate = ride.date;
-    const startTime = ride.starttime || "00:00:00";
-    let endTime = ride.endtime || "";
-
-    if (!endTime) {
-      // Estimate 2 hours long if end time is missing
-      const startDateTime = getRideDateTime(rideDate, startTime);
-      const estimatedEndDateTime = new Date(
-        startDateTime.getTime() + 2 * 60 * 60 * 1000,
-      );
-
-      // Manually build the 24-hour time string
-      const pad = (num: number) => String(num).padStart(2, "0");
-      endTime = `${pad(estimatedEndDateTime.getHours())}:${pad(estimatedEndDateTime.getMinutes())}:${pad(estimatedEndDateTime.getSeconds())}`;
-    }
-
-    // --- 2. Format to ICS (Using your assumed helper functions) ---
-    // Generate current timestamp for file creation
-    const DTSTAMP = formatToICS(
-      new Date().toISOString().slice(0, 10),
-      new Date().toLocaleTimeString("en-US", { hour12: false }),
-    );
-
-    const DTSTART = formatToICS(rideDate, startTime);
-    const DTEND = formatToICS(rideDate, endTime);
-
-    // --- 3. Construct ICS Content (The text file) ---
-    // Clean up description and add shareable link to details
-    const DETAILS = `DESCRIPTION:${ride.details.replace(/[\r\n]/g, "\\n")}\\nURL:${ride.shareable}`;
-    const LOCATION = `${ride.venue || ride.address}`;
-
-    const ICS_CONTENT = `BEGIN:VCALENDAR
-      VERSION:2.0
-      PRODID:-//CycleScene//NONSGML V1.0//EN
-      BEGIN:VEVENT
-      UID:${ride.id}@cyclescene.com
-      DTSTAMP:${DTSTAMP}
-      DTSTART:${DTSTART}
-      DTEND:${DTEND}
-      SUMMARY:${ride.title}
-      LOCATION:${LOCATION}
-      ${DETAILS}
-      END:VEVENT
-      END:VCALENDAR`;
-
-    // --- 4. Trigger Download (The iOS/Safari Fix) ---
-    const blob = new Blob([ICS_CONTENT], {
-      type: "text/calendar;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-
-    // Create a temporary link element
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${ride.title.replace(/[\s\W]+/g, "_")}_${ride.date}.ics`;
-
-    // Append to body (required for some browsers)
-    document.body.appendChild(link);
-
-    link.click();
-
-    // 5. Clean up temporary objects
-    // Use a slight delay to ensure the browser registers the download before cleanup
-    setTimeout(() => {
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    }, 100);
   }
 </script>
 
