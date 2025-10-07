@@ -24,18 +24,14 @@
     if (ride) {
       const url = `${API_BASE}/ics?id=${ride.id}&city=${CITY_CODE}`;
       const res = await fetch(url);
+      const icsContent = await res.text();
 
-      if (res.ok) {
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
+      if (!icsContent) return;
 
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = "ride.ics";
-        link.click();
+      const encodedContent = encodeURIComponent(icsContent);
+      const dataUrl = `data:text/calendar;charset=utf8,${encodedContent}`;
 
-        URL.revokeObjectURL(blobUrl);
-      }
+      window.open(dataUrl, "_self");
     }
   }
 </script>

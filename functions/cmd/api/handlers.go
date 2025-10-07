@@ -230,8 +230,9 @@ func GenerateICSHandler(db *sql.DB, fetcher rideFetcher) http.HandlerFunc {
 
 		// Set the Content-Disposition header to force the browser to download the file
 		filename := url.QueryEscape(ride.Title) // URL-encode the filename
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.ics\"", filename))
-		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("filename=\"%s.ics\"", filename))
+		// w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(icsContent)))
 
 		// Write the content to the HTTP response
