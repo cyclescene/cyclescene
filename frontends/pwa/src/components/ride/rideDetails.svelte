@@ -16,7 +16,19 @@
   function handleOpenNativeMapApp() {
     if (ride) {
       const url = `https://www.google.com/maps/search/?api=1&query=${ride.lat},${ride.lng}`;
-      window.open(url, "_blank");
+      if (
+        window.matchMedia("(display-mode: standalone)").matches ||
+        /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      ) {
+        // 2. Mobile/Installed PWA Mode: Use window.open(url, '_self')
+        // This is the most reliable command to force the OS to trigger the Calendar intent.
+        // It causes a brief, full-screen navigation event that is necessary.
+        window.open(url, "_self");
+      } else {
+        // 3. Desktop Browser Mode: Use the classic window.open(url, '_blank')
+        // This opens a new tab and prevents the user from losing their SPA window.
+        window.open(url, "_blank");
+      }
     }
   }
 
