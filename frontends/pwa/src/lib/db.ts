@@ -1,4 +1,5 @@
 import { openDB } from "idb"
+import type { RideData } from "./types"
 
 const DB_NAME = 'cycle-scene-pdx'
 const ALLRIDES_STORE_NAME = 'rides'
@@ -21,22 +22,14 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
   }
 })
 
-/**
- * Saves an array of ride objects to IndexedDB, orverwriting existing data.
- * @param {Array<Object>} rides - array of rides to save
- */
-export async function saveRidesToDB(rides) {
+export async function saveRidesToDB(rides: RideData[]) {
   const db = await dbPromise
   const tx = db.transaction(ALLRIDES_STORE_NAME, "readwrite")
   await Promise.all(rides.map(ride => tx.store.put(ride))).catch(e => console.error(e))
   await tx.done
 }
 
-/**
- * Retrieves all rides from IndexedDB
- * @returns {Promise<Array<Object>>} - an array of ride objects
- */
-export async function getRidesfromDB() {
+export async function getRidesfromDB(): Promise<RideData[]> {
   const db = await dbPromise
   return await db.getAll(ALLRIDES_STORE_NAME)
 }
@@ -45,7 +38,7 @@ export async function getRidesfromDB() {
 // LOGIC for user instance saved rides ////////////////////////////////
 
 // saves a ride to the saved ride store
-export async function addSavedRide(ride) {
+export async function addSavedRide(ride: RideData) {
   const db = await dbPromise
   const tx = db.transaction(SAVED_RIDES_STORE_NAME, "readwrite")
   try {
@@ -58,7 +51,7 @@ export async function addSavedRide(ride) {
 }
 
 // remove a saved ride
-export async function deleteSavedRide(rideID) {
+export async function deleteSavedRide(rideID: string) {
   const db = await dbPromise
   const tx = db.transaction(SAVED_RIDES_STORE_NAME, "readwrite")
   try {
@@ -86,7 +79,7 @@ export async function clearSavedRides() {
 
 }
 
-export async function savedRideExists(rideId) {
+export async function savedRideExists(rideId: string) {
   const db = await dbPromise
   const tx = db.transaction(SAVED_RIDES_STORE_NAME)
   let objectStore = tx.objectStore(SAVED_RIDES_STORE_NAME)

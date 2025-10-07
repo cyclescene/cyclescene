@@ -26,6 +26,21 @@ importers:
       vite-plugin-ngrok:
         specifier: ^1.1.2
         version: 1.1.2(vite@7.1.5(jiti@2.5.1)(lightningcss@1.30.1)(terser@5.44.0))
+      workbox-cacheable-response:
+        specifier: ^7.3.0
+        version: 7.3.0
+      workbox-expiration:
+        specifier: ^7.3.0
+        version: 7.3.0
+      workbox-precaching:
+        specifier: ^7.3.0
+        version: 7.3.0
+      workbox-routing:
+        specifier: ^7.3.0
+        version: 7.3.0
+      workbox-strategies:
+        specifier: ^7.3.0
+        version: 7.3.0
     devDependencies:
       '@internationalized/date':
         specifier: ^3.9.0
@@ -45,6 +60,9 @@ importers:
       '@types/geojson':
         specifier: ^7946.0.16
         version: 7946.0.16
+      '@types/workbox-sw':
+        specifier: ^4.3.7
+        version: 4.3.7
       bits-ui:
         specifier: ^2.11.4
         version: 2.11.4(@internationalized/date@3.9.0)(svelte@5.38.8)
@@ -1204,6 +1222,49 @@ packages:
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
+
+  '@types/workbox-background-sync@4.3.2':
+    resolution: {integrity: sha512-WAp8TxDW8QAs6A2ns2NQlti5MVov/P0bN0TEUPYjhzVqzQa5VQSVSCUA03MLJFkb+kdqvqhcOwWlcbuIgepSsQ==}
+
+  '@types/workbox-broadcast-update@4.3.1':
+    resolution: {integrity: sha512-JAwv2fHu9pTMvu1wKSR5sanTAR6ne8jXBE/MYo4bDs7ipVqM9OZ+M9RO3aXtNXI7oh+8uWgPxHam/7OGZF8d4Q==}
+
+  '@types/workbox-build@5.1.0':
+    resolution: {integrity: sha512-kAu7EuhMG/h10bH9zxaUYLtfOQ7AczNvpzGzfW9ZPhlP6pcrx3gVhhxhTlU6AvIb5Q2udvSzwhRyvLcHHg+HiA==}
+    deprecated: This is a stub types definition. workbox-build provides its own type definitions, so you do not need this installed.
+
+  '@types/workbox-cacheable-response@4.3.1':
+    resolution: {integrity: sha512-gXOrC5bBwjDu2R6mDFoY0HYhH6+IuaU00SvDDhSOAZSOjPwn8DLPZAQC58xZFLG+ShsvbQw/cT84uZouAdHz9A==}
+
+  '@types/workbox-core@4.3.1':
+    resolution: {integrity: sha512-KTXHNijPQ+LpEdS+MvSdFn+YBzdfoNzgWjkTy68WrByVrsVU0wzE9536fCBIZrbruaEUcmf50vY94crpF3Vong==}
+
+  '@types/workbox-expiration@4.3.1':
+    resolution: {integrity: sha512-sIcKaG5KVN4OvvvdTk57Mdi49QwXPPMYv6ztc/0nGNvdczHUY5w/b4MZbR11ouEbc5PPKCMAawdu9KreMVmZ4g==}
+
+  '@types/workbox-google-analytics@4.3.1':
+    resolution: {integrity: sha512-qDPehZ8ewDbs0VBCbeAozvktz8pBNcF+NYIWrOzq9EwmpifvUoWpKU/iPTIZI7hph/74ROnFFS5clbmtIMfz7Q==}
+
+  '@types/workbox-navigation-preload@4.3.0':
+    resolution: {integrity: sha512-yv4iMch2cM1rW2GTFjtEHAmUJfYtWnHENdR9TrjziO47czDSulLU/UzflmS/L9alQNP7GyHpegDWBJwtKad/Mg==}
+
+  '@types/workbox-precaching@4.3.1':
+    resolution: {integrity: sha512-FDpEzz2iiArZkIhOANoU8WbL3EdvnzA+DZmtDLLgysRJB/iHPHhvzjyveRwfVQh7QOk3O+c5hINlnldVMEPb1g==}
+
+  '@types/workbox-range-requests@4.3.0':
+    resolution: {integrity: sha512-IlZcWZtGlpT4OhEdCdWeMkHHOO5yVwDqmuJq1WtgtjyIwm/mwwVPYGLVeVOE62m8sQ2L9Ziqfem2h9UmabBDmg==}
+
+  '@types/workbox-routing@4.3.1':
+    resolution: {integrity: sha512-2TYTiMcF6lMdMU36zUZPyQurpM8xso3Ad6XnFDdlSZowukoFy6pwZV+oT27z/jU1eaa+QgtPkdYFrS5KsJDMOQ==}
+
+  '@types/workbox-strategies@4.3.1':
+    resolution: {integrity: sha512-jD3LwQpxIzaOThzj9OroMT8Ci9XAmAB5apSAv91WfYQ9jbRB0/+gsxuhLy+BQMERziU8w0hK24SOA/YZr0jhyw==}
+
+  '@types/workbox-streams@4.3.0':
+    resolution: {integrity: sha512-PYI7eAOQ9Dj/cu/WcROOfSsn29pC9gjCudK+hQBSWgAaxfHBmNFQGh7EvtZ3BzOJhjj3O0pEV5l6aA55oBRxBQ==}
+
+  '@types/workbox-sw@4.3.7':
+    resolution: {integrity: sha512-hHuet6bQ3WmDBdaSfI/oFqhUzhHspxwGoV749BO649uyAlueLG0sX7wrqjhFhhZ6MYBYbWIeL2EmNX3bvZMOVw==}
 
   acorn@8.15.0:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
@@ -3676,6 +3737,73 @@ snapshots:
       '@types/geojson': 7946.0.16
 
   '@types/trusted-types@2.0.7': {}
+
+  '@types/workbox-background-sync@4.3.2':
+    dependencies:
+      '@types/workbox-core': 4.3.1
+
+  '@types/workbox-broadcast-update@4.3.1':
+    dependencies:
+      '@types/workbox-core': 4.3.1
+
+  '@types/workbox-build@5.1.0':
+    dependencies:
+      workbox-build: 7.3.0
+    transitivePeerDependencies:
+      - '@types/babel__core'
+      - supports-color
+
+  '@types/workbox-cacheable-response@4.3.1':
+    dependencies:
+      '@types/workbox-core': 4.3.1
+
+  '@types/workbox-core@4.3.1': {}
+
+  '@types/workbox-expiration@4.3.1':
+    dependencies:
+      '@types/workbox-core': 4.3.1
+
+  '@types/workbox-google-analytics@4.3.1': {}
+
+  '@types/workbox-navigation-preload@4.3.0': {}
+
+  '@types/workbox-precaching@4.3.1':
+    dependencies:
+      '@types/workbox-core': 4.3.1
+
+  '@types/workbox-range-requests@4.3.0':
+    dependencies:
+      '@types/workbox-core': 4.3.1
+
+  '@types/workbox-routing@4.3.1': {}
+
+  '@types/workbox-strategies@4.3.1':
+    dependencies:
+      '@types/workbox-core': 4.3.1
+      '@types/workbox-routing': 4.3.1
+
+  '@types/workbox-streams@4.3.0':
+    dependencies:
+      '@types/workbox-routing': 4.3.1
+
+  '@types/workbox-sw@4.3.7':
+    dependencies:
+      '@types/workbox-background-sync': 4.3.2
+      '@types/workbox-broadcast-update': 4.3.1
+      '@types/workbox-build': 5.1.0
+      '@types/workbox-cacheable-response': 4.3.1
+      '@types/workbox-core': 4.3.1
+      '@types/workbox-expiration': 4.3.1
+      '@types/workbox-google-analytics': 4.3.1
+      '@types/workbox-navigation-preload': 4.3.0
+      '@types/workbox-precaching': 4.3.1
+      '@types/workbox-range-requests': 4.3.0
+      '@types/workbox-routing': 4.3.1
+      '@types/workbox-strategies': 4.3.1
+      '@types/workbox-streams': 4.3.0
+    transitivePeerDependencies:
+      - '@types/babel__core'
+      - supports-color
 
   acorn@8.15.0: {}
 

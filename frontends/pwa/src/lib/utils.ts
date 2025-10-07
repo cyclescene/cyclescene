@@ -1,12 +1,10 @@
 import { clsx, } from "clsx";
 import { twMerge } from "tailwind-merge";
 
-import { parseTime } from "@internationalized/date";
-import { DateFormatter } from "@internationalized/date";
-import { parseDate } from "@internationalized/date";
-import { getLocalTimeZone } from "@internationalized/date";
-import { today } from "@internationalized/date";
+import { parseTime, DateFormatter, parseDate, getLocalTimeZone, today } from "@internationalized/date";
 import { SvelteMap } from "svelte/reactivity";
+import type { RideData } from "./types";
+
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
@@ -33,7 +31,32 @@ export function formatTime(timeString) {
   return timeFormatter.format(dateForFormatting)
 }
 
-export function formatDate(dateString) {
+export function formatToICS(dateString: string, timeString: string): string {
+  // Combine date and time strings (e.g., "2025-10-06 19:00:00")
+  const combinedString = `${dateString} ${timeString}`;
+  const date = new Date(combinedString);
+
+  if (isNaN(date.getTime())) {
+    // Fallback for an invalid date/time string
+    console.error("Invalid date/time passed to formatToICS:", combinedString);
+    return formatToICS(new Date().toISOString().slice(0, 10), "00:00:00");
+  }
+
+  // Function to pad numbers
+  const pad = (num: number) => String(num).padStart(2, '0');
+
+  // Convert to UTC/Zulu Time (The required ICS standard)
+  const year = date.getUTCFullYear();
+  const month = pad(date.getUTCMonth() + 1);
+  const day = pad(date.getUTCDate());
+  const hour = pad(date.getUTCHours());
+  const minute = pad(date.getUTCMinutes());
+  const second = pad(date.getUTCSeconds());
+
+  return `${year}${month}${day}T${hour}${minute}${second}Z`;
+}
+
+export function formatDate(dateString: string) {
   if (!dateString) {
     return "";
   }
@@ -69,7 +92,7 @@ export function formatDate(dateString) {
 
 }
 
-export function getSortedUniqueDatesWithToday(savedRides) {
+export function getSortedUniqueDatesWithToday(savedRides: RideData[]) {
   const existingCalendarDates = savedRides.map(ride => ride.date);
 
   const todaysCalendarDate = today(getLocalTimeZone())

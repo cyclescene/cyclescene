@@ -1,14 +1,10 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+import type { RideData } from "./types"
 
-/**
- * helper function to handle fetch requests and errors
- * @param {string} endpoint - specific API endpoint to call
- * @param {object} [options={}] Optional fetch options (method, headers, body)
- * @returns {Promise<any>} A promise that resolves to the JSON response data
- * @throws {Error} Throws an error if the network request fails or the server responds with error status
- */
-async function apiFetch(endpoint, options = {}) {
-  const url = `${API_BASE_URL}${endpoint}`
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const CITY_CODE = import.meta.env.VITE_CITY_CODE
+
+async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<RideData[]> {
+  const url = `${API_BASE_URL}${endpoint}?city=${CITY_CODE}`
 
   try {
     const response = await fetch(url, options)
@@ -25,20 +21,11 @@ async function apiFetch(endpoint, options = {}) {
 }
 
 
-/**
- * Fetches all upcoming rides to call the '/upcoming' endpoint
- * @returns {Promise<Array>} a promise that resolves to an array of upcoming ride objects
- */
-export async function getUpcomingRides() {
+export async function getUpcomingRides(): Promise<RideData[]> {
   return apiFetch('/upcoming')
 }
 
-
-/**
- * Fetches all past rides (last 7 days) from the API
- * @returns {Promise<Array>} a promise that resolves to an array of past rides
- */
-export async function getPastRides() {
+export async function getPastRides(): Promise<RideData[]> {
   return apiFetch('/past')
 }
 

@@ -47,11 +47,10 @@
   import SubTermsOfServiceView from "./views/sub/subTermsOfServiceView.svelte";
   import SubChangelogView from "./views/sub/subChangelogView.svelte";
   import { SvelteSet } from "svelte/reactivity";
+  import SubDataView from "./views/sub/subDataView.svelte";
 
   onMount(() => {
     rides.init();
-    rides.fetchUpcoming();
-
     savedRidesStore.init();
   });
 
@@ -95,7 +94,7 @@
     [SUB_VIEW_COVID_SAFETY_RIDES]: SubRideListView,
     [SUB_VIEW_ABOUT]: SubAboutView,
     [SUB_VIEW_CHANGE_LOG]: SubChangelogView,
-    [SUB_VIEW_DATA]: SubAboutView,
+    [SUB_VIEW_DATA]: SubDataView,
   };
 
   $: ActiveComponent = viewMap[$activeView];

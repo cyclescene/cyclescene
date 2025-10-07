@@ -14,13 +14,41 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import { mode } from "mode-watcher";
 
+  let ride = $derived(currentRideStore.getRide());
+  let rideExists = $state(false);
+  let loading = $state(true);
+
   function handleGoBack() {
     goBackInHistory();
     currentRideStore.clearRide();
   }
 
-  let rideExists = $state(false);
-  let loading = $state(true);
+  async function copyToClipboard() {
+    try {
+      await navigator.clipboard.writeText(ride.shareable);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function handleShareRide() {
+    if (navigator.share && ride) {
+      navigator.share({
+        title: ride.title,
+        url: ride.shareable,
+      });
+    }
+    if (navigator.clipboard && ride) {
+      copyToClipboard(ride.shareable)
+        .then(() => {
+          toast("Link copied to clipboard!");
+        })
+        .catch(() => {
+          toast("Could not copy link. Please manually copy the URL.");
+        });
+    }
+  }
 
   $effect(() => {
     (async () => {
@@ -33,7 +61,6 @@
   });
 
   async function handleSavedRide() {
-    const ride = currentRideStore.getRide();
     if (rideExists) {
       toast.promise(savedRidesStore.deleteRide(ride.id), {
         loading: "Removing...",
@@ -76,6 +103,14 @@
     <Button
       variant="ghost"
       disabled={false}
+      class="h-10 w-10"
+      onclick={handleShareRide}
+    >
+      <ShareIcon />
+    </Button>
+    <Button
+      variant="ghost"
+      disabled={false}
       class={`h-10 w-10`}
       onclick={handleSavedRide}
     >
@@ -84,9 +119,6 @@
       {:else}
         <UnsavedIcon />
       {/if}
-    </Button>
-    <Button variant="ghost" disabled={false} class="h-10 w-10">
-      <ShareIcon />
     </Button>
   </div>
 </div>

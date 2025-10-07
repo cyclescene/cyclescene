@@ -3,14 +3,87 @@
   import * as Card from "$lib/components/ui/card";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
   import { currentRide } from "$lib/stores";
-  import { formatDate, formatTime } from "$lib/utils";
+  import { formatDate, formatTime, formatToICS } from "$lib/utils";
   import RideLabels from "./rideLabels.svelte";
   import RideMap from "./rideMap.svelte";
 
+  const ride = $derived($currentRide);
+
   const SHIFT2BIKES_URL = "https://www.shift2bikes.org/";
+
+  function handleOpenNativeMapApp() {
+    if (ride) {
+      const url = `https://www.google.com/maps/search/?api=1&query=${ride.lat},${ride.lng}`;
+      window.open(url, "_blank");
+    }
+  }
+
+  function getRideDateTime(date: string, time: string): Date {
+    return new Date(`${date} ${time}`);
+  }
+
+  function handleAddtoCalendar() {
+    if (ride) {
+      // --- 1. Determine Start and End Times ---
+      const rideDate = ride.date;
+      const startTime = ride.starttime || "00:00:00";
+      let endTime = ride.endtime || "";
+
+      if (!endTime) {
+        // If endtime is missing, calculate an end time (e.g., 2 hours later)
+        const startDateTime = getRideDateTime(rideDate, startTime);
+        const estimatedEndDateTime = new Date(
+          startDateTime.getTime() + 2 * 60 * 60 * 1000,
+        );
+
+        const pad = (num: number) => String(num).padStart(2, "0");
+        endTime = `${pad(estimatedEndDateTime.getHours())}:${pad(estimatedEndDateTime.getMinutes())}:${pad(estimatedEndDateTime.getSeconds())}`;
+      }
+
+      // --- 2. Format to ICS ---
+      const DTSTAMP = formatToICS(
+        new Date().toISOString().slice(0, 10),
+        new Date().toLocaleTimeString("en-US", { hour12: false }),
+      );
+      const DTSTART = formatToICS(rideDate, startTime);
+      const DTEND = formatToICS(rideDate, endTime);
+
+      // --- 3. Construct ICS Content ---
+      const DETAILS = `DESCRIPTION:${ride.details.replace(/[\r\n]/g, "\\n")}\\nURL:${ride.shareable}`;
+      const LOCATION = `${ride.venue || ride.address}`;
+
+      const ICS_CONTENT = `BEGIN:VCALENDAR
+        VERSION:2.0
+        PRODID:-//CycleScene//NONSGML V1.0//EN
+        BEGIN:VEVENT
+        UID:${ride.id}@cyclescene.com
+        DTSTAMP:${DTSTAMP}
+        DTSTART:${DTSTART}
+        DTEND:${DTEND}
+        SUMMARY:${ride.title}
+        LOCATION:${LOCATION}
+        ${DETAILS}
+        END:VEVENT
+        END:VCALENDAR`;
+
+      // --- 4. Trigger Download ---
+      const blob = new Blob([ICS_CONTENT], {
+        type: "text/calendar;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${ride.title.replace(/[\s\W]+/g, "_")}_${ride.date}.ics`;
+
+      link.click();
+
+      URL.revokeObjectURL(url);
+    }
+  }
 </script>
 
-{#if $currentRide}
+{#if ride}
   <div
     class="absolute top-0 bottom-[75px] min-h-[calc(100vh-115px)] left-0 w-full p-5 overflow-hidden z-50"
   >
@@ -19,67 +92,63 @@
         <!-- <div -->
         <!--   class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl" -->
         <!-- > -->
-        <RideMap ride={$currentRide} />
+        <RideMap {ride} />
         <!-- </div> -->
-        <h2 class="text-3xl">{$currentRide.title}</h2>
-        <p>{$currentRide.newsflash}</p>
-        <RideLabels ride={$currentRide} />
+        <h2 class="text-3xl">{ride.title}</h2>
+        <p>{ride.newsflash}</p>
+        <RideLabels {ride} />
 
-        <Card.Root>
+        <Card.Root role="button" tabindex="0" onclick={handleAddtoCalendar}>
           <Card.Header>
             <Card.Description>Meetup Time</Card.Description>
             <Card.Title class="text-2xl">
-              {formatTime($currentRide?.starttime)}
-              {formatDate($currentRide.date)}
+              {formatTime(ride?.starttime)}
+              {formatDate(ride.date)}
             </Card.Title>
           </Card.Header>
         </Card.Root>
 
-        <Card.Root>
+        <Card.Root role="button" tabindex="0" onclick={handleOpenNativeMapApp}>
           <Card.Header>
             <Card.Description>Meetup Location</Card.Description>
             <Card.Title class="text-2xl">
-              {$currentRide.venue}</Card.Title
+              {ride.venue}</Card.Title
             >
-            <Card.Description>{$currentRide.address}</Card.Description>
+            <Card.Description>{ride.address}</Card.Description>
             <Card.Description
-              >{$currentRide.loopride
+              >{ride.loopride
                 ? "Ride is a loop"
                 : "Ride not a loop"}</Card.Description
             >
           </Card.Header>
 
-          {#if $currentRide.locdetails != ""}
-            <Card.Footer>{$currentRide.locdetails}</Card.Footer>
+          {#if ride.locdetails != ""}
+            <Card.Footer>{ride.locdetails}</Card.Footer>
           {/if}
         </Card.Root>
 
-        {#if $currentRide.image != ""}
+        {#if ride.image != ""}
           <img
-            src={SHIFT2BIKES_URL + $currentRide.image}
-            alt={`Image for ${$currentRide.title} bike ride`}
+            src={SHIFT2BIKES_URL + ride.image}
+            alt={`Image for ${ride.title} bike ride`}
           />
         {/if}
 
-        <p class="text-lg">{$currentRide.details}</p>
+        <p class="text-lg">{ride.details}</p>
         <Card.Root>
           <Card.Header>
-            <Card.Title>{$currentRide.organizer}</Card.Title>
+            <Card.Title>{ride.organizer}</Card.Title>
 
-            {#if $currentRide.email}
+            {#if ride.email}
               <Card.Title>
-                {$currentRide.email}
+                {ride.email}
               </Card.Title>
             {/if}
 
-            {#if $currentRide.weburl && $currentRide.webname}
-              <a
-                href={$currentRide.weburl}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+            {#if ride.weburl && ride.webname}
+              <a href={ride.weburl} target="_blank" rel="noopener noreferrer">
                 <Card.Title class="text-yellow-400 mt-1"
-                  >{$currentRide.webname}</Card.Title
+                  >{ride.webname}</Card.Title
                 >
               </a>
             {/if}

@@ -4,13 +4,10 @@ import { getPastRides, getUpcomingRides } from "./api";
 import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
+import { SvelteMap } from "svelte/reactivity";
 import { STARTING_LAT, STARTING_LNG } from "./config";
 import { type ValidatedRide, type RideData } from "./types";
 import type * as GeoJSON from "geojson";
-import { formatDate } from "./utils";
-
-
 
 // Portland, OR coordinates
 const FALLBACK_LAT = STARTING_LAT
@@ -55,49 +52,107 @@ export const SUB_VIEWS = [
 export const TILE_URLS = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-
 };
+
+const RIDES_SYNC_TAG = "update-rides-6hr"
+const SYNC_INTERVAL = 6 * 60 * 60 * 1000
+
 
 function createRidesStore() {
   const { subscribe, set, update } = writable<{
     loading: boolean,
-    data: RideData[],
+    rideData: RideData[],
     error: String | null
-
   }>({
     loading: true,
-    data: [],
+    rideData: [],
     error: null
   })
+
+
+  function updateStoreAndDB(freshRides: RideData[]) {
+    saveRidesToDB(freshRides).then(() => {
+      getRidesfromDB()
+        .then((rides) => (set({ loading: false, rideData: rides, error: null })))
+        .catch(e => {
+          update((store) => ({
+            ...store, loading: false, error: `${e}`
+          }))
+        })
+    })
+      .catch(err => {
+        console.error("Failed to save fresh rides to IDB: ", err);
+      })
+  }
+
+  if ('serviceWorker' in navigator) {
+    const swMessageListener = (event: MessageEvent) => {
+      const data = event.data
+      if (data.type === "RIDES_UPDATE_SUCCESSFULL" && data.data) {
+        updateStoreAndDB(data.data)
+      }
+    }
+    navigator.serviceWorker.addEventListener('message', swMessageListener)
+
+  }
+
+
 
   return {
     subscribe,
     init: async () => {
       try {
+        let cachedRides = await getRidesfromDB()
+        // only do a manual fetch if cached rides are empty
+        if (cachedRides.length === 0) {
+          const upcomingRides = await getUpcomingRides()
+          const pastRides = await getPastRides()
+          await saveRidesToDB([...upcomingRides, ...pastRides])
+          cachedRides = await getPastRides()
+        }
+
+        set({ loading: false, rideData: cachedRides, error: null })
+      } catch (err) {
+        update(store => ({ ...store, loading: false, error: "Unable to get idb ride data" }))
+      }
+
+      if ('serviceWorker' in navigator && 'PeriodicSyncManager' in self) {
+        navigator.serviceWorker.ready
+          .then(registration => {
+            registration.periodicSync.register(
+              RIDES_SYNC_TAG,
+              {
+                minInterval: SYNC_INTERVAL
+              }
+            )
+          })
+          .then(() => console.log("Periodic Sync Registered"))
+          .catch(err => console.error("Periodic Sync Registration Failed: ", err))
+      }
+    },
+    refetch: async () => {
+      try {
+        update(store => ({ ...store, loading: true }))
         const cachedRides = await getRidesfromDB()
-        set({ loading: false, data: cachedRides, error: null })
-      } catch (error) {
-        set({ loading: false, data: [], error: "Could not load cached rides" })
-      }
-    },
-    fetchUpcoming: async () => {
-      try {
-        const freshRides = await getUpcomingRides();
-        set({ loading: false, data: freshRides, error: null })
-        await saveRidesToDB(freshRides)
-      } catch (error) {
-        update(store => ({ ...store, loading: false, error: `API fetch failed, relying on cached data: ${error}` }))
-      }
-    },
-    fetchPast: async () => {
-      try {
-        const freshRides = await getPastRides();
-        set({ loading: false, data: freshRides, error: null })
-        await saveRidesToDB(freshRides)
-      } catch (error) {
-        update(store => ({ ...store, loading: false, error: `API fetch failed, relying on cached data: ${error}` }))
+        set({ loading: false, rideData: cachedRides, error: null })
+      } catch (e) {
+        update(() => ({ loading: false, rideData: [], error: `${e}` }))
+        console.error(e);
       }
     }
+  }
+}
+
+export function triggerForegroundSync() {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({
+      type: "FORCE_FOREGROUND_SYNC"
+    })
+
+    console.log("Forground sync requested by user");
+
+  } else {
+    alert("Cannot connect to the backgoung worker. Please check PWA installation")
   }
 }
 
@@ -135,7 +190,7 @@ function createSavedRideStore() {
         set({ loading: false, data: [], error: "Could not load saved rides" })
       }
     },
-    deleteRide: async (rideID: String) => {
+    deleteRide: async (rideID: string) => {
       try {
         await deleteSavedRide(rideID)
         const savedRides = await getAllSavedRides()
@@ -145,7 +200,7 @@ function createSavedRideStore() {
       }
 
     },
-    isRideSaved: async (rideID: String) => {
+    isRideSaved: async (rideID: string) => {
       try {
         const exists = await savedRideExists(rideID)
         return exists
@@ -390,11 +445,11 @@ export const rides = createRidesStore()
 export const ridesWithoutLocations = derived(
   [rides, currentDate],
   ([$rides, $currentDate]) => {
-    if (!$rides || !$rides.data || !$currentDate) {
+    if (!$rides || !$rides.rideData || !$currentDate) {
       return [];
     }
 
-    return $rides.data.filter(ride => {
+    return $rides.rideData.filter(ride => {
       const rideDate = parseDate(ride.date);
 
       const lat = ride.lat
@@ -418,11 +473,11 @@ export const ridesWithoutLocations = derived(
 export const ridesWithLocations = derived(
   [rides, currentDate],
   ([$rides, $currentDate]) => {
-    if (!$rides || !$rides.data || !$currentDate) {
+    if (!$rides || !$rides.rideData || !$currentDate) {
       return [];
     }
 
-    return $rides.data.filter(ride => {
+    return $rides.rideData.filter(ride => {
       const rideDate = parseDate(ride.date);
 
       const lat = ride.lat
@@ -443,11 +498,11 @@ export const ridesWithLocations = derived(
 export const todaysRides = derived(
   [rides, currentDate],
   ([$rides, $currentDate]) => {
-    if (!$rides || !$rides.data || !$currentDate) {
+    if (!$rides || !$rides.rideData || !$currentDate) {
       return [];
     }
 
-    return $rides.data.filter(ride => {
+    return $rides.rideData.filter(ride => {
       const rideDate = parseDate(ride.date);
 
       const isSameDayAsCurrent = $currentDate.compare(rideDate) === 0
@@ -458,12 +513,12 @@ export const todaysRides = derived(
 )
 
 export const allUpcomingAdultOnlyRides = derived([rides], ([$rides]) => {
-  if (!$rides || !$rides.data) {
+  if (!$rides || !$rides.rideData) {
     return [];
   }
 
 
-  return $rides.data.filter(ride => {
+  return $rides.rideData.filter(ride => {
     const rideDate = parseDate(ride.date)
     //
     const isTodayOrUpcoming = initialDate.compare(rideDate) <= 0
@@ -475,12 +530,12 @@ export const allUpcomingAdultOnlyRides = derived([rides], ([$rides]) => {
 })
 
 export const allUpcomingFamilyFriendlyRides = derived([rides], ([$rides]) => {
-  if (!$rides || !$rides.data) {
+  if (!$rides || !$rides.rideData) {
     return [];
   }
 
 
-  return $rides.data.filter(ride => {
+  return $rides.rideData.filter(ride => {
     const rideDate = parseDate(ride.date)
     //
     const isTodayOrUpcoming = initialDate.compare(rideDate) <= 0
@@ -492,12 +547,12 @@ export const allUpcomingFamilyFriendlyRides = derived([rides], ([$rides]) => {
 })
 
 export const allUpcomingCovidSafetyRides = derived([rides], ([$rides]) => {
-  if (!$rides || !$rides.data) {
+  if (!$rides || !$rides.rideData) {
     return [];
   }
 
 
-  return $rides.data.filter(ride => {
+  return $rides.rideData.filter(ride => {
     const rideDate = parseDate(ride.date)
     //
     const isTodayOrUpcoming = initialDate.compare(rideDate) <= 0
@@ -574,10 +629,10 @@ export const SINGLE_RIDE_ZOOM = 16
 function createMapStore() {
   const { subscribe, update } = rawMapStore
 
-  const fitMaptoRides = (map: Map, coords: ValidatedRide[]) => {
-    if (!map || !coords) return;
+  const fitMaptoRides = (map: Map, rides: ValidatedRide[]) => {
+    if (!map || !rides) return;
 
-    if (coords.length === 0) {
+    if (rides.length === 0) {
       map.flyTo({
         center: [STARTING_LNG, STARTING_LAT],
         zoom: STARTING_ZOOM,
@@ -587,9 +642,9 @@ function createMapStore() {
       return;
     }
 
-    if (coords.length === 1) {
+    if (rides.length === 1) {
       map.flyTo({
-        center: coords[0],
+        center: rides[0],
         zoom: SINGLE_RIDE_ZOOM,
         essential: true,
         duration: 1000,
@@ -599,7 +654,7 @@ function createMapStore() {
     }
 
     const bounds = new LngLatBounds();
-    coords.forEach((coord) => bounds.extend(coord));
+    rides.forEach((ride) => bounds.extend(ride));
     map.fitBounds(bounds, { padding: 100, duration: 800 });
   }
 

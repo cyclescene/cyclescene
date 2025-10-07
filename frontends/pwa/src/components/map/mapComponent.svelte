@@ -42,7 +42,7 @@
     }
   }
 
-  function handleMapClick(e: MapLayerMouseEvent) {
+  function handleMapClick(_: MapLayerMouseEvent) {
     currentRideStore.clearRide();
   }
 
