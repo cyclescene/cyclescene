@@ -33,9 +33,6 @@ export const SUB_VIEW_PRIVACY_POLICY = "privacyPolicy"
 export const SUB_VIEW_TERMS_OF_USE = 'termsOfUse'
 export const SUB_VIEW_CHANGE_LOG = 'changeLog'
 export const SUB_VIEW_CONTACT = 'contact'
-
-
-
 export const SUB_VIEWS = [
   SUB_VIEW_APPEARANCE,
   SUB_VIEW_DATA,
@@ -96,8 +93,6 @@ function createRidesStore() {
 
   }
 
-
-
   return {
     subscribe,
     init: async () => {
@@ -108,7 +103,8 @@ function createRidesStore() {
           const upcomingRides = await getUpcomingRides()
           const pastRides = await getPastRides()
           await saveRidesToDB([...upcomingRides, ...pastRides])
-          cachedRides = await getPastRides()
+          // on first load refresh the page so that rides are ready to view
+          location.reload()
         }
 
         set({ loading: false, rideData: cachedRides, error: null })
@@ -155,7 +151,6 @@ export function triggerForegroundSync() {
     alert("Cannot connect to the backgoung worker. Please check PWA installation")
   }
 }
-
 
 interface SavedRideStore {
   loading: boolean;

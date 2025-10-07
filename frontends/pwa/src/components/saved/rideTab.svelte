@@ -4,11 +4,9 @@
   import { savedRidesSplitByPastAndUpcoming as savedRides } from "$lib/stores";
   import Card from "../card.svelte";
 
-  let pastRides = $savedRides.past;
-  let upcomingRides = $savedRides.upcoming;
+  let pastRides = $derived($savedRides.past);
+  let upcomingRides = $derived($savedRides.upcoming);
   let whichSaved = $state("upcoming");
-
-  console.log(upcomingRides, pastRides);
 </script>
 
 <Tabs.Root

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"os"
 	"slices"
 
 	chi "github.com/go-chi/chi/v5"
@@ -25,17 +26,33 @@ func isAllowedOrigin(_ *http.Request, origin string) bool {
 }
 
 func NewRideAPIRouter(db *sql.DB) http.Handler {
+	var corsOptions cors.Options
+
+	if os.Getenv("APP_ENV") == "dev" {
+		slog.Info("loading cors with dev options")
+		corsOptions = cors.Options{
+			AllowedOrigins:   []string{"*"},
+			AllowedMethods:   []string{http.MethodGet},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: false,
+			MaxAge:           300,
+		}
+	} else {
+		corsOptions = cors.Options{
+			AllowOriginFunc:  isAllowedOrigin,
+			AllowedMethods:   []string{http.MethodGet},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: false,
+			MaxAge:           300,
+		}
+	}
+
 	r := chi.NewMux()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(cors.Handler(cors.Options{
-		AllowOriginFunc:  isAllowedOrigin,
-		AllowedMethods:   []string{http.MethodGet},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
-		MaxAge:           300,
-	}))
+	r.Use(cors.Handler(corsOptions))
 
 	r.Route("/v1/rides", func(r chi.Router) {
 		r.Get("/upcoming", MakeRidesHandler(db, getUpcomingRides))

@@ -51,6 +51,7 @@
 
   onMount(() => {
     rides.init();
+    rides.refetch();
     savedRidesStore.init();
   });
 

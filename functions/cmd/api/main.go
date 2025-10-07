@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	// "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
@@ -16,10 +16,10 @@ var db *sql.DB
 func init() {
 	var err error
 	// Used while in development
-	// err = godotenv.Load()
-	// if err != nil {
-	// 	log.Fatalf("failed to read environment variables: %v", err)
-	// }
+	err = godotenv.Load()
+	if err != nil {
+		log.Fatalf("failed to read environment variables: %v", err)
+	}
 	db, err = ConnectToDB()
 	if err != nil {
 		log.Fatalf("unable to connect to TursoDB: %v", err)

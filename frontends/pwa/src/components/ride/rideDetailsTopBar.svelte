@@ -38,8 +38,7 @@
         title: ride.title,
         url: ride.shareable,
       });
-    }
-    if (navigator.clipboard && ride) {
+    } else if (navigator.clipboard && ride) {
       copyToClipboard(ride.shareable)
         .then(() => {
           toast("Link copied to clipboard!");
