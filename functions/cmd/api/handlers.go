@@ -125,75 +125,51 @@ func GenerateICSHandler(db *sql.DB, fetcher rideFetcher) http.HandlerFunc {
 
 		ride := storedRides[0].ToRide()
 
-		// --- 1. DATE/TIME PREPARATION (CRITICAL) ---
-		// Combine date and time and parse it into a Go time.Time object
 		startTimeStr := fmt.Sprintf("%s %s", ride.Date, ride.StartTime)
-		start, err := time.Parse("2006-01-02 15:04:05", startTimeStr) // Adjust layout to match your DB time format
+		start, err := time.Parse("2006-01-02 15:04:05", startTimeStr)
 		if err != nil {
-			slog.Error("Failed to parse ride start time", "time", startTimeStr, "error", err)
-			http.Error(w, "Invalid ride time data", http.StatusInternalServerError)
+			http.Error(w, "Invalid start time", http.StatusInternalServerError)
 			return
 		}
 
-		// Set End Time (Default to 2 hours if missing)
 		end := start.Add(2 * time.Hour)
 		if ride.EndTime != "" {
-			// If end time is present, parse it instead
-			endTimeStr := fmt.Sprintf("%s %s", ride.Date, ride.EndTime)
-			end, err = time.Parse("2006-01-02 15:04:05", endTimeStr)
-			if err != nil {
-				// Log error but use the default 2-hour end time
-				slog.Warn("Failed to parse ride end time, defaulting to 2 hours", "error", err)
-				end = start.Add(2 * time.Hour)
+			if endTime, err := time.Parse("2006-01-02 15:04:05", fmt.Sprintf("%s %s", ride.Date, ride.EndTime)); err == nil {
+				end = endTime
 			}
 		}
 
-		// Helper function to format Go time.Time to ICS format (YYYYMMDDTHHMMSSZ)
-		// ICS requires the time in UTC/Zulu format (the .UTC().Format part is critical)
 		formatICS := func(t time.Time) string {
 			return t.UTC().Format("20060102T150405Z")
 		}
 
-		// --- 2. ICS CONTENT GENERATION (MANUAL STRING BUILD) ---
+		// Clean newlines and commas
+		desc := strings.ReplaceAll(ride.Details, "\n", "\\n")
+		desc = strings.ReplaceAll(desc, ",", "\\,")
 
-		// Escape necessary characters for ICS (newline to \n, comma to \,)
-		detailsEscaped := strings.ReplaceAll(ride.Details, "\n", "\\n")
-		detailsEscaped = strings.ReplaceAll(detailsEscaped, ",", "\\,")
+		icsContent := strings.Join([]string{
+			"BEGIN:VCALENDAR",
+			"VERSION:2.0",
+			"PRODID:-//CycleScene//EN",
+			"BEGIN:VEVENT",
+			fmt.Sprintf("UID:%s@cyclescene.com", ride.ID),
+			fmt.Sprintf("DTSTAMP:%s", formatICS(time.Now())),
+			fmt.Sprintf("DTSTART:%s", formatICS(start)),
+			fmt.Sprintf("DTEND:%s", formatICS(end)),
+			fmt.Sprintf("SUMMARY:%s", ride.Title),
+			fmt.Sprintf("LOCATION:%s", ride.Venue),
+			fmt.Sprintf("DESCRIPTION:%s\\nURL:%s", desc, ride.Shareable),
+			"STATUS:CONFIRMED",
+			"END:VEVENT",
+			"END:VCALENDAR",
+			"", // ensure trailing CRLF
+		}, "\r\n")
 
-		// Build the ICS file content
-		icsContent := fmt.Sprintf(`BEGIN:VCALENDAR
-		 		VERSION:2.0
-		 		PRODID:-//CycleScene//EN
-		 		BEGIN:VEVENT
-		 		UID:%s@cyclescene.com
-		 		DTSTAMP:%s
-		 		DTSTART:%s
-		 		DTEND:%s
-		 		SUMMARY:%s
-		 		LOCATION:%s
-		 		DESCRIPTION:%s\nURL:%s
-		 		END:VEVENT
-		 		END:VCALENDAR`,
-			ride.ID,
-			formatICS(time.Now()),
-			formatICS(start),
-			formatICS(end),
-			ride.Title,
-			ride.Venue,
-			detailsEscaped,
-			ride.Shareable,
-		)
-
-		// --- 3. SERVE THE FILE ---
-
-		// Set the Content-Disposition header to force the browser to download the file
 		filename := url.QueryEscape(ride.Title)
 		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s.ics\"", filename))
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(icsContent)))
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.ics\"", filename))
+		w.Header().Set("Cache-Control", "public, max-age=3600")
 
-		// Write the content to the HTTP response
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(icsContent))
 	}

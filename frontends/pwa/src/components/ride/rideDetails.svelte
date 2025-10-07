@@ -23,8 +23,7 @@
   async function handleAddtoCalendar() {
     if (ride) {
       const url = `${API_BASE}/ics?id=${ride.id}&city=${CITY_CODE}`;
-      // window.location.href = url;
-      window.open(url, "_blank");
+      window.open(url);
     }
   }
 </script>
