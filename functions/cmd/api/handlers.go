@@ -61,7 +61,7 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	r.Route("/v1/rides", func(r chi.Router) {
 		r.Get("/upcoming", MakeRidesHandler(db, getUpcomingRides))
 		r.Get("/past", MakeRidesHandler(db, getPastRides))
-		r.Get("/ics", MakeRideHandler(db, getRide))
+		r.Get("/ics", GenerateICSHandler(db, getRide))
 
 	})
 
@@ -107,7 +107,7 @@ func MakeRidesHandler(db *sql.DB, fetcher ridesFetcher) http.HandlerFunc {
 
 type rideFetcher func(db *sql.DB, cityCode string, id string) ([]RideFromDB, error)
 
-func MakeRideHandler(db *sql.DB, fetcher rideFetcher) http.HandlerFunc {
+func GenerateICSHandler(db *sql.DB, fetcher rideFetcher) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rideId := r.URL.Query().Get("id")
 		cityCode := r.URL.Query().Get("city")
@@ -122,48 +122,6 @@ func MakeRideHandler(db *sql.DB, fetcher rideFetcher) http.HandlerFunc {
 		}
 
 		slog.Info("Stored Rides Get!", "num of rides", len(storedRides))
-
-		var rides []Ride
-		for i := range storedRides {
-			rdb := storedRides[i]
-			rides = append(rides, rdb.ToRide())
-		}
-
-		if rides == nil {
-			rides = []Ride{}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		if err := json.NewEncoder(w).Encode(rides); err != nil {
-			slog.Error("Failed to encode rides to JSON", "error", err.Error())
-
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func GenerateICSHandler(db *sql.DB, fetcher rideFetcher) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var cityCode string
-		rideId := r.URL.Query().Get("id")
-		// fmt.Println(rideId)
-
-		if r.URL.Query().Get("city") == "" {
-			cityCode = "pdx"
-		} else {
-			cityCode = r.URL.Query().Get("city")
-		}
-
-		fmt.Printf("ID: %s\nCity: %s", rideId, cityCode)
-
-		storedRides, err := getRide(db, rideId, cityCode)
-		if err != nil {
-			slog.Error("Database query failed", "error", err.Error())
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		slog.Info("Ride Found!", "id", rideId, "cityCode", cityCode)
 
 		ride := storedRides[0].ToRide()
 
@@ -229,10 +187,10 @@ func GenerateICSHandler(db *sql.DB, fetcher rideFetcher) http.HandlerFunc {
 		// --- 3. SERVE THE FILE ---
 
 		// Set the Content-Disposition header to force the browser to download the file
-		filename := url.QueryEscape(ride.Title) // URL-encode the filename
-		w.Header().Set("Content-Disposition", fmt.Sprintf("filename=\"%s.ics\"", filename))
-		// w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
-		w.Header().Set("Content-Type", "text/plain")
+		filename := url.QueryEscape(ride.Title)
+		w.Header().Set("Content-Type", "text/calendar; charset=utf-8")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=\"%s.ics\"", filename))
+		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", len(icsContent)))
 
 		// Write the content to the HTTP response
