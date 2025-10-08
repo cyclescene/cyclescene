@@ -52,14 +52,6 @@ func main() {
 	}
 	defer db.Close()
 
-	if err := scraperhelpers.CreateTables(db); err != nil {
-		log.Fatal("failed to create tables")
-	}
-
-	if err := scraperhelpers.CreateTableIndexes(db); err != nil {
-		log.Fatal("failed to create table indexes")
-	}
-
 	////// READY TO START /////////////////////////
 
 	// get all previously saved locations from DB

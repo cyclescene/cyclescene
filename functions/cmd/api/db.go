@@ -104,7 +104,7 @@ func getUpcomingRides(db *sql.DB, cityCode string) ([]RideFromDB, error) {
 
 	query := `
     SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
-    FROM rides
+    FROM shift2bikes_events
     WHERE 
 			citycode = ?
 			AND
@@ -129,7 +129,7 @@ func getPastRides(db *sql.DB, cityCode string) ([]RideFromDB, error) {
 
 	query := `
     SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
-    FROM rides
+    FROM shift2bikes_events
     WHERE 
 				citycode = ?
 				AND
@@ -142,7 +142,7 @@ func getRide(db *sql.DB, cityCode, rideId string) ([]RideFromDB, error) {
 
 	query := `
     SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
-    FROM rides
+    FROM shift2bikes_events
     WHERE 
 				composite_event_id = ?
 				AND
