@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS events (
     location_details TEXT,
     ending_location TEXT,
     is_loop_ride INTEGER NOT NULL DEFAULT 0, -- 0=FALSE, 1=TRUE
+    city TEXT NOT NULL,
 
     /* Contact Fields & Privacy Flags */
     organizer_name TEXT,
@@ -39,10 +40,13 @@ CREATE TABLE IF NOT EXISTS events (
     /* System/Moderation Fields */
     is_published INTEGER NOT NULL DEFAULT 0, -- CRITICAL: 0=Pending Review, 1=Published
     is_featured INTEGER NOT NULL DEFAULT 0,
+    moderation_notes TEXT,
+    moderated_at TEXT,
     
     /* Audit Fields (Turso/SQLite) */
     created_at TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
     updated_at TEXT NOT NULL DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+
 
     FOREIGN KEY (group_code)
         REFERENCES groups(code)
@@ -50,5 +54,5 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 -- Index for fast moderation and public display queries
-CREATE INDEX idx_published ON events (is_published);
-CREATE INDEX idx_group_code ON events (group_code);
+CREATE INDEX IF NOT EXISTS idx_published ON events (is_published);
+CREATE INDEX IF NOT EXISTS idx_group_code ON events (group_code);

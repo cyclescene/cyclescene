@@ -1,4 +1,4 @@
 -- Write your down sql migration here
-DROP TABLE events;
-DROP INDEX idx_published ON events;
-DROP INDEX idx_group_code ON events;
+DROP TABLE IF EXISTS events;
+DROP INDEX IF EXISTS idx_published;
+DROP INDEX IF EXISTS idx_group_code;

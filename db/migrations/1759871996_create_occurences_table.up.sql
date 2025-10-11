@@ -20,5 +20,5 @@ CREATE TABLE IF NOT EXISTS event_occurrences (
 );
 
 -- Essential Index for fast chronological queries
-CREATE INDEX idx_occurrence_datetime ON event_occurrences (start_datetime);
-CREATE INDEX idx_occurrence_event_id ON event_occurrences (event_id);
+CREATE INDEX IF NOT EXISTS idx_occurrence_datetime ON event_occurrences (start_datetime);
+CREATE INDEX IF NOT EXISTS idx_occurrence_event_id ON event_occurrences (event_id);

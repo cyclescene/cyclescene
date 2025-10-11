@@ -150,3 +150,14 @@ func getRide(db *sql.DB, cityCode, rideId string) ([]RideFromDB, error) {
 
 	return scanRides(db, query, rideId, cityCode)
 }
+
+func storeSubmissionToken(db *sql.DB, token, city, expires_at string) error {
+	query := `
+	INSERT INTO submission_tokens (token, city, expires_at)
+	VALUES (?, ?, ?)
+	`
+
+	_, err := db.Exec(query, token, city, expires_at)
+
+	return err
+}

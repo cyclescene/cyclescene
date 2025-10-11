@@ -65,6 +65,8 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 
 	})
 
+	// register the BFFRoutes
+	addBFFRoutes(r, db)
 	return r
 }
 

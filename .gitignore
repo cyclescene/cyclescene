@@ -2,3 +2,4 @@
 functions/*.yml
 functions/*.env
 **/*.yml
+frontends/**/node_modules
