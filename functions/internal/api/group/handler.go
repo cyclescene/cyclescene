@@ -70,14 +70,6 @@ func (h *Handler) RegisterGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate origin
-	origin := r.Header.Get("Origin")
-	if !strings.HasSuffix(origin, "form.cyclescene.cc") {
-		slog.Warn("Invalid origin for group registration", "origin", origin)
-		http.Error(w, "Unauthorized origin", http.StatusForbidden)
-		return
-	}
-
 	var registration Registration
 	if err := json.NewDecoder(r.Body).Decode(&registration); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)

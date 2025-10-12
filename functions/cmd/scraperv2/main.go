@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	// "github.com/joho/godotenv"
-	scraperhelpers "github.com/spacesedan/cyclescene/functions/lib/scraper-helpers"
+	"github.com/joho/godotenv"
+	"github.com/spacesedan/cyclescene/functions/internal/scraper"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
@@ -23,8 +23,9 @@ const (
 
 func main() {
 	// used in development
-	// _ = godotenv.Load()
-	// Check for ENV variables
+	if os.Getenv("APP_ENV") == "dev" {
+		_ = godotenv.Load()
+	}
 	// DB Vars
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_DB_RW_TOKEN") == "" {
 		log.Fatal("FATAL: Turso env variable not set properly")
@@ -55,29 +56,30 @@ func main() {
 	////// READY TO START /////////////////////////
 
 	// get all previously saved locations from DB
-	geocodeCache, err := scraperhelpers.GetGeocodeCache(db)
+	geocodeCache, err := scraper.GetGeocodeCache(db)
 	if err != nil {
 		log.Fatalf("something went wrong: %s\n", err.Error())
 	}
 
 	// get upcoming Rides
-	shift2BikesEvents, err := scraperhelpers.GetRides()
+	shift2BikesEvents, err := scraper.GetRides()
 	if err != nil {
 		fmt.Println("failed to get ride data")
 	}
 
-	var rideLocations []scraperhelpers.Location
+	var rideLocations []scraper.Location
 	for i := range shift2BikesEvents.Events {
 		event := &shift2BikesEvents.Events[i]
 		event.SourcedFrom = EVENT_SOURCE
 		event.CityCode = PDX_CITY_CODE
 
 		// parse Starting location
-		location := scraperhelpers.CreateLocationFromEvent(event)
-		geocodeQuery := scraperhelpers.CreateGeoCodingQuery(&location)
+		location := scraper.CreateLocationFromEvent(event)
+		geocodeQuery := scraper.CreateGeoCodingQuery(&location)
 		normalizedQuery := strings.ToLower(geocodeQuery)
 
 		location.Query = geocodeQuery
+		location.City = PDX_CITY_CODE
 
 		// locations where coords were avialable in the ride data
 		if !location.NeedsGeocoding {
@@ -98,7 +100,7 @@ func main() {
 		}
 
 		// check cache for location
-		var cachedLoc scraperhelpers.GeoCodeCached
+		var cachedLoc scraper.GeoCodeCached
 		var found bool
 		if cachedLoc, found = geocodeCache[normalizedQuery]; found {
 			location.Latitude = cachedLoc.Latitude
@@ -111,7 +113,7 @@ func main() {
 		// make request to geocode API for location
 		fmt.Printf("GEOCODE: %s\n", geocodeQuery)
 
-		lat, lng, err := scraperhelpers.GeocodeQuery(geocodeQuery)
+		lat, lng, err := scraper.GeocodeQuery(geocodeQuery, PDX_CITY_CODE)
 		if err != nil {
 			slog.Error("Unable to geocode query, using fall back coords", "error", err.Error(), "query", geocodeQuery)
 			location.Query = FALLBACK_QUERY
@@ -128,7 +130,7 @@ func main() {
 		event.Location = location
 
 		// prevent from running geocode API twice in the same run
-		geocodeCache[normalizedQuery] = scraperhelpers.GeoCodeCached{
+		geocodeCache[normalizedQuery] = scraper.GeoCodeCached{
 			Query:     normalizedQuery,
 			Latitude:  location.Latitude,
 			Longitude: location.Longitude,
@@ -139,13 +141,13 @@ func main() {
 	}
 
 	// Get Locations ready to upsert into db
-	if err = scraperhelpers.BulkUpsertGeocodeData(db, rideLocations); err != nil {
+	if err = scraper.BulkUpsertGeocodeData(db, rideLocations); err != nil {
 		slog.Error("unable to bulk upsert ride locations", "locations_len", len(rideLocations), "error", err.Error())
 		log.Fatalf("unable to bulk upsert ride locations: %v", err)
 	}
 
 	// store ride information
-	if err = scraperhelpers.BulkUpsertRideData(db, shift2BikesEvents.Events); err != nil {
+	if err = scraper.BulkUpsertRideData(db, shift2BikesEvents.Events); err != nil {
 		slog.Error("unable to bulk upsert ride data", "locations_len", len(rideLocations), "error", err.Error())
 		log.Fatalf("unable to bulk upsert ride data: %v", err)
 

@@ -1,8 +1,10 @@
 <script lang="ts">
   import {
+    CalendarDate,
     DateFormatter,
     type DateValue,
     getLocalTimeZone,
+    today,
   } from "@internationalized/date";
   import { Calendar as CalendarIcon, Clock, Plus, X } from "@lucide/svelte";
   import { Button } from "$lib/components/ui/button";
@@ -38,15 +40,17 @@
     dateStyle: "long",
   });
 
-  let selectedDate = $state<DateValue | undefined>(undefined);
+  const todayDate: CalendarDate = today(getLocalTimeZone());
+
+  let selectedDate = $state<DateValue>(todayDate);
   let selectedTime = $state("18:00");
   let durationMinutes = $state<number>(120);
   let timeDetails = $state("");
 
   // For recurring rides - day of week selection
   let recurringDay = $state<number | undefined>(undefined);
-  let recurringStartDate = $state<DateValue | undefined>(undefined);
-  let recurringEndDate = $state<DateValue | undefined>(undefined);
+  let recurringStartDate = $state<CalendarDate>(todayDate);
+  let recurringEndDate = $state<CalendarDate>(todayDate.add({ days: 7 }));
 
   function addOccurrence() {
     if (!selectedDate) return;
@@ -65,7 +69,7 @@
     onupdate(occurrences);
 
     // Reset form
-    selectedDate = undefined;
+    selectedDate = todayDate;
     timeDetails = "";
   }
 
@@ -108,8 +112,8 @@
     onupdate(occurrences);
 
     // Reset
-    recurringStartDate = undefined;
-    recurringEndDate = undefined;
+    recurringStartDate = todayDate;
+    recurringEndDate = todayDate.add({ days: 7 });
     recurringDay = undefined;
   }
 

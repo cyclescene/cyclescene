@@ -1,4 +1,4 @@
-package scraperhelpers
+package scraper
 
 import (
 	"database/sql"
@@ -9,89 +9,6 @@ import (
 	"time"
 )
 
-// Going to be taking care of table and index creation using TURSO CLI
-//
-//	func CreateTables(db *sql.DB) error {
-//		createTableSQL := `
-//	    CREATE TABLE IF NOT EXISTS rides (
-//	        composite_event_id TEXT PRIMARY KEY,
-//
-//	        id TEXT NOT NULL,
-//	        title TEXT NOT NULL,
-//					lat REAL NOT NULL,
-//					lng REAL NOT NULL,
-//	        address TEXT NOT NULL,
-//	        audience TEXT NOT NULL,
-//	        cancelled INTEGER NOT NULL,
-//	        date TEXT NOT NULL,
-//	        starttime TEXT NOT NULL,
-//	        safetyplan INTEGER NOT NULL,
-//	        details TEXT NOT NULL,
-//	        venue TEXT NOT NULL,
-//	        organizer TEXT NOT NULL,
-//	        loopride INTEGER NOT NULL,
-//	        shareable TEXT NOT NULL,
-//
-//
-//	        endtime TEXT,
-//	        email TEXT,
-//	        eventduration INTEGER,
-//	        image TEXT,
-//	        locdetails TEXT,
-//	        locend TEXT,
-//	        newsflash TEXT,
-//	        timedetails TEXT,
-//	        webname TEXT,
-//	        weburl TEXT,
-//
-//					citycode TEXT NOT NULL,
-//					ridesource TEXT NOT NULL,
-//	        source_data TEXT NOT NULL
-//	    );`
-//
-//		createGeocodeCacheTableSQL := `
-//	    CREATE TABLE IF NOT EXISTS geocode_cache (
-//	  	location_key TEXT PRIMARY KEY,
-//	    lat REAL NOT NULL,
-//	    lng REAL NOT NULL,
-//	    last_updated TEXT NOT NULL
-//	    );`
-//
-//		if _, err := db.Exec(createTableSQL); err != nil {
-//			return err
-//		}
-//
-//		if _, err := db.Exec(createGeocodeCacheTableSQL); err != nil {
-//			return err
-//		}
-//
-//		return nil
-//	}
-//
-//	func CreateTableIndexes(db *sql.DB) error {
-//		createCityCodeIndexSQL := `
-//		CREATE INDEX IF NOT EXISTS citycode_index ON rides (citycode);`
-//
-//		createDateIndexSQL := `
-//		CREATE INDEX IF NOT EXISTS date_index ON rides (date);`
-//
-//		createGeocodeKeyIndexSQL := `
-//		CREATE UNIQUE INDEX IF NOT EXISTS idx_geocode_key on geocode_cache (location_key)`
-//
-//		if _, err := db.Exec(createCityCodeIndexSQL); err != nil {
-//			return err
-//		}
-//
-//		if _, err := db.Exec(createDateIndexSQL); err != nil {
-//			return err
-//		}
-//
-//		if _, err := db.Exec(createGeocodeKeyIndexSQL); err != nil {
-//			return err
-//		}
-//
-//		return nil
-//	}
 func GetGeocodeCache(db *sql.DB) (map[string]GeoCodeCached, error) {
 	rows, err := db.Query("SELECT location_key, lat, lng FROM geocode_cache")
 	if err != nil {
@@ -138,9 +55,10 @@ func BulkUpsertGeocodeData(db *sql.DB, locations []Location) error {
 	}()
 
 	stmt, err := tx.Prepare(`
-        INSERT INTO geocode_cache (location_key, lat, lng, last_updated)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO geocode_cache (location_key, lat, lng, city, last_updated)
+        VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(location_key) DO UPDATE SET
+						city=excluded.city,
             lat=excluded.lat,
             lng=excluded.lng,
             last_updated=excluded.last_updated;
@@ -159,10 +77,11 @@ func BulkUpsertGeocodeData(db *sql.DB, locations []Location) error {
 			strings.ToLower(loc.Query),
 			loc.Latitude,
 			loc.Longitude,
+			loc.City,
 			now,
 		)
 		if err != nil {
-			slog.Error("Failed to upsert single location in batch", "query", loc.Query, "error", err.Error())
+			slog.Error("Failed to upsert single location in batch", "loc", loc, "error", err.Error())
 			return fmt.Errorf("failed to execute batch upsert for key %s: %w", loc.Query, err)
 		}
 	}

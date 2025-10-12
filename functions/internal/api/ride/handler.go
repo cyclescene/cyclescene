@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -42,14 +41,6 @@ func (h *Handler) SubmitRide(w http.ResponseWriter, r *http.Request) {
 	bffToken := r.Header.Get("X-BFF-Token")
 	if bffToken == "" {
 		http.Error(w, "Missing BFF token", http.StatusUnauthorized)
-		return
-	}
-
-	// Validate origin
-	origin := r.Header.Get("Origin")
-	if !strings.HasSuffix(origin, "form.cyclescene.cc") {
-		slog.Warn("Invalid origin for ride submission", "origin", origin)
-		http.Error(w, "Unauthorized origin", http.StatusForbidden)
 		return
 	}
 

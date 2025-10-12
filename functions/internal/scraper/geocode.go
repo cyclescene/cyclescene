@@ -1,4 +1,4 @@
-package scraperhelpers
+package scraper
 
 import (
 	"context"
@@ -15,15 +15,6 @@ import (
 
 const saCredentialsKey = "GOOGLE_SA_CREDENTIALS"
 const addressScope = "https://www.googleapis.com/auth/maps-platform.geocode.address"
-const (
-	// Portland Bounding Box
-	// SW Corner
-	PDX_SW_LAT = 45.0
-	PDX_SW_LNG = -123.0
-	// NE Corner
-	PDX_NE_LAT = 46.0
-	PDX_NE_LNG = -121.5
-)
 
 var authenticatedClient *http.Client
 
@@ -55,11 +46,27 @@ func getAuthenticatedClient(ctx context.Context) (*http.Client, error) {
 
 }
 
-func GeocodeQuery(query string) (float64, float64, error) {
+type CityDetails struct {
+	CityName string
+	State    string
+	NELat    float64
+	NELng    float64
+	SWLat    float64
+	SWLng    float64
+}
+
+var cityMap = map[string]CityDetails{
+	"pdx": {CityName: "Portland", State: "OR", SWLat: 45.4325, SWLng: -122.8367, NELat: 46.00, NELng: -121.5},
+	"slc": {CityName: "Salt Lake City", State: "UT", SWLat: 40.6307, SWLng: -112.1, NELat: 41.0, NELng: -111.5},
+}
+
+func GeocodeQuery(query, cityCode string) (float64, float64, error) {
 	ctx := context.Background()
 	client, err := getAuthenticatedClient(ctx)
 
 	baseURL := "https://geocode.googleapis.com/v4beta/geocode/address/"
+
+	cityDetails := cityMap[cityCode]
 
 	var req *http.Request
 	req, err = http.NewRequest(http.MethodGet, baseURL, nil)
@@ -70,13 +77,13 @@ func GeocodeQuery(query string) (float64, float64, error) {
 	q := req.URL.Query()
 	q.Add("regionCode", "US")
 
-	q.Add("locationBias.rectangle.low.latitude", strconv.FormatFloat(45.4325, 'f', -1, 64))
-	q.Add("locationBias.rectangle.low.longitude", strconv.FormatFloat(-122.8367, 'f', -1, 64))
-	q.Add("locationBias.rectangle.high.latitude", strconv.FormatFloat(45.7500, 'f', -1, 64))
-	q.Add("locationBias.rectangle.high.longitude", strconv.FormatFloat(-122.4702, 'f', -1, 64))
+	q.Add("locationBias.rectangle.low.latitude", strconv.FormatFloat(cityDetails.SWLat, 'f', -1, 64))
+	q.Add("locationBias.rectangle.low.longitude", strconv.FormatFloat(cityDetails.SWLng, 'f', -1, 64))
+	q.Add("locationBias.rectangle.high.latitude", strconv.FormatFloat(cityDetails.NELat, 'f', -1, 64))
+	q.Add("locationBias.rectangle.high.longitude", strconv.FormatFloat(cityDetails.NELng, 'f', -1, 64))
 	q.Add("address.addressLines", query)
-	q.Add("address.administrativeArea", "OR")
-	q.Add("address.locality", "Portland")
+	q.Add("address.administrativeArea", cityDetails.State)
+	q.Add("address.locality", cityDetails.CityName)
 
 	req.URL.RawQuery = q.Encode()
 
@@ -96,16 +103,6 @@ func GeocodeQuery(query string) (float64, float64, error) {
 	if err := json.NewDecoder(res.Body).Decode(&googleResponse); err != nil {
 		return 0.0, 0.0, fmt.Errorf("failed to decode Google geocoding response: %v", err)
 	}
-
-	// Using v4 the response no longer provides a status
-	// if googleResponse.Status != "OK" {
-	// 	if googleResponse.Status == "ZERO_RESULTS" {
-	// 		fmt.Println(string(bodyBytes))
-	// 		return 0.0, 0.0, fmt.Errorf("Google Geocoding API found no results for address: '%s'", query)
-	// 	}
-	// 	fmt.Println(string(bodyBytes))
-	// 	return 0.0, 0.0, fmt.Errorf("Google Geocoding API returned status: %s for (for address: '%s')", googleResponse.Status, query)
-	// }
 
 	if len(googleResponse.Results) == 0 {
 		return 0.0, 0.0, fmt.Errorf("no results found for address: '%s' (GOOGLE API 'OK' status but empty results", query)

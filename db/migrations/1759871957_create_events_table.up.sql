@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS events (
 
 
     FOREIGN KEY (group_code)
-        REFERENCES groups(code)
+        REFERENCES ride_groups(code)
         ON DELETE SET NULL
 );
 

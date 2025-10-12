@@ -100,48 +100,32 @@ export const actions = {
       });
     }
 
-    try {
-      // Submit to your Go backend - use full URL for server-side fetch
-      const response = await fetch(`${API_URL}/v1/rides/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-BFF-Token': token,
-          'Origin': 'https://form.cyclescene.cc'
-        },
-        body: JSON.stringify(form.data)
-      });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        return fail(response.status, {
-          form,
-          error: errorText || 'Submission failed'
-        });
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.edit_token) {
-        throw redirect(303, `/success?token=${result.edit_token}&event_id=${result.event_id}`);
-      }
-
-      return fail(500, {
-        form,
-        error: result.message || 'Submission failed'
-      });
-    } catch (err) {
-      // If it's a redirect, re-throw it
-      if (err instanceof Response && err.status >= 300 && err.status < 400) {
-        throw err;
-      }
-
-      console.error('Ride submission error:', err);
+    const response = await fetch(`${API_URL}/v1/rides/submit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-BFF-Token': token,
+      },
+      body: JSON.stringify(form.data)
+    }).catch(err => {
       return fail(500, {
         form,
         error: err instanceof Error ? err.message : 'An error occurred'
       });
+    }) as Response
+
+    if ('status' in response && response.status === 500) {
+      return response
     }
+
+    const result = await response.json() as { success: true; event_id: number; edit_token: string }
+
+
+    if (result.success) {
+      throw redirect(303, `/success?token=${result.edit_token}&event_id=${result.event_id}`);
+    }
+
   }
 } satisfies Actions;
 

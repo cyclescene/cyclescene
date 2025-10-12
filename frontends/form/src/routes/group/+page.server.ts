@@ -73,34 +73,20 @@ export const actions: Actions = {
       });
     }
 
-    try {
-      // Submit to your Go backend
-      const response = await registerGroup(form.data, token);
 
-      if (response.success && response.edit_token) {
-        // Redirect to success page with edit token
-        throw redirect(303, `/group/success?token=${response.edit_token}&code=${response.code}`);
-      }
-
-      return fail(500, {
-        form,
-        error: response.message || 'Registration failed'
-      });
-    } catch (err) {
-      console.error('Group registration error:', err);
-
-      // Handle code already exists error
-      if (err instanceof Error && err.message.includes('already exists')) {
-        return fail(409, {
+    const response = await registerGroup(form.data, token)
+      .catch((err) => {
+        return fail(500, {
           form,
-          error: 'This group code is already taken. Please choose another.'
+          error: err instanceof Error ? err.message : 'An error occurred'
         });
-      }
+      })
 
-      return fail(500, {
-        form,
-        error: err instanceof Error ? err.message : 'An error occurred'
-      });
+    if ('status' in response && response.status === 500) {
+      return response
     }
+
+    throw redirect(303, `/group/success?token=${response.edit_token}&code=${response.code}`);
+
   }
 };

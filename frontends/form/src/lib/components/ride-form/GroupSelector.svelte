@@ -18,6 +18,25 @@
   let groupName = $state<string>("");
   let debounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
 
+  async function handleRegisterGroup() {
+    try {
+      const url = `http://localhost:8080/v1/tokens/submission`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ city: "pdx" }),
+      });
+
+      const { token } = await response.json();
+
+      // Redirect to group registration form
+      window.location.href = `/group?token=${token}&city=pdx`;
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+
   async function handleValidation(code: string) {
     if (!code || code.length !== 4) {
       validationState = "idle";
@@ -116,8 +135,9 @@
   {/if}
 
   <p class="text-xs text-muted-foreground">
-    Don't have a group? <a href="/group" class="underline hover:text-foreground"
-      >Register one here</a
+    Don't have a group? <button
+      onclick={handleRegisterGroup}
+      class="underline hover:text-foreground">Register one here</button
     >
   </p>
 </div>

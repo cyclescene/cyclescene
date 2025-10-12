@@ -1,4 +1,4 @@
-package scraperhelpers
+package scraper
 
 type Shift2BikeEvent struct {
 	ID            string `json:"id"`
@@ -58,6 +58,7 @@ type Shift2BikeEvents struct {
 
 type Location struct {
 	ID             int     `json:"-"`
+	City           string  `json:"city"`
 	Query          string  `json:"query"`
 	Address        string  `json:"address"`
 	Latitude       float64 `json:"lat"`
