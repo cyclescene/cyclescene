@@ -1,0 +1,147 @@
+// src/routes/+page.server.ts
+import { superValidate } from 'sveltekit-superforms';
+import { zod4 as zod } from 'sveltekit-superforms/adapters';
+import { fail, redirect } from '@sveltejs/kit';
+import { rideSubmissionSchema } from '$lib/schemas/ride';
+import type { PageServerLoad, Actions } from './$types';
+import { env } from '$env/dynamic/private';
+
+// Get API URL from environment - server side
+const API_URL = env.API_URL || 'http://localhost:8080';
+
+export const load: PageServerLoad = async ({ url, request }) => {
+  const token = url.searchParams.get('token');
+  const city = url.searchParams.get('city');
+
+  // Validate token and origin
+  if (!token || !city) {
+    throw redirect(302, '/error?message=Missing token or city');
+  }
+
+  // Check referrer to ensure request came from PWA
+  const referrer = request.headers.get('referer') || '';
+  const isValidReferrer = referrer.includes('pdx.cyclescene.cc') ||
+    referrer.includes('slc.cyclescene.cc') ||
+    referrer.includes('localhost'); // for dev
+
+  if (!isValidReferrer) {
+    throw redirect(302, '/error?message=Invalid referrer');
+  }
+
+  try {
+    // Validate the token with your API - use full URL for server-side fetch
+    const response = await fetch(`${API_URL}/v1/tokens/validate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ token, city })
+    });
+
+    if (!response.ok) {
+      throw redirect(302, '/error?message=Token validation failed');
+    }
+
+    const validation = await response.json();
+
+    if (!validation.valid) {
+      throw redirect(302, '/error?message=Invalid or expired token');
+    }
+  } catch (err) {
+    console.error('Token validation failed:', err);
+    throw redirect(302, '/error?message=Token validation failed');
+  }
+
+  // Initialize form with city pre-filled
+  // Don't validate on initial load (errors: false)
+  const form = await superValidate(
+    {
+      city,
+      title: '',
+      description: '',
+      venue_name: '',
+      address: '',
+      organizer_name: '',
+      organizer_email: '',
+      date_type: 'S' as const,
+      is_loop_ride: false,
+      hide_email: false,
+      hide_phone: false,
+      hide_contact_name: false,
+      occurrences: []
+    },
+    zod(rideSubmissionSchema),
+    { errors: false } // Don't show errors on initial load
+  );
+
+  return {
+    form,
+    token,
+    city
+  };
+};
+
+export const actions = {
+  default: async ({ request, url }) => {
+    const formData = await request.formData();
+
+    // Validate form data with schema
+    const form = await superValidate(formData, zod(rideSubmissionSchema));
+
+    if (!form.valid) {
+      return fail(400, { form });
+    }
+
+    const token = url.searchParams.get('token');
+    if (!token) {
+      return fail(400, {
+        form,
+        error: 'Missing submission token'
+      });
+    }
+
+    try {
+      // Submit to your Go backend - use full URL for server-side fetch
+      const response = await fetch(`${API_URL}/v1/rides/submit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-BFF-Token': token,
+          'Origin': 'https://form.cyclescene.cc'
+        },
+        body: JSON.stringify(form.data)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return fail(response.status, {
+          form,
+          error: errorText || 'Submission failed'
+        });
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.edit_token) {
+        throw redirect(303, `/success?token=${result.edit_token}&event_id=${result.event_id}`);
+      }
+
+      return fail(500, {
+        form,
+        error: result.message || 'Submission failed'
+      });
+    } catch (err) {
+      // If it's a redirect, re-throw it
+      if (err instanceof Response && err.status >= 300 && err.status < 400) {
+        throw err;
+      }
+
+      console.error('Ride submission error:', err);
+      return fail(500, {
+        form,
+        error: err instanceof Error ? err.message : 'An error occurred'
+      });
+    }
+  }
+} satisfies Actions;
+

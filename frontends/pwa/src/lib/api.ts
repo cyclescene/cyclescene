@@ -4,7 +4,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const CITY_CODE = import.meta.env.VITE_CITY_CODE
 
 async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<RideData[]> {
-  const url = `${API_BASE_URL}${endpoint}?city=${CITY_CODE}`
+  const url = `${API_BASE_URL}/v1/rides${endpoint}?city=${CITY_CODE}`
 
   try {
     const response = await fetch(url, options)

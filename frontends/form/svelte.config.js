@@ -14,6 +14,10 @@ const config = {
     adapter: adapter(),
     alias: {
       "$lib/*": "./src/lib/*"
+    },
+    env: {
+      privatePrefix: "API_",
+      publicPrefix: "PUBLIC_"
     }
   }
 };
