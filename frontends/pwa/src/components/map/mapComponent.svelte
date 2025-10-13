@@ -77,13 +77,15 @@
   onclick={handleMapClick}
   attributionControl={false}
 >
-  <GeoJSONSource data={$rideGeoJSON} id={SOURCE_ID} />
-  {#if iconLoaded}
-    <RideLayers
-      sourceId={SOURCE_ID}
-      iconName={ICON_NAME}
-      onRideClick={handleRideClick}
-    />
+  {#if $rideGeoJSON}
+    {#if iconLoaded}
+      <RideLayers
+        sourceId={SOURCE_ID}
+        iconName={ICON_NAME}
+        onRideClick={handleRideClick}
+      />
+    {/if}
+    <GeoJSONSource data={$rideGeoJSON} id={SOURCE_ID} />
   {/if}
 
   {#if mapInstance}

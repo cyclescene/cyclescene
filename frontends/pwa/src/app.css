@@ -123,4 +123,32 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* iOS Safe Area Support */
+  /* Ensure content respects notch and home indicator areas */
+  html, body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+
+  /* Prevent iOS from auto-zooming on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Fix iOS Safari bounce/overscroll issues */
+  body {
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Disable iOS callout menu on long press */
+  * {
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Allow text selection where needed */
+  p, span, h1, h2, h3, h4, h5, h6, a {
+    -webkit-touch-callout: default;
+  }
 }

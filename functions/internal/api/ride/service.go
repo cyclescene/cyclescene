@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/spacesedan/cyclescene/functions/internal/scraper"
 )
 
 type Service struct {
@@ -26,7 +28,21 @@ func (s *Service) SubmitRide(submission *Submission) (*SubmissionResponse, error
 		return nil, err
 	}
 
-	eventID, err := s.repo.CreateRide(submission, editToken)
+	// Geocode the address to get latitude and longitude
+	var lat, lng float64
+	if submission.Address != "" {
+		geocodeQuery := fmt.Sprintf("%s %s", submission.VenueName, submission.Address)
+		lat, lng, err = scraper.GeocodeQuery(geocodeQuery, submission.City)
+		if err != nil {
+			slog.Warn("Failed to geocode address", "geocodequery", geocodeQuery, "city", submission.City, "error", err)
+			// Continue with 0,0 coordinates if geocoding fails
+			lat, lng = 0.0, 0.0
+		} else {
+			slog.Info("Successfully geocoded address", "address", submission.Address, "lat", lat, "lng", lng)
+		}
+	}
+
+	eventID, err := s.repo.CreateRide(submission, editToken, lat, lng)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +68,21 @@ func (s *Service) GetRideByEditToken(token string) (*EditResponse, error) {
 }
 
 func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionResponse, error) {
-	if err := s.repo.UpdateRide(token, submission); err != nil {
+	// Geocode the address to get latitude and longitude
+	var lat, lng float64
+	if submission.Address != "" {
+		var err error
+		lat, lng, err = scraper.GeocodeQuery(submission.Address, submission.City)
+		if err != nil {
+			slog.Warn("Failed to geocode address", "address", submission.Address, "city", submission.City, "error", err)
+			// Continue with 0,0 coordinates if geocoding fails
+			lat, lng = 0.0, 0.0
+		} else {
+			slog.Info("Successfully geocoded address", "address", submission.Address, "lat", lat, "lng", lng)
+		}
+	}
+
+	if err := s.repo.UpdateRide(token, submission, lat, lng); err != nil {
 		return nil, err
 	}
 

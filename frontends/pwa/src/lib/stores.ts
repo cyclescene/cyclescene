@@ -1,7 +1,7 @@
 import { CalendarDate, parseDate } from "@internationalized/date";
 import { LngLatBounds, type LngLatLike, type Map } from "maplibre-gl"
 import { getPastRides, getUpcomingRides } from "./api";
-import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB } from "./db";
+import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB, clearAllRides, clearSavedRides } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
@@ -135,6 +135,24 @@ function createRidesStore() {
         update(() => ({ loading: false, rideData: [], error: `${e}` }))
         console.error(e);
       }
+    },
+    clearAndRefreshRides: async () => {
+      try {
+        update(store => ({ ...store, loading: true }))
+        // Clear the rides from IndexedDB
+        await clearAllRides()
+        // Fetch fresh data from API
+        const upcomingRides = await getUpcomingRides()
+        const pastRides = await getPastRides()
+        const freshRides = [...upcomingRides, ...pastRides]
+        // Save to IndexedDB
+        await saveRidesToDB(freshRides)
+        // Update the store
+        set({ loading: false, rideData: freshRides, error: null })
+      } catch (e) {
+        update(() => ({ loading: false, rideData: [], error: `Failed to refresh rides: ${e}` }))
+        console.error(e);
+      }
     }
   }
 }
@@ -200,6 +218,14 @@ function createSavedRideStore() {
         const exists = await savedRideExists(rideID)
         return exists
       } catch (e) {
+      }
+    },
+    clearAll: async () => {
+      try {
+        await clearSavedRides()
+        set({ loading: false, data: [], error: null })
+      } catch (e) {
+        set({ loading: false, data: [], error: "Could not clear saved rides" })
       }
     }
   }
@@ -703,5 +729,37 @@ function createMapStore() {
 }
 
 export const selectedRideId = derived(currentRide, ($ride) => $ride && $ride.id || "")
+
+// GeoJSON for a single ride without offset applied (for individual ride maps)
+export const singleRideGeoJSON = derived(
+  currentRide, ($currentRide) => {
+    if (!$currentRide) {
+      return {
+        type: "FeatureCollection",
+        features: []
+      } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
+    }
+
+    const lat = $currentRide.lat as number
+    const lng = $currentRide.lng as number
+
+    // Only create a feature if coordinates are valid
+    if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+      return {
+        type: "FeatureCollection",
+        features: []
+      } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
+    }
+
+    return {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [lng, lat] },
+        properties: { id: $currentRide.id, name: $currentRide.title }
+      }]
+    } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
+  }
+)
 
 export const mapStore = createMapStore()

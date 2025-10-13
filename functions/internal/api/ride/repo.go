@@ -16,7 +16,7 @@ func NewRepository(db *sql.DB) *Repository {
 }
 
 // User-submitted rides
-func (r *Repository) CreateRide(submission *Submission, editToken string) (int64, error) {
+func (r *Repository) CreateRide(submission *Submission, editToken string, latitude, longitude float64) (int64, error) {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return 0, err
@@ -28,8 +28,9 @@ func (r *Repository) CreateRide(submission *Submission, editToken string) (int64
 			title, tinytitle, description, image_url, audience, ride_length, area, date_type,
 			venue_name, address, location_details, ending_location, is_loop_ride,
 			organizer_name, organizer_email, organizer_phone, web_url, web_name, newsflash,
-			hide_email, hide_phone, hide_contact_name, group_code, edit_token, city, is_published
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+			hide_email, hide_phone, hide_contact_name, group_code, edit_token, city, is_published,
+			latitude, longitude
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
 	`,
 		submission.Title, submission.TinyTitle, submission.Description, submission.ImageURL,
 		submission.Audience, submission.RideLength, submission.Area, submission.DateType,
@@ -37,7 +38,7 @@ func (r *Repository) CreateRide(submission *Submission, editToken string) (int64
 		boolToInt(submission.IsLoopRide), submission.OrganizerName, submission.OrganizerEmail,
 		submission.OrganizerPhone, submission.WebURL, submission.WebName, submission.Newsflash,
 		boolToInt(submission.HideEmail), boolToInt(submission.HidePhone), boolToInt(submission.HideContactName),
-		nilIfEmpty(submission.GroupCode), editToken, submission.City,
+		nilIfEmpty(submission.GroupCode), editToken, submission.City, latitude, longitude,
 	)
 
 	if err != nil {
@@ -54,7 +55,7 @@ func (r *Repository) CreateRide(submission *Submission, editToken string) (int64
 		startDatetime := fmt.Sprintf("%s %s", occ.StartDate, occ.StartTime)
 		_, err = tx.Exec(`
 			INSERT INTO event_occurrences (
-				event_id, start_date, start_time, start_datetime, 
+				event_id, start_date, start_time, start_datetime,
 				event_duration_minutes, event_time_details
 			) VALUES (?, ?, ?, ?, ?, ?)
 		`, eventID, occ.StartDate, occ.StartTime, startDatetime, occ.EventDurationMinutes, occ.EventTimeDetails)
@@ -129,7 +130,7 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 	return &submission, isPublished == 1, nil
 }
 
-func (r *Repository) UpdateRide(token string, submission *Submission) error {
+func (r *Repository) UpdateRide(token string, submission *Submission, latitude, longitude float64) error {
 	tx, err := r.db.Begin()
 	if err != nil {
 		return err
@@ -144,7 +145,7 @@ func (r *Repository) UpdateRide(token string, submission *Submission) error {
 			organizer_name = ?, organizer_email = ?, organizer_phone = ?,
 			web_url = ?, web_name = ?, newsflash = ?,
 			hide_email = ?, hide_phone = ?, hide_contact_name = ?,
-			group_code = ?, updated_at = STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')
+			group_code = ?, latitude = ?, longitude = ?, updated_at = STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')
 		WHERE edit_token = ?
 	`,
 		submission.Title, submission.TinyTitle, submission.Description, submission.ImageURL,
@@ -153,7 +154,7 @@ func (r *Repository) UpdateRide(token string, submission *Submission) error {
 		boolToInt(submission.IsLoopRide), submission.OrganizerName, submission.OrganizerEmail,
 		submission.OrganizerPhone, submission.WebURL, submission.WebName, submission.Newsflash,
 		boolToInt(submission.HideEmail), boolToInt(submission.HidePhone), boolToInt(submission.HideContactName),
-		nilIfEmpty(submission.GroupCode), token,
+		nilIfEmpty(submission.GroupCode), latitude, longitude, token,
 	)
 
 	if err != nil {

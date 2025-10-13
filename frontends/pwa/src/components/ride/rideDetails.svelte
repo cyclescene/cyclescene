@@ -35,7 +35,8 @@
   function handleAddtoCalendar() {
     if (!ride) return;
 
-    const url = `${API_BASE}/ics?id=${ride.id}&city=${CITY_CODE}`;
+    const url = `${API_BASE}/v1/rides/ics?id=${ride.id}&city=${CITY_CODE}`;
+    console.log(url);
 
     // 1. Check if the code is being run in a mobile PWA/browser context
     if (

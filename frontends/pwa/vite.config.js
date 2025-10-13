@@ -33,6 +33,12 @@ export default defineConfig({
         short_name: "CycleScenePDX",
         description: "Upcoming bike rides in Portland, Oregon",
         theme_color: "#000000",
+        background_color: "#000000",
+        display: "standalone",
+        start_url: "/",
+        scope: "/",
+        orientation: "portrait-primary",
+        categories: ["lifestyle", "sports"],
         icons: [
           {
             src: "/icons/manifest-icon-192.maskable.png",
@@ -57,6 +63,18 @@ export default defineConfig({
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable"
+          },
+          {
+            src: "/icons/favicon-196.png",
+            sizes: "196x196",
+            type: "image/png",
+            purpose: "any"
+          },
+          {
+            src: "/cyclescene_temp.png",
+            sizes: "any",
+            type: "image/png",
+            purpose: "any"
           }
         ]
       },
