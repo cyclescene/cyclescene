@@ -18,8 +18,16 @@ API_IMAGE_NAME := cyclescene-api-image
 API_IMAGE_TAG := $(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO_NAME)/$(API_SERVICE_NAME)/$(API_IMAGE_NAME):latest
 API_DOCKERFILE := ./Dockerfile.API
 
+CLEANER_SERVICE_NAME := submission-token-cleaner
+CLEANER_LOCAL_TAG := cs-token-cleaner:latest
+CLEANER_IMAGE_NAME := token-cleaner-image
+CLEANER_IMAGE_TAG := $(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO_NAME)/$(CLEANER_SERVICE_NAME)/$(CLEANER_IMAGE_NAME):latest
+CLEANER_DOCKERFILE := ./Dockerfile.ExpTokenCleaner
+
+
 .PHONY: build-local-scraper auth-docker push-image deploy-job setup-repo
 
+# GCP Docker Repo Setup
 setup-repo:
 	@echo "--- Creating Artifact Registry Repository: $(REPO_NAME)"
 	gcloud artifacts repositories create $(REPO_NAME) \
@@ -29,6 +37,7 @@ setup-repo:
 		--project=$(PROJECT_ID) || true
 	@echo "-- REPOSITORY SETUP COMPLETE ---"
 
+# Scraper build and deploy commands
 build-local-scraper: setup-repo
 	@echo "--- Building Local Docker Image ---"
 	docker build -t $(SCRAPER_LOCAL_TAG) . -f $(SCRAPER_DOCKERFILE)
@@ -42,7 +51,7 @@ push-scraper-image: auth-docker build-local-scraper
 	docker tag $(SCRAPER_LOCAL_TAG) $(SCRAPER_IMAGE_TAG)
 	docker push $(SCRAPER_IMAGE_TAG)
 
-deploy-job: push-scraper-image
+deploy-scraper: push-scraper-image
 	@echo "--- Deploying Cloud Run Job ---"
 	gcloud run jobs deploy $(SCRAPER_SERVICE_NAME) \
 		--image $(SCRAPER_IMAGE_TAG) \
@@ -50,7 +59,7 @@ deploy-job: push-scraper-image
 		--env-vars-file ./runtime.yml 
 	@echo "--- DEPLOYMENT COMPLETE ---"
 
-
+# API commands to build and deploy
 build-local-api: setup-repo
 	@echo "--- Building Local Docker Image ---"
 	docker build -t $(API_LOCAL_TAG) . -f $(API_DOCKERFILE)
@@ -67,4 +76,23 @@ deploy-api-service: push-api-image
 		--region $(REGION) \
 		--env-vars-file ./runtime.yml
 
-deploy-all: deploy-job deploy-api-service
+
+# Expired Submission Token Cleaner build and deploy
+build-local-cleaner: setup-repo
+	@echo "--- Building Local Docker Image ---"
+	docker build -t $(CLEANER_LOCAL_TAG) . -f $(CLEANER_DOCKERFILE)
+
+push-cleaner-image: auth-docker build-local-cleaner
+	@echo "-- Tagging and Pushing image to Artifact Registry ---"
+	docker tag $(CLEANER_LOCAL_TAG) $(CLEANER_IMAGE_TAG)
+	docker push $(CLEANER_IMAGE_TAG)
+
+deploy-cleaner: push-cleaner-image
+	@echo "--- Deploying Cloud Run Job ---"
+	gcloud run jobs deploy $(CLEANER_SERVICE_NAME) \
+		--image $(CLEANER_IMAGE_TAG) \
+		--region $(REGION) \
+		--env-vars-file ./runtime.yml 
+	@echo "--- DEPLOYMENT COMPLETE ---"
+
+deploy-all: deploy-scraper deploy-api-service deploy-cleaner
