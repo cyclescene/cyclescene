@@ -1,8 +1,5 @@
 PROJECT_ID := cyclescene
 REGION := us-west1
-BUILD_IMAGE := go125
-TIMEOUT := 540s
-MEMORY := 256M
 REPO_NAME := cyclescene
 
 
@@ -24,6 +21,13 @@ CLEANER_IMAGE_NAME := token-cleaner-image
 CLEANER_IMAGE_TAG := $(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO_NAME)/$(CLEANER_SERVICE_NAME)/$(CLEANER_IMAGE_NAME):latest
 CLEANER_DOCKERFILE := ./Dockerfile.ExpTokenCleaner
 
+
+BACKUP_SERVICE_NAME := turso-backup-job
+BACKUP_SERVICE_ACCOUNT := cyclescene-backup-uploader@$(PROJECT_ID).iam.gserviceaccount.com
+BACKUP_LOCAL_TAG := turso-backup:latest
+BACKUP_IMAGE_NAME := turso-backup-image
+BACKUP_IMAGE_TAG := $(REGION)-docker.pkg.dev/$(PROJECT_ID)/$(REPO_NAME)/$(BACKUP_SERVICE_NAME)/$(BACKUP_IMAGE_NAME):latest
+BACKUP_DOCKERFILE := Dockerfile.Backup
 
 .PHONY: build-local-scraper auth-docker push-image deploy-job setup-repo
 
@@ -76,7 +80,6 @@ deploy-api-service: push-api-image
 		--region $(REGION) \
 		--env-vars-file ./runtime.yml
 
-
 # Expired Submission Token Cleaner build and deploy
 build-local-cleaner: setup-repo
 	@echo "--- Building Local Docker Image ---"
@@ -94,5 +97,24 @@ deploy-cleaner: push-cleaner-image
 		--region $(REGION) \
 		--env-vars-file ./runtime.yml 
 	@echo "--- DEPLOYMENT COMPLETE ---"
+
+
+build-local-backup: setup-repo # Assumes setup-repo is defined earlier
+	@echo "--- Building Local Backup Docker Image ---"
+	docker build -t $(BACKUP_LOCAL_TAG) . -f $(BACKUP_DOCKERFILE)
+
+push-backup-image: auth-docker build-local-backup
+	@echo "-- Tagging and Pushing Backup image to Artifact Registry ---"
+	docker tag $(BACKUP_LOCAL_TAG) $(BACKUP_IMAGE_TAG)
+	docker push $(BACKUP_IMAGE_TAG)
+
+deploy-backup: push-backup-image
+	@echo "--- Deploying Turso Backup Cloud Run Job ---"
+	gcloud run jobs deploy $(BACKUP_SERVICE_NAME) \
+		--image $(BACKUP_IMAGE_TAG) \
+		--region $(REGION) \
+		--service-account $(BACKUP_SERVICE_ACCOUNT) \
+		--env-vars-file ./runtime.yml 
+	@echo "--- BACKUP DEPLOYMENT COMPLETE ---"
 
 deploy-all: deploy-scraper deploy-api-service deploy-cleaner
