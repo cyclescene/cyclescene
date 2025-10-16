@@ -1,0 +1,11 @@
+# Terraform/OpenTofu files
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+*.tfplan
+tfplan
+
+# Crash logs
+crash.log
+crash.*.log

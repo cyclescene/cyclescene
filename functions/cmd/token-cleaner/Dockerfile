@@ -7,12 +7,13 @@ WORKDIR /app
 # Copy go.mod and go.sum (from the root) to handle dependencies first
 COPY go.mod go.sum ./
 
-# Copy the specific source files needed for the final build
-# This correctly gets the main executable and the helper files
-
-# Download and compile the application
+# Download dependencies (cached layer if go.mod doesn't change)
 RUN go mod download
-COPY . .
+
+# Copy only the code this service needs
+COPY cmd/token-cleaner ./cmd/token-cleaner
+# Add any internal packages if token-cleaner uses them
+# COPY internal/ ./internal/
 
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o cleaner ./cmd/token-cleaner
 

@@ -1,0 +1,15 @@
+# Terraform/OpenTofu files
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.*
+*.tfplan
+tfplan
+
+# Environment variables (keep terraform.tfvars.example, ignore actual tfvars)
+# Uncomment if you want to ignore tfvars:
+# terraform.tfvars
+
+# Crash logs
+crash.log
+crash.*.log

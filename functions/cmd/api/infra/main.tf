@@ -1,0 +1,114 @@
+terraform {
+  required_version = ">= 1.6"
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 5.0"
+    }
+  }
+
+  backend "gcs" {
+    bucket = "cyclescene-terraform-state"
+    prefix = "terraform/state/api"
+  }
+}
+
+provider "google" {
+  project = var.project_id
+  region  = var.region
+}
+
+# Service Account for API with storage and signBlob permissions
+module "api_service_account" {
+  source = "../../../../infrastructure/modules/service-account"
+
+  account_id   = "cyclescene-api"
+  display_name = "CycleScene API Service Account"
+  description  = "Service account for API with storage and signed URL capabilities"
+  project_id   = var.project_id
+
+  roles = [
+    "roles/storage.objectCreator",     # Create objects in bucket
+    "roles/storage.objectViewer",      # Read objects from bucket
+    "roles/iam.serviceAccountTokenCreator" # Required for signing URLs (signBlob)
+  ]
+}
+
+# Storage bucket for user-submitted media (images)
+module "user_media_bucket" {
+  source = "../../../../infrastructure/modules/storage-bucket"
+
+  bucket_name                 = "${var.project_id}-user-media"
+  location                    = var.region
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+  force_destroy               = false
+  versioning_enabled          = false
+
+  # CORS configuration for browser uploads
+  cors_rules = [
+    {
+      origin          = var.allowed_origins
+      method          = ["GET", "POST", "PUT", "HEAD"]
+      response_header = ["Content-Type", "Content-Length"]
+      max_age_seconds = 3600
+    }
+  ]
+
+  # Lifecycle rule to transition old media to cheaper storage
+  lifecycle_rules = [
+    {
+      action = {
+        type          = "SetStorageClass"
+        storage_class = "NEARLINE"
+      }
+      condition = {
+        age = 90 # Move to nearline after 90 days
+      }
+    }
+  ]
+
+  labels = {
+    environment = var.environment
+    purpose     = "user-media"
+    managed_by  = "opentofu"
+  }
+}
+
+# Cloud Run Service for API Gateway
+module "api_service" {
+  source = "../../../../infrastructure/modules/cloud-run-service"
+
+  service_name          = "cyclescene-api-gateway"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/cyclescene-api-gateway/cyclescene-api-image:latest"
+  service_account_email = module.api_service_account.email
+
+  env_vars = merge(
+    var.env_vars,
+    {
+      MEDIA_BUCKET = module.user_media_bucket.bucket_name
+      GCP_PROJECT  = var.project_id
+    }
+  )
+
+  # Resource configuration
+  cpu_limit              = var.api_cpu_limit
+  memory_limit           = var.api_memory_limit
+  cpu_always_allocated   = false
+
+  # Scaling configuration
+  min_instances = var.api_min_instances
+  max_instances = var.api_max_instances
+
+  # Network configuration
+  container_port        = 8080
+  allow_unauthenticated = var.api_allow_public
+  timeout               = "300s"
+
+  labels = {
+    environment = var.environment
+    service     = "api"
+    managed_by  = "opentofu"
+  }
+}

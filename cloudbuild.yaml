@@ -1,0 +1,46 @@
+steps:
+  # Step 1: Build and push container images
+  # Add your build steps here for each service/job
+  # Example for a service:
+  # - name: 'gcr.io/cloud-builders/docker'
+  #   args: ['build', '-t', 'gcr.io/$PROJECT_ID/my-service:$COMMIT_SHA', './path/to/service']
+  # - name: 'gcr.io/cloud-builders/docker'
+  #   args: ['push', 'gcr.io/$PROJECT_ID/my-service:$COMMIT_SHA']
+
+  # Step 2: Initialize OpenTofu/Terraform
+  - name: 'ghcr.io/opentofu/opentofu:latest'
+    dir: 'infrastructure'
+    args:
+      - 'init'
+      - '-backend-config=bucket=${_STATE_BUCKET}'
+      - '-backend-config=prefix=terraform/state/${_ENVIRONMENT}'
+
+  # Step 3: Plan infrastructure changes
+  - name: 'ghcr.io/opentofu/opentofu:latest'
+    dir: 'infrastructure'
+    args:
+      - 'plan'
+      - '-var=project_id=$PROJECT_ID'
+      - '-var=region=${_REGION}'
+      - '-var=environment=${_ENVIRONMENT}'
+      - '-out=tfplan'
+
+  # Step 4: Apply infrastructure changes
+  - name: 'ghcr.io/opentofu/opentofu:latest'
+    dir: 'infrastructure'
+    args:
+      - 'apply'
+      - '-auto-approve'
+      - 'tfplan'
+
+# Substitutions - define your variables here
+substitutions:
+  _ENVIRONMENT: 'dev'
+  _REGION: 'us-central1'
+  _STATE_BUCKET: 'your-terraform-state-bucket'
+
+options:
+  machineType: 'N1_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+timeout: 1800s
