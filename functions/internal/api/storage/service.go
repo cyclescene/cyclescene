@@ -184,7 +184,7 @@ func loadServiceAccountFromBase64(credentialsB64 string) (*ServiceAccountCredent
 	}
 
 	// Parse the JSON key
-	var keyFile map[string]interface{}
+	var keyFile map[string]any
 	if err := json.Unmarshal(keyData, &keyFile); err != nil {
 		return nil, fmt.Errorf("failed to parse service account key: %v", err)
 	}
@@ -223,7 +223,7 @@ func loadServiceAccountFromFile(keyPath string) (*ServiceAccountCredentials, err
 	}
 
 	// Parse the JSON key file
-	var keyFile map[string]interface{}
+	var keyFile map[string]any
 	if err := json.Unmarshal(keyData, &keyFile); err != nil {
 		return nil, fmt.Errorf("failed to parse service account key file: %v", err)
 	}

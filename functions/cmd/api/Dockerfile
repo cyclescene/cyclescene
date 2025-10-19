@@ -11,9 +11,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy only the code this service needs
-COPY cmd/api ./cmd/api
-COPY internal/api ./internal/api
-COPY internal/scraper ./internal/scraper
+COPY . .
 
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o api ./cmd/api/
 
