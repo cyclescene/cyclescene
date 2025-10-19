@@ -2,18 +2,16 @@ package scraper
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
-	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
+	"google.golang.org/api/transport"
 )
 
-const saCredentialsKey = "GOOGLE_SA_CREDENTIALS"
 const addressScope = "https://www.googleapis.com/auth/maps-platform.geocode.address"
 
 var authenticatedClient *http.Client
@@ -23,24 +21,18 @@ func getAuthenticatedClient(ctx context.Context) (*http.Client, error) {
 		return authenticatedClient, nil
 	}
 
-	credsB64 := os.Getenv(saCredentialsKey)
-	if credsB64 == "" {
-		return nil, fmt.Errorf("FATAL: Google Service Account credentials not found is %s", saCredentialsKey)
-	}
+	// Use Application Default Credentials (ADC) from the service account running on Cloud Run
+	// This will automatically use the credentials of the Cloud Run service account
+	clientOption := option.WithScopes(addressScope)
 
-	credsJSON, err := base64.StdEncoding.DecodeString(credsB64)
+	// Create HTTP client with ADC
+	httpClient, _, err := transport.NewHTTPClient(ctx, clientOption)
 	if err != nil {
-		return nil, fmt.Errorf("FATAL: failed to decode Base64 credentials %w", err)
-	}
-	creds, err := google.JWTConfigFromJSON([]byte(credsJSON), addressScope)
-	if err != nil {
-
-		return nil, fmt.Errorf("failed to create credentials from JSON: %w", err)
+		return nil, fmt.Errorf("failed to create authenticated HTTP client with ADC: %w", err)
 	}
 
-	client := creds.Client(ctx)
-	client.Timeout = 15 * time.Second
-	authenticatedClient = client
+	httpClient.Timeout = 15 * time.Second
+	authenticatedClient = httpClient
 
 	return authenticatedClient, nil
 

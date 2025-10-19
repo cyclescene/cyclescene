@@ -35,4 +35,4 @@ optimizer_service_account_email = "cyclescene-image-optimizer@cyclescene.iam.gse
 optimizer_cpu_limit             = "2"
 optimizer_memory_limit          = "2Gi"
 optimizer_max_instances         = 5
-image_optimizer_url             = "https://cyclescene-image-optimizer-us-west1-run.app"
+image_optimizer_url             = "https://cyclescene-image-optimizer-556687167657.us-west1.run.app"

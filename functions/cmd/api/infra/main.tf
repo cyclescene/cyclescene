@@ -19,19 +19,20 @@ provider "google" {
   region  = var.region
 }
 
-# Service Account for API with storage and signBlob permissions
+# Service Account for API with storage, geocoding, and signBlob permissions
 module "api_service_account" {
   source = "../../../../infrastructure/modules/service-account"
 
   account_id   = "cyclescene-api"
   display_name = "CycleScene API Service Account"
-  description  = "Service account for API with storage and signed URL capabilities"
+  description  = "Service account for API with storage, geocoding, and signed URL capabilities"
   project_id   = var.project_id
 
   roles = [
-    "roles/storage.objectCreator",     # Create objects in bucket
-    "roles/storage.objectViewer",      # Read objects from bucket
-    "roles/iam.serviceAccountTokenCreator" # Required for signing URLs (signBlob)
+    "roles/storage.objectCreator",                        # Create objects in bucket
+    "roles/storage.objectViewer",                         # Read objects from bucket
+    "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs (signBlob)
+    "roles/serviceusage.serviceUsageConsumer"             # Required to call Google APIs
   ]
 }
 

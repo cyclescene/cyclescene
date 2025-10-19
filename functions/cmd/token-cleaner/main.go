@@ -22,11 +22,6 @@ func main() {
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_DB_RW_TOKEN") == "" {
 		log.Fatal("FATAL: Turso env variable not set properly")
 	}
-
-	// GOOGLE Vars
-	if os.Getenv("GOOGLE_GEOCODING_API_KEY") == "" {
-		log.Fatal("FATAL: GOOGLE_GEOCODING_API_KEY not properly set")
-	}
 	//
 	// // set up logger
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
