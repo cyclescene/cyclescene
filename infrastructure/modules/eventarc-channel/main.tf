@@ -12,7 +12,7 @@ resource "google_eventarc_trigger" "trigger" {
   project  = var.project_id
 
   # Listen to custom events from the channel
-  matching_criteria {
+  event_filters {
     attribute = "type"
     value     = var.event_type
   }
