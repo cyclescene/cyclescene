@@ -64,6 +64,7 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 			slog.Info("found image with extension", "extension", ext)
 			break
 		}
+		slog.Warn("failed to download with this extension", "extension", ext, "error", err)
 	}
 
 	if imageData == nil {
