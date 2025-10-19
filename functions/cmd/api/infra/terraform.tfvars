@@ -22,7 +22,9 @@ allowed_origins = [
   "https://www.cyclescene.cc",
   "https://form.cyclescene.cc",
   "https://pdx.cyclescene.cc",
-  "https://slc.cyclescene.cc"
+  "https://slc.cyclescene.cc",
+  "http://localhost:5173",
+  "http://localhost:5174",
 ]
 
 # Database & API credentials

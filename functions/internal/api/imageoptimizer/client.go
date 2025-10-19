@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"cloud.google.com/go/compute/metadata"
+	"google.golang.org/api/idtoken"
 )
 
 type Client struct {
@@ -23,12 +26,63 @@ func NewClient() *Client {
 		baseURL = "http://localhost:8080" // Default for local development
 	}
 
+	httpClient := createAuthenticatedHTTPClient(baseURL)
+
 	return &Client{
-		baseURL: baseURL,
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		baseURL:    baseURL,
+		httpClient: httpClient,
 	}
+}
+
+// createAuthenticatedHTTPClient creates an HTTP client with Cloud Run authentication
+func createAuthenticatedHTTPClient(targetURL string) *http.Client {
+	// For local development, use unauthenticated client
+	if targetURL == "http://localhost:8080" {
+		return &http.Client{
+			Timeout: 30 * time.Second,
+		}
+	}
+
+	// For Cloud Run, use identity token authentication
+	return &http.Client{
+		Transport: &idTokenRoundTripper{
+			targetURL: targetURL,
+		},
+		Timeout: 30 * time.Second,
+	}
+}
+
+// idTokenRoundTripper adds identity token to requests for service-to-service authentication
+type idTokenRoundTripper struct {
+	targetURL string
+}
+
+func (rt *idTokenRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	ctx := context.Background()
+
+	// Check if we're running in a Cloud environment by trying to get project ID
+	_, err := metadata.ProjectID()
+	if err != nil {
+		slog.Warn("not running on GCP, making unauthenticated request to image optimizer")
+		return http.DefaultTransport.RoundTrip(req)
+	}
+
+	// Get an identity token for the target service
+	audience := rt.targetURL
+	token, err := idtoken.NewClient(ctx, audience)
+	if err != nil {
+		slog.Error("failed to create identity token client", "error", err)
+		return http.DefaultTransport.RoundTrip(req)
+	}
+
+	// Add the identity token to the request
+	resp, err := token.Transport.RoundTrip(req)
+	if err != nil {
+		slog.Error("failed to make authenticated request", "error", err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
 // TriggerOptimization triggers image optimization asynchronously
