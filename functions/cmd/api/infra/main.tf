@@ -32,7 +32,8 @@ module "api_service_account" {
     "roles/storage.objectCreator",                        # Create objects in bucket
     "roles/storage.objectViewer",                         # Read objects from bucket
     "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs (signBlob)
-    "roles/serviceusage.serviceUsageConsumer"             # Required to call Google APIs
+    "roles/serviceusage.serviceUsageConsumer",            # Required to call Google APIs
+    "roles/eventarc.eventPublisher"                       # Required to publish events to Eventarc
   ]
 }
 
@@ -88,11 +89,12 @@ module "api_service" {
   env_vars = merge(
     var.env_vars,
     {
-      MEDIA_BUCKET       = module.user_media_bucket.bucket_name
-      GCP_PROJECT        = var.project_id
-      TURSO_DB_URL       = var.turso_db_url
-      TURSO_DB_RW_TOKEN  = var.turso_db_rw_token
-      IMAGE_OPTIMIZER_URL = var.image_optimizer_url
+      MEDIA_BUCKET          = module.user_media_bucket.bucket_name
+      GCP_PROJECT           = var.project_id
+      TURSO_DB_URL          = var.turso_db_url
+      TURSO_DB_RW_TOKEN     = var.turso_db_rw_token
+      IMAGE_OPTIMIZER_URL   = var.image_optimizer_url
+      EVENTARC_CHANNEL_NAME = var.eventarc_channel_name
     }
   )
 

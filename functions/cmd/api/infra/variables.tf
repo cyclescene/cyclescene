@@ -116,3 +116,9 @@ variable "image_optimizer_url" {
   default     = ""
   sensitive   = false
 }
+
+variable "eventarc_channel_name" {
+  description = "Name of the Eventarc channel for image optimization events"
+  type        = string
+  default     = "image-optimization-events"
+}

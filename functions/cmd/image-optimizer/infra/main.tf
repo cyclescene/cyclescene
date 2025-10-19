@@ -91,7 +91,44 @@ module "image_optimizer_service" {
   }
 }
 
-# Grant API service account permission to invoke the optimizer service
+# Eventarc channel for image optimization events
+module "image_optimization_channel" {
+  source = "../../../../infrastructure/modules/eventarc-channel"
+
+  project_id                = var.project_id
+  location                  = var.region
+  channel_name              = "image-optimization-events"
+  trigger_name              = "image-optimizer-trigger"
+  trigger_description       = "Routes image optimization events to the image optimizer service"
+  event_type                = "com.cyclescene.image.optimization"
+  cloud_run_service_name    = module.image_optimizer_service.service_name
+  cloud_run_path            = "/optimize"
+  trigger_service_account   = google_service_account.eventarc_trigger_sa.email
+
+  labels = {
+    environment = var.environment
+    service     = "image-optimizer"
+    managed_by  = "opentofu"
+  }
+}
+
+# Service account for Eventarc trigger to invoke Cloud Run
+resource "google_service_account" "eventarc_trigger_sa" {
+  account_id   = "eventarc-image-optimizer-trigger"
+  display_name = "Eventarc Image Optimizer Trigger SA"
+  description  = "Service account for Eventarc trigger to invoke image optimizer"
+  project      = var.project_id
+}
+
+# Grant Eventarc trigger SA permission to invoke the optimizer service
+resource "google_cloud_run_service_iam_member" "eventarc_invoker" {
+  service  = module.image_optimizer_service.service_name
+  location = module.image_optimizer_service.region
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.eventarc_trigger_sa.email}"
+}
+
+# Grant API service account permission to invoke the optimizer service (legacy, for direct calls)
 resource "google_cloud_run_service_iam_member" "api_invoker" {
   service  = module.image_optimizer_service.service_name
   location = module.image_optimizer_service.region
