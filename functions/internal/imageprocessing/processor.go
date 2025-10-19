@@ -21,6 +21,13 @@ const (
 	webpQuality = 85
 )
 
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 type ImageProcessor struct {
 	stagingBucket   string
 	optimizedBucket string
@@ -62,6 +69,9 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 	if imageData == nil {
 		return "", fmt.Errorf("failed to download image from staging bucket with any common extension")
 	}
+
+	// Log file info for debugging
+	slog.Info("downloaded image file", "imageUUID", imageUUID, "stagingObjectName", stagingObjectName, "fileSize", len(imageData), "firstBytes", fmt.Sprintf("%x", imageData[:min(8, len(imageData))]))
 
 	// Optimize image and convert to WebP format
 	slog.Info("optimizing image", "imageUUID", imageUUID)
@@ -123,9 +133,12 @@ func (p *ImageProcessor) deleteFromGCS(ctx context.Context, bucket, object strin
 
 // optimizeImage compresses and optimizes an image to WebP format
 func (p *ImageProcessor) optimizeImage(imageData []byte) ([]byte, error) {
+	slog.Info("starting image optimization", "dataSize", len(imageData))
+
 	// Decode image config to get format info
 	img, format, err := image.DecodeConfig(bytes.NewReader(imageData))
 	if err != nil {
+		slog.Error("decode config failed", "error", err, "dataSize", len(imageData))
 		return nil, fmt.Errorf("failed to decode image config: %v", err)
 	}
 
