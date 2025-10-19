@@ -115,8 +115,8 @@ module "image_optimization_channel" {
 
 # Service account for Eventarc trigger to invoke Cloud Run
 resource "google_service_account" "eventarc_trigger_sa" {
-  account_id   = "eventarc-image-optimizer-trigger"
-  display_name = "Eventarc Image Optimizer Trigger SA"
+  account_id   = "img-optimizer-trigger"
+  display_name = "Image Optimizer Eventarc Trigger SA"
   description  = "Service account for Eventarc trigger to invoke image optimizer"
   project      = var.project_id
 }

@@ -3,8 +3,6 @@ resource "google_eventarc_channel" "channel" {
   name       = var.channel_name
   location   = var.location
   project    = var.project_id
-
-  labels = var.labels
 }
 
 # Eventarc Trigger that listens to channel and routes to Cloud Run
@@ -43,9 +41,10 @@ resource "google_eventarc_trigger" "trigger" {
 }
 
 # Grant publisher service account permission to publish events to the channel
-resource "google_eventarc_channel_iam_member" "publisher" {
+# The channel uses a Pub/Sub topic under the hood, so we grant pubsub.publisher on that topic
+resource "google_pubsub_topic_iam_member" "channel_publisher" {
   count   = var.publisher_service_account_email != "" ? 1 : 0
-  channel = google_eventarc_channel.channel.name
-  role    = "roles/eventarc.eventPublisher"
+  topic   = google_eventarc_channel.channel.pubsub_topic
+  role    = "roles/pubsub.publisher"
   member  = "serviceAccount:${var.publisher_service_account_email}"
 }
