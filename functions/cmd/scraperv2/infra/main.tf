@@ -33,12 +33,27 @@ module "scheduler_service_account" {
   ]
 }
 
+# Service account for the scraper job itself
+module "scraper_job_service_account" {
+  source = "../../../../infrastructure/modules/service-account"
+
+  account_id   = "scraper-job"
+  display_name = "Scraper Job SA"
+  description  = "Service account for scraper job to access Google APIs and databases"
+  project_id   = var.project_id
+
+  roles = [
+    "roles/serviceusage.serviceUsageConsumer"  # Required to call Google APIs (geocoding)
+  ]
+}
+
 # Cloud Run Job for PDX scraper
 module "scraper_job" {
   source = "../../../../infrastructure/modules/cloud-run-job"
 
-  job_name = "pdx-scraper"
-  image    = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/pdx-scraper/scraper-image:latest"
+  job_name               = "pdx-scraper"
+  image                  = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/pdx-scraper/scraper-image:latest"
+  service_account_email  = module.scraper_job_service_account.email
 
   env_vars = var.env_vars
 
