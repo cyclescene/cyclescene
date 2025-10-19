@@ -95,15 +95,16 @@ module "image_optimizer_service" {
 module "image_optimization_channel" {
   source = "../../../../infrastructure/modules/eventarc-channel"
 
-  project_id                = var.project_id
-  location                  = var.region
-  channel_name              = "image-optimization-events"
-  trigger_name              = "image-optimizer-trigger"
-  trigger_description       = "Routes image optimization events to the image optimizer service"
-  event_type                = "com.cyclescene.image.optimization"
-  cloud_run_service_name    = module.image_optimizer_service.service_name
-  cloud_run_path            = "/optimize"
-  trigger_service_account   = google_service_account.eventarc_trigger_sa.email
+  project_id                      = var.project_id
+  location                        = var.region
+  channel_name                    = "image-optimization-events"
+  trigger_name                    = "image-optimizer-trigger"
+  trigger_description             = "Routes image optimization events to the image optimizer service"
+  event_type                      = "com.cyclescene.image.optimization"
+  cloud_run_service_name          = module.image_optimizer_service.service_name
+  cloud_run_path                  = "/optimize"
+  trigger_service_account         = google_service_account.eventarc_trigger_sa.email
+  publisher_service_account_email = var.api_service_account_email
 
   labels = {
     environment = var.environment

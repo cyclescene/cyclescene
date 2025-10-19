@@ -12,14 +12,14 @@ import (
 )
 
 type Handler struct {
-	service         *Service
-	eventarcClient  *events.EventarcClient
+	service        *Service
+	eventarcClient *events.EventarcClient
 }
 
 func NewHandler(service *Service, eventarcClient *events.EventarcClient) *Handler {
 	return &Handler{
-		service:         service,
-		eventarcClient:  eventarcClient,
+		service:        service,
+		eventarcClient: eventarcClient,
 	}
 }
 

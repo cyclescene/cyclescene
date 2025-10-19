@@ -41,3 +41,11 @@ resource "google_eventarc_trigger" "trigger" {
 
   labels = var.labels
 }
+
+# Grant publisher service account permission to publish events to the channel
+resource "google_eventarc_channel_iam_member" "publisher" {
+  count   = var.publisher_service_account_email != "" ? 1 : 0
+  channel = google_eventarc_channel.channel.name
+  role    = "roles/eventarc.eventPublisher"
+  member  = "serviceAccount:${var.publisher_service_account_email}"
+}

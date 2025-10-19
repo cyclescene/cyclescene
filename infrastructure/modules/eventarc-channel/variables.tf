@@ -46,6 +46,12 @@ variable "trigger_service_account" {
   type        = string
 }
 
+variable "publisher_service_account_email" {
+  description = "Email of the service account that will publish events to this channel"
+  type        = string
+  default     = ""
+}
+
 variable "labels" {
   description = "Labels to apply to resources"
   type        = map(string)

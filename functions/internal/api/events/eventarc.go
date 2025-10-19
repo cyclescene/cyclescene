@@ -22,13 +22,13 @@ type EventarcClient struct {
 
 // CloudEvent represents a CloudEvents v1.0 format event
 type CloudEvent struct {
-	SpecVersion     string                 `json:"specversion"`
-	Type            string                 `json:"type"`
-	Source          string                 `json:"source"`
-	ID              string                 `json:"id"`
-	Time            string                 `json:"time,omitempty"`
-	DataContentType string                 `json:"datacontenttype,omitempty"`
-	Data            map[string]interface{} `json:"data"`
+	SpecVersion     string         `json:"specversion"`
+	Type            string         `json:"type"`
+	Source          string         `json:"source"`
+	ID              string         `json:"id"`
+	Time            string         `json:"time,omitempty"`
+	DataContentType string         `json:"datacontenttype,omitempty"`
+	Data            map[string]any `json:"data"`
 }
 
 // NewEventarcClient creates a new Eventarc client
@@ -89,7 +89,7 @@ func (ec *EventarcClient) TriggerOptimization(ctx context.Context, event *ImageO
 		ID:              uuid.New().String(),
 		Time:            time.Now().UTC().Format(time.RFC3339),
 		DataContentType: "application/json",
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"imageUUID":  event.ImageUUID,
 			"cityCode":   event.CityCode,
 			"entityID":   event.EntityID,

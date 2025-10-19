@@ -32,8 +32,7 @@ module "api_service_account" {
     "roles/storage.objectCreator",                        # Create objects in bucket
     "roles/storage.objectViewer",                         # Read objects from bucket
     "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs (signBlob)
-    "roles/serviceusage.serviceUsageConsumer",            # Required to call Google APIs
-    "roles/eventarc.eventPublisher"                       # Required to publish events to Eventarc
+    "roles/serviceusage.serviceUsageConsumer"             # Required to call Google APIs
   ]
 }
 
