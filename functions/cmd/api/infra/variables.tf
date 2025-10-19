@@ -59,3 +59,60 @@ variable "env_vars" {
     NODE_ENV = "production"
   }
 }
+
+variable "api_custom_domain" {
+  description = "Custom domain name for the API (e.g., api.cyclescene.cc)"
+  type        = string
+  default     = ""
+}
+
+variable "optimizer_service_account_email" {
+  description = "Email of the image optimizer service account for IAM permissions"
+  type        = string
+  default     = ""
+}
+
+variable "staging_bucket_name" {
+  description = "Name of the staging bucket for image uploads"
+  type        = string
+  default     = ""
+}
+
+variable "turso_db_url" {
+  description = "Turso database URL"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "turso_db_rw_token" {
+  description = "Turso database read-write token"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "optimizer_cpu_limit" {
+  description = "CPU limit for image optimizer service"
+  type        = string
+  default     = "2"
+}
+
+variable "optimizer_memory_limit" {
+  description = "Memory limit for image optimizer service"
+  type        = string
+  default     = "2Gi"
+}
+
+variable "optimizer_max_instances" {
+  description = "Maximum number of optimizer instances"
+  type        = number
+  default     = 5
+}
+
+variable "image_optimizer_url" {
+  description = "URL for the image optimizer service"
+  type        = string
+  default     = ""
+  sensitive   = false
+}

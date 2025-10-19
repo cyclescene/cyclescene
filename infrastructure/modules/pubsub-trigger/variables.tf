@@ -1,3 +1,9 @@
+variable "project_id" {
+  description = "GCP project ID"
+  type        = string
+  default     = null
+}
+
 variable "topic_name" {
   description = "Name of the Pub/Sub topic"
   type        = string
@@ -22,6 +28,43 @@ variable "labels" {
   description = "Labels to apply to resources"
   type        = map(string)
   default     = {}
+}
+
+# Eventarc trigger settings
+variable "create_eventarc_trigger" {
+  description = "Whether to create an Eventarc trigger"
+  type        = bool
+  default     = false
+}
+
+variable "trigger_name" {
+  description = "Name of the Eventarc trigger (defaults to topic_name-trigger)"
+  type        = string
+  default     = null
+}
+
+variable "trigger_location" {
+  description = "Location/region for the Eventarc trigger"
+  type        = string
+  default     = "us-central1"
+}
+
+variable "cloud_run_service_name" {
+  description = "Name of the Cloud Run service to trigger"
+  type        = string
+  default     = null
+}
+
+variable "cloud_run_path" {
+  description = "Path on the Cloud Run service to send events to"
+  type        = string
+  default     = "/"
+}
+
+variable "eventarc_service_account_email" {
+  description = "Service account email for Eventarc to use when invoking Cloud Run"
+  type        = string
+  default     = null
 }
 
 # Subscription settings

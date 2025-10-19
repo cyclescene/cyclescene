@@ -1,6 +1,7 @@
 package ride
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,14 +9,19 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/spacesedan/cyclescene/functions/internal/api/imageoptimizer"
 )
 
 type Handler struct {
-	service *Service
+	service         *Service
+	optimizerClient *imageoptimizer.Client
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service:         service,
+		optimizerClient: imageoptimizer.NewClient(),
+	}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
@@ -73,6 +79,18 @@ func (h *Handler) SubmitRide(w http.ResponseWriter, r *http.Request) {
 		"city", submission.City,
 		"title", submission.Title,
 	)
+
+	// Trigger image optimization if image_uuid is provided
+	if submission.ImageUUID != "" {
+		optimizeReq := &imageoptimizer.OptimizeRequest{
+			ImageUUID:  submission.ImageUUID,
+			CityCode:   submission.City,
+			EntityID:   fmt.Sprintf("%d", response.EventID),
+			EntityType: "ride",
+		}
+		h.optimizerClient.TriggerOptimization(context.Background(), optimizeReq)
+		slog.Info("Image optimization triggered for ride", "event_id", response.EventID, "image_uuid", submission.ImageUUID)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

@@ -8,6 +8,7 @@
   } from "$lib/schemas/ride";
   import GroupSelector from "$lib/components/ride-form/GroupSelector.svelte";
   import DateTimePicker from "$lib/components/ride-form/DateTimePicker.svelte";
+  import ImageUploader from "$lib/components/ride-form/ImageUploader.svelte";
 
   // shadcn imports
   import { Button } from "$lib/components/ui/button";
@@ -147,22 +148,38 @@
           </div>
         </div>
 
-        <div class="space-y-2">
-          <Label for="image_url" class="text-sm sm:text-base"
-            >Image URL (Optional)</Label
-          >
-          <Input
-            id="image_url"
-            type="url"
-            bind:value={$form.image_url}
-            placeholder="https://example.com/image.jpg"
-            class="text-base"
+        <div class="space-y-4">
+          <ImageUploader
+            label="Ride Image (Optional)"
+            description="Upload a photo of your ride or cycling community"
+            onUploadComplete={(uuid) => {
+              $form.image_uuid = uuid;
+            }}
+            onUploadError={(error) => {
+              console.error("Image upload error:", error);
+            }}
           />
-          {#if $errors.image_url}
-            <p class="text-xs sm:text-sm text-destructive">
-              {$errors.image_url}
-            </p>
-          {/if}
+
+          <div class="space-y-2">
+            <Label for="image_url" class="text-sm sm:text-base"
+              >Image URL (Optional)
+              <span class="text-xs text-muted-foreground font-normal"
+                >Alternative to upload above</span
+              ></Label
+            >
+            <Input
+              id="image_url"
+              type="url"
+              bind:value={$form.image_url}
+              placeholder="https://example.com/image.jpg"
+              class="text-base"
+            />
+            {#if $errors.image_url}
+              <p class="text-xs sm:text-sm text-destructive">
+                {$errors.image_url}
+              </p>
+            {/if}
+          </div>
         </div>
       </Card.Content>
     </Card.Root>

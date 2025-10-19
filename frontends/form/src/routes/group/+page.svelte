@@ -3,6 +3,7 @@
   import { zod4Client as zodClient } from "sveltekit-superforms/adapters";
   import { groupRegistrationSchema } from "$lib/schemas/ride";
   import { checkGroupCodeAvailability } from "$lib/api/client";
+  import ImageUploader from "$lib/components/ride-form/ImageUploader.svelte";
 
   // shadcn imports
   import { Button } from "$lib/components/ui/button";
@@ -238,9 +239,25 @@
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
+        <ImageUploader
+          label="Upload Group Icon (Optional)"
+          description="Recommended: 64x64px PNG or SVG for the best results"
+          acceptedTypes={["image/png", "image/svg+xml", "image/jpeg", "image/webp"]}
+          maxSizeMB={5}
+          onUploadComplete={(uuid) => {
+            $form.icon_uuid = uuid;
+          }}
+          onUploadError={(error) => {
+            console.error("Icon upload error:", error);
+          }}
+        />
+
         <div class="space-y-2">
           <Label for="icon_url" class="text-sm sm:text-base"
-            >Icon URL (Optional)</Label
+            >Icon URL (Optional)
+            <span class="text-xs text-muted-foreground font-normal"
+              >Alternative to upload above</span
+            ></Label
           >
           <Input
             id="icon_url"
@@ -254,10 +271,6 @@
               {$errors.icon_url}
             </p>
           {/if}
-          <p class="text-xs text-muted-foreground">
-            Recommended: 64x64px PNG or SVG. We'll add GCP bucket upload in the
-            future.
-          </p>
         </div>
 
         {#if $form.icon_url}

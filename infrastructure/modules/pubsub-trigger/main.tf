@@ -16,7 +16,43 @@ resource "google_pubsub_topic" "topic" {
   }
 }
 
-# Create Pub/Sub subscription
+# Create Eventarc trigger for Pub/Sub
+resource "google_eventarc_trigger" "pubsub_trigger" {
+  count = var.create_eventarc_trigger ? 1 : 0
+
+  name     = var.trigger_name != null ? var.trigger_name : "${var.topic_name}-trigger"
+  location = var.trigger_location
+  project  = var.project_id
+
+  # Match Pub/Sub messages from this topic
+  matching_criteria {
+    attribute = "type"
+    value     = "google.cloud.pubsub.topic.v1.messagePublished"
+  }
+
+  # Destination Cloud Run service
+  destination {
+    cloud_run_service {
+      service = var.cloud_run_service_name
+      region  = var.trigger_location
+      path    = var.cloud_run_path
+    }
+  }
+
+  # Service account for invoking Cloud Run
+  service_account = var.eventarc_service_account_email
+
+  # Transport topic
+  transport {
+    pubsub {
+      topic = google_pubsub_topic.topic.id
+    }
+  }
+
+  labels = var.labels
+}
+
+# Create Pub/Sub subscription (legacy support)
 resource "google_pubsub_subscription" "subscription" {
   count = var.create_subscription ? 1 : 0
 
@@ -51,7 +87,7 @@ resource "google_pubsub_subscription" "subscription" {
     }
   }
 
-  # Push subscription for Cloud Run
+  # Push subscription for Cloud Run (legacy)
   dynamic "push_config" {
     for_each = var.push_endpoint != null ? [1] : []
     content {

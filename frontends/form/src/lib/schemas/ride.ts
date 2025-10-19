@@ -15,6 +15,7 @@ export const rideSubmissionSchema = z.object({
   tinytitle: z.string().max(50).optional(),
   description: z.string().min(10, 'Description must be at least 10 characters'),
   image_url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  image_uuid: z.string().optional(),
   audience: z.enum(['G', 'F', 'A', 'E'], {
     error: () => ({ message: 'Please select an audience type' })
   }).optional(),
@@ -65,6 +66,7 @@ export const groupRegistrationSchema = z.object({
   description: z.string().max(500).optional(),
   city: z.string().min(2, 'City is required'),
   icon_url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  icon_uuid: z.string().optional(),
   web_url: z.url('Must be a valid URL').optional().or(z.literal(''))
 });
 

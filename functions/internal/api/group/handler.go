@@ -1,21 +1,28 @@
 package group
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/spacesedan/cyclescene/functions/internal/api/imageoptimizer"
 )
 
 type Handler struct {
-	service *Service
+	service         *Service
+	optimizerClient *imageoptimizer.Client
 }
 
 func NewHandler(service *Service) *Handler {
-	return &Handler{service: service}
+	return &Handler{
+		service:         service,
+		optimizerClient: imageoptimizer.NewClient(),
+	}
 }
 
 func (h *Handler) RegisterRoutes(r chi.Router) {
@@ -98,6 +105,18 @@ func (h *Handler) RegisterGroup(w http.ResponseWriter, r *http.Request) {
 		"name", registration.Name,
 		"city", registration.City,
 	)
+
+	// Trigger image optimization if icon_uuid is provided
+	if registration.IconUUID != "" {
+		optimizeReq := &imageoptimizer.OptimizeRequest{
+			ImageUUID:  registration.IconUUID,
+			CityCode:   registration.City,
+			EntityID:   registration.Code,
+			EntityType: "group",
+		}
+		h.optimizerClient.TriggerOptimization(context.Background(), optimizeReq)
+		slog.Info("Image optimization triggered for group", "code", response.Code, "image_uuid", registration.IconUUID)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

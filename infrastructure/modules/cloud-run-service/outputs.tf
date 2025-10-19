@@ -17,3 +17,8 @@ output "service_location" {
   description = "Location of the Cloud Run service"
   value       = google_cloud_run_v2_service.service.location
 }
+
+output "region" {
+  description = "Region/Location of the Cloud Run service"
+  value       = google_cloud_run_v2_service.service.location
+}

@@ -9,6 +9,7 @@ type Submission struct {
 	TinyTitle   string `json:"tinytitle"`
 	Description string `json:"description"`
 	ImageURL    string `json:"image_url"`
+	ImageUUID   string `json:"image_uuid"`
 	Audience    string `json:"audience"`
 	RideLength  string `json:"ride_length"`
 	Area        string `json:"area"`

@@ -13,6 +13,7 @@ import (
 	"github.com/spacesedan/cyclescene/functions/internal/api/auth"
 	"github.com/spacesedan/cyclescene/functions/internal/api/group"
 	"github.com/spacesedan/cyclescene/functions/internal/api/ride"
+	"github.com/spacesedan/cyclescene/functions/internal/api/storage"
 )
 
 var allowedDomains = []string{
@@ -21,6 +22,8 @@ var allowedDomains = []string{
 	"https://form.cyclescene.cc",
 	"https://pdx.cyclescene.cc",
 	"https://slc.cyclescene.cc",
+	"http://localhost:5173",
+	"http://localhost:5174",
 }
 
 func isAllowedOrigin(_ *http.Request, origin string) bool {
@@ -34,7 +37,7 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 		slog.Info("loading cors with dev options")
 		corsOptions = cors.Options{
 			AllowedOrigins:   []string{"*"},
-			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost},
+			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodOptions},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token"},
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: false,
@@ -43,7 +46,7 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	} else {
 		corsOptions = cors.Options{
 			AllowOriginFunc:  isAllowedOrigin,
-			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost},
+			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodOptions},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token"},
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: false,
@@ -68,9 +71,20 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	groupService := group.NewService(groupRepo)
 	groupHandler := group.NewHandler(groupService)
 
+	// Storage handler for signed URLs (image uploads)
+	storageService, err := storage.NewService()
+	if err != nil {
+		slog.Error("Failed to initialize storage service", "error", err)
+		// Don't fail startup, but log the error
+	}
+	storageHandler := storage.NewHandler(storageService)
+
 	r.Route("/v1", func(r chi.Router) {
 		// auth handlers -- /tokens
 		authHandler.RegisterRoutes(r)
+
+		// storage handlers -- /storage (signed URLs for uploads)
+		storageHandler.RegisterRoutes(r)
 
 		// ride handlers scraped and user submitted -- /rides
 		rideHandler.RegisterRoutes(r)

@@ -6,6 +6,7 @@ type Registration struct {
 	Description string `json:"description"`
 	City        string `json:"city"`
 	IconURL     string `json:"icon_url"`
+	IconUUID    string `json:"icon_uuid"`
 	WebURL      string `json:"web_url"`
 }
 

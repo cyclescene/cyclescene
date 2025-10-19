@@ -39,7 +39,7 @@ module "api_service_account" {
 module "user_media_bucket" {
   source = "../../../../infrastructure/modules/storage-bucket"
 
-  bucket_name                 = "${var.project_id}-user-media"
+  bucket_name                 = "${var.project_id}-user-media-staging"
   location                    = var.region
   storage_class               = "STANDARD"
   uniform_bucket_level_access = true
@@ -87,8 +87,11 @@ module "api_service" {
   env_vars = merge(
     var.env_vars,
     {
-      MEDIA_BUCKET = module.user_media_bucket.bucket_name
-      GCP_PROJECT  = var.project_id
+      MEDIA_BUCKET       = module.user_media_bucket.bucket_name
+      GCP_PROJECT        = var.project_id
+      TURSO_DB_URL       = var.turso_db_url
+      TURSO_DB_RW_TOKEN  = var.turso_db_rw_token
+      IMAGE_OPTIMIZER_URL = var.image_optimizer_url
     }
   )
 
@@ -111,4 +114,15 @@ module "api_service" {
     service     = "api"
     managed_by  = "opentofu"
   }
+}
+
+# Custom domain mapping for API (optional)
+module "api_domain" {
+  count  = var.api_custom_domain != "" ? 1 : 0
+  source = "../../../../infrastructure/modules/cloud-run-domain"
+
+  project_id              = var.project_id
+  location                = var.region
+  domain_name             = var.api_custom_domain
+  cloud_run_service_name  = module.api_service.service_name
 }

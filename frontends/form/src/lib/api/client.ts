@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8080"
+import { PUBLIC_API_URL } from "$env/static/public"
 
 export class APIError extends Error {
   constructor(
@@ -16,7 +16,7 @@ async function fetchAPI<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const url = `${API_URL}${endpoint}`;
+  const url = `${PUBLIC_API_URL}${endpoint}`;
 
   const response = await fetch(url, {
     ...options,
@@ -36,6 +36,52 @@ async function fetchAPI<T>(
   }
 
   return response.json();
+}
+
+// ============================================================================
+// IMAGE UPLOADS & SIGNED URLS
+// ============================================================================
+
+export interface SignedURLRequest {
+  file_name: string;
+  file_type: string;
+}
+
+export interface SignedURLResponse {
+  success: boolean;
+  signed_url: string;
+  object_name: string;
+  image_uuid: string;
+  expires_at: string;
+  bucket_name: string;
+  error?: string;
+}
+
+export async function generateSignedUploadURL(
+  fileName: string,
+  fileType: string
+): Promise<SignedURLResponse> {
+  return fetchAPI<SignedURLResponse>('/v1/storage/upload-url', {
+    method: 'POST',
+    body: JSON.stringify({ file_name: fileName, file_type: fileType })
+  });
+}
+
+export async function uploadImageToGCS(
+  signedUrl: string,
+  file: File
+): Promise<void> {
+  const response = await fetch(signedUrl, {
+    method: 'PUT',
+    body: file,
+    headers: {
+      'Content-Type': file.type
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to upload image: ${response.statusText}`);
+  }
 }
 
 // ============================================================================
@@ -106,6 +152,7 @@ export interface RideSubmissionPayload {
   tinytitle?: string;
   description: string;
   image_url?: string;
+  image_uuid?: string;
   audience?: string;
   ride_length?: string;
   area?: string;
@@ -187,6 +234,7 @@ export interface GroupRegistrationPayload {
   description?: string;
   city: string;
   icon_url?: string;
+  icon_uuid?: string;
   web_url?: string;
 }
 

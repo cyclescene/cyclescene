@@ -4,10 +4,8 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { fail, redirect } from '@sveltejs/kit';
 import { rideSubmissionSchema } from '$lib/schemas/ride';
 import type { PageServerLoad, Actions } from './$types';
-import { env } from '$env/dynamic/private';
+import { API_URL } from '$env/static/private';
 
-// Get API URL from environment - server side
-const API_URL = env.API_URL || 'http://localhost:8080';
 
 export const load: PageServerLoad = async ({ url, request }) => {
   const token = url.searchParams.get('token');
