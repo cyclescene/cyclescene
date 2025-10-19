@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"path/filepath"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/kolesa-team/go-webp/encoder"
@@ -49,6 +50,13 @@ func NewImageProcessor(ctx context.Context, stagingBucket, optimizedBucket strin
 
 // ProcessImage handles the complete image optimization workflow
 func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, entityID, entityType string) (string, error) {
+	// Check context deadline
+	if deadline, ok := ctx.Deadline(); ok {
+		slog.Info("context deadline set", "deadline", deadline, "timeUntilDeadline", time.Until(deadline))
+	} else {
+		slog.Info("no context deadline set")
+	}
+
 	// Try to find the image file with common extensions since we don't know the exact format
 	extensions := []string{".jpg", ".jpeg", ".png", ".webp", ".gif"}
 	var imageData []byte
