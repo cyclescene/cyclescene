@@ -7,12 +7,14 @@ resource "google_eventarc_channel" "channel" {
 
 # Eventarc Trigger that listens to channel and routes to Cloud Run
 resource "google_eventarc_trigger" "trigger" {
-  name     = var.trigger_name
-  location = var.location
-  project  = var.project_id
+  name            = var.trigger_name
+  location        = var.location
+  project         = var.project_id
+  channel         = google_eventarc_channel.channel.id
+  service_account = var.trigger_service_account
 
   # Listen to custom events from the channel
-  event_filters {
+  matching_criteria {
     attribute = "type"
     value     = var.event_type
   }
@@ -23,16 +25,6 @@ resource "google_eventarc_trigger" "trigger" {
       service = var.cloud_run_service_name
       region  = var.location
       path    = var.cloud_run_path
-    }
-  }
-
-  # Service account for invoking Cloud Run
-  service_account = var.trigger_service_account
-
-  # Use the Eventarc channel
-  transport {
-    pubsub {
-      topic = google_eventarc_channel.channel.pubsub_topic
     }
   }
 

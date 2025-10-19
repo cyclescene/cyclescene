@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -61,12 +60,12 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	}
 
 	// Validate metadata fields are provided
-	if req.CityCode == "" || req.EntityID == "" || req.EntityType == "" {
-		return nil, fmt.Errorf("city_code, entity_id, and entity_type are required")
+	if req.UUID == "" || req.CityCode == "" || req.EntityType == "" {
+		return nil, fmt.Errorf("uuid, city_code, and entity_type are required")
 	}
 
-	// Generate a UUID for the image
-	imageUUID := uuid.New().String()
+	// Use the provided UUID for the image
+	imageUUID := req.UUID
 
 	// Determine file extension from MIME type
 	ext := getExtensionFromMimeType(req.FileType)
@@ -74,10 +73,10 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	// Create object name: {uuid}.{ext}
 	objectName := fmt.Sprintf("%s%s", imageUUID, ext)
 
-	slog.Info("generating signed URL", "object", objectName, "bucket", s.bucketName, "duration", s.signedURLDuration, "cityCode", req.CityCode, "entityID", req.EntityID, "entityType", req.EntityType)
+	slog.Info("generating signed URL", "object", objectName, "bucket", s.bucketName, "duration", s.signedURLDuration, "imageUUID", imageUUID, "cityCode", req.CityCode, "entityType", req.EntityType)
 
 	// Generate signed URL with metadata
-	signedURL, err := s.generateSignedURLWithMetadata(ctx, objectName, req.FileType, req.CityCode, req.EntityID, req.EntityType)
+	signedURL, err := s.generateSignedURLWithMetadata(ctx, objectName, req.FileType, req.CityCode, req.EntityType)
 	if err != nil {
 		slog.Error("failed to generate signed URL", "error", err, "object", objectName)
 		return nil, fmt.Errorf("failed to generate signed URL: %v", err)
@@ -125,7 +124,7 @@ func (s *Service) generateSignedURL(ctx context.Context, objectName, contentType
 
 // generateSignedURLWithMetadata creates a signed URL with custom metadata
 // Note: Metadata will be set by the frontend when uploading via x-goog-meta-* headers
-func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityID, entityType string) (string, error) {
+func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityType string) (string, error) {
 	// Get the default service account credentials
 	credentials, err := getServiceAccountCredentials(ctx)
 	if err != nil {
@@ -148,7 +147,7 @@ func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName,
 		return "", fmt.Errorf("failed to create signed URL: %v", err)
 	}
 
-	slog.Info("generated signed URL with metadata", "object", objectName, "cityCode", cityCode, "entityID", entityID, "entityType", entityType)
+	slog.Info("generated signed URL with metadata", "object", objectName, "cityCode", cityCode, "entityType", entityType)
 
 	return signedURL, nil
 }
