@@ -7,10 +7,9 @@ resource "google_eventarc_channel" "channel" {
 
 # Eventarc Trigger that listens to channel and routes to Cloud Run
 resource "google_eventarc_trigger" "trigger" {
-  name        = var.trigger_name
-  location    = var.location
-  project     = var.project_id
-  description = var.trigger_description
+  name     = var.trigger_name
+  location = var.location
+  project  = var.project_id
 
   # Listen to custom events from the channel
   matching_criteria {
