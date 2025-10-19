@@ -1,7 +1,6 @@
 package ride
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,18 +8,18 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/spacesedan/cyclescene/functions/internal/api/imageoptimizer"
+	"github.com/spacesedan/cyclescene/functions/internal/api/events"
 )
 
 type Handler struct {
 	service         *Service
-	optimizerClient *imageoptimizer.Client
+	eventarcClient  *events.EventarcClient
 }
 
-func NewHandler(service *Service) *Handler {
+func NewHandler(service *Service, eventarcClient *events.EventarcClient) *Handler {
 	return &Handler{
 		service:         service,
-		optimizerClient: imageoptimizer.NewClient(),
+		eventarcClient:  eventarcClient,
 	}
 }
 
@@ -81,15 +80,17 @@ func (h *Handler) SubmitRide(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Trigger image optimization if image_uuid is provided
-	if submission.ImageUUID != "" {
-		optimizeReq := &imageoptimizer.OptimizeRequest{
+	if submission.ImageUUID != "" && h.eventarcClient != nil {
+		event := &events.ImageOptimizationEvent{
 			ImageUUID:  submission.ImageUUID,
 			CityCode:   submission.City,
 			EntityID:   fmt.Sprintf("%d", response.EventID),
 			EntityType: "ride",
 		}
-		h.optimizerClient.TriggerOptimization(context.Background(), optimizeReq)
-		slog.Info("Image optimization triggered for ride", "event_id", response.EventID, "image_uuid", submission.ImageUUID)
+		if err := h.eventarcClient.TriggerOptimization(r.Context(), event); err != nil {
+			slog.Warn("failed to trigger image optimization", "error", err, "event_id", response.EventID)
+			// Don't fail the request if optimization trigger fails - the image is already uploaded
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

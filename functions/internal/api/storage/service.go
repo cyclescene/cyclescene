@@ -60,6 +60,11 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 		return nil, fmt.Errorf("file_name and file_type are required")
 	}
 
+	// Validate metadata fields are provided
+	if req.CityCode == "" || req.EntityID == "" || req.EntityType == "" {
+		return nil, fmt.Errorf("city_code, entity_id, and entity_type are required")
+	}
+
 	// Generate a UUID for the image
 	imageUUID := uuid.New().String()
 
@@ -69,11 +74,10 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	// Create object name: {uuid}.{ext}
 	objectName := fmt.Sprintf("%s%s", imageUUID, ext)
 
-	slog.Info("generating signed URL", "object", objectName, "bucket", s.bucketName, "duration", s.signedURLDuration)
+	slog.Info("generating signed URL", "object", objectName, "bucket", s.bucketName, "duration", s.signedURLDuration, "cityCode", req.CityCode, "entityID", req.EntityID, "entityType", req.EntityType)
 
-	// Generate signed URL using the default service account credentials
-	// This requires the service account to have roles/iam.serviceAccountTokenCreator role
-	signedURL, err := s.generateSignedURL(ctx, objectName, req.FileType)
+	// Generate signed URL with metadata
+	signedURL, err := s.generateSignedURLWithMetadata(ctx, objectName, req.FileType, req.CityCode, req.EntityID, req.EntityType)
 	if err != nil {
 		slog.Error("failed to generate signed URL", "error", err, "object", objectName)
 		return nil, fmt.Errorf("failed to generate signed URL: %v", err)
@@ -115,6 +119,36 @@ func (s *Service) generateSignedURL(ctx context.Context, objectName, contentType
 	if err != nil {
 		return "", fmt.Errorf("failed to create signed URL: %v", err)
 	}
+
+	return signedURL, nil
+}
+
+// generateSignedURLWithMetadata creates a signed URL with custom metadata
+// Note: Metadata will be set by the frontend when uploading via x-goog-meta-* headers
+func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityID, entityType string) (string, error) {
+	// Get the default service account credentials
+	credentials, err := getServiceAccountCredentials(ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get credentials: %v", err)
+	}
+
+	// Use the storage.SignedURL function with the credentials
+	// The frontend will include x-goog-meta-* headers when uploading
+	opts := &storage.SignedURLOptions{
+		Scheme:         storage.SigningSchemeV4,
+		Method:         "PUT",
+		Expires:        time.Now().Add(s.signedURLDuration),
+		ContentType:    contentType,
+		GoogleAccessID: credentials.Email,
+		PrivateKey:     []byte(credentials.PrivateKey),
+	}
+
+	signedURL, err := storage.SignedURL(s.bucketName, objectName, opts)
+	if err != nil {
+		return "", fmt.Errorf("failed to create signed URL: %v", err)
+	}
+
+	slog.Info("generated signed URL with metadata", "object", objectName, "cityCode", cityCode, "entityID", entityID, "entityType", entityType)
 
 	return signedURL, nil
 }

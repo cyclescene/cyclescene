@@ -1,7 +1,6 @@
 package group
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"log/slog"
@@ -9,18 +8,18 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/spacesedan/cyclescene/functions/internal/api/imageoptimizer"
+	"github.com/spacesedan/cyclescene/functions/internal/api/events"
 )
 
 type Handler struct {
 	service         *Service
-	optimizerClient *imageoptimizer.Client
+	eventarcClient  *events.EventarcClient
 }
 
-func NewHandler(service *Service) *Handler {
+func NewHandler(service *Service, eventarcClient *events.EventarcClient) *Handler {
 	return &Handler{
 		service:         service,
-		optimizerClient: imageoptimizer.NewClient(),
+		eventarcClient:  eventarcClient,
 	}
 }
 
@@ -106,15 +105,17 @@ func (h *Handler) RegisterGroup(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Trigger image optimization if icon_uuid is provided
-	if registration.IconUUID != "" {
-		optimizeReq := &imageoptimizer.OptimizeRequest{
+	if registration.IconUUID != "" && h.eventarcClient != nil {
+		event := &events.ImageOptimizationEvent{
 			ImageUUID:  registration.IconUUID,
 			CityCode:   registration.City,
 			EntityID:   registration.Code,
 			EntityType: "group",
 		}
-		h.optimizerClient.TriggerOptimization(context.Background(), optimizeReq)
-		slog.Info("Image optimization triggered for group", "code", response.Code, "image_uuid", registration.IconUUID)
+		if err := h.eventarcClient.TriggerOptimization(r.Context(), event); err != nil {
+			slog.Warn("failed to trigger image optimization", "error", err, "code", response.Code)
+			// Don't fail the request if optimization trigger fails - the image is already uploaded
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

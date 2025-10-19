@@ -11,6 +11,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/spacesedan/cyclescene/functions/internal/api/auth"
+	"github.com/spacesedan/cyclescene/functions/internal/api/events"
 	"github.com/spacesedan/cyclescene/functions/internal/api/group"
 	"github.com/spacesedan/cyclescene/functions/internal/api/ride"
 	"github.com/spacesedan/cyclescene/functions/internal/api/storage"
@@ -63,13 +64,16 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
 
+	// Create Eventarc client for triggering image optimization
+	eventarcClient := events.NewEventarcClient()
+
 	rideRepo := ride.NewRepository(db)
 	rideService := ride.NewService(rideRepo)
-	rideHandler := ride.NewHandler(rideService)
+	rideHandler := ride.NewHandler(rideService, eventarcClient)
 
 	groupRepo := group.NewRepository(db)
 	groupService := group.NewService(groupRepo)
-	groupHandler := group.NewHandler(groupService)
+	groupHandler := group.NewHandler(groupService, eventarcClient)
 
 	// Storage handler for signed URLs (image uploads)
 	storageService, err := storage.NewService()
