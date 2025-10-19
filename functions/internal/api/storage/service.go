@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/storage"
+	"github.com/google/uuid"
 )
 
 type Service struct {
@@ -60,12 +61,12 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	}
 
 	// Validate metadata fields are provided
-	if req.UUID == "" || req.CityCode == "" || req.EntityType == "" {
-		return nil, fmt.Errorf("uuid, city_code, and entity_type are required")
+	if req.CityCode == "" || req.EntityType == "" {
+		return nil, fmt.Errorf("city_code and entity_type are required")
 	}
 
-	// Use the provided UUID for the image
-	imageUUID := req.UUID
+	// Generate a UUID for the image
+	imageUUID := uuid.New().String()
 
 	// Determine file extension from MIME type
 	ext := getExtensionFromMimeType(req.FileType)
