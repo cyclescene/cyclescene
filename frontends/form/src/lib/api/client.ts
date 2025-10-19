@@ -59,11 +59,13 @@ export interface SignedURLResponse {
 
 export async function generateSignedUploadURL(
   fileName: string,
-  fileType: string
+  fileType: string,
+  entityType: string,
+  cityCode: string,
 ): Promise<SignedURLResponse> {
   return fetchAPI<SignedURLResponse>('/v1/storage/upload-url', {
     method: 'POST',
-    body: JSON.stringify({ file_name: fileName, file_type: fileType })
+    body: JSON.stringify({ file_name: fileName, file_type: fileType, city_code: cityCode, entity_type: entityType })
   });
 }
 

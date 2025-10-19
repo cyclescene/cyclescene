@@ -41,13 +41,25 @@ func NewImageProcessor(ctx context.Context, stagingBucket, optimizedBucket strin
 
 // ProcessImage handles the complete image optimization workflow
 func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, entityID, entityType string) (string, error) {
-	// Download image from staging bucket
-	stagingObjectName := fmt.Sprintf("%s.jpg", imageUUID)
-	slog.Info("downloading image from staging", "bucket", p.stagingBucket, "object", stagingObjectName)
+	// Try to find the image file with common extensions since we don't know the exact format
+	extensions := []string{".jpg", ".jpeg", ".png", ".webp", ".gif"}
+	var imageData []byte
+	var stagingObjectName string
+	var err error
 
-	imageData, err := p.downloadFromGCS(ctx, p.stagingBucket, stagingObjectName)
-	if err != nil {
-		return "", fmt.Errorf("failed to download image from staging: %v", err)
+	for _, ext := range extensions {
+		stagingObjectName = fmt.Sprintf("%s%s", imageUUID, ext)
+		slog.Info("attempting to download image from staging", "bucket", p.stagingBucket, "object", stagingObjectName)
+
+		imageData, err = p.downloadFromGCS(ctx, p.stagingBucket, stagingObjectName)
+		if err == nil {
+			slog.Info("found image with extension", "extension", ext)
+			break
+		}
+	}
+
+	if imageData == nil {
+		return "", fmt.Errorf("failed to download image from staging bucket with any common extension")
 	}
 
 	// Optimize image and convert to WebP format

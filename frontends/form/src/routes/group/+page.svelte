@@ -240,9 +240,16 @@
       </Card.Header>
       <Card.Content class="space-y-4">
         <ImageUploader
+          cityCode={data.city}
+          entityType="group"
           label="Upload Group Icon (Optional)"
           description="Recommended: 64x64px PNG or SVG for the best results"
-          acceptedTypes={["image/png", "image/svg+xml", "image/jpeg", "image/webp"]}
+          acceptedTypes={[
+            "image/png",
+            "image/svg+xml",
+            "image/jpeg",
+            "image/webp",
+          ]}
           maxSizeMB={5}
           onUploadComplete={(uuid) => {
             $form.icon_uuid = uuid;

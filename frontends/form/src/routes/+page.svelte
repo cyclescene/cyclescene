@@ -150,6 +150,8 @@
 
         <div class="space-y-4">
           <ImageUploader
+            cityCode={data.city}
+            entityType="ride"
             label="Ride Image (Optional)"
             description="Upload a photo of your ride or cycling community"
             onUploadComplete={(uuid) => {

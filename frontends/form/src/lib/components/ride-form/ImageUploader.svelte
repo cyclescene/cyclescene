@@ -9,6 +9,8 @@
 
   interface Props {
     label?: string;
+    entityType: string;
+    cityCode: string;
     description?: string;
     onUploadComplete?: (imageUUID: string) => void;
     onUploadError?: (error: string) => void;
@@ -18,6 +20,8 @@
 
   let {
     label = "Upload Image",
+    entityType,
+    cityCode,
     description,
     onUploadComplete,
     onUploadError,
@@ -79,7 +83,12 @@
 
       // Generate signed URL
       const signedURLResponse: SignedURLResponse =
-        await generateSignedUploadURL(file.name, getMimeType(file));
+        await generateSignedUploadURL(
+          file.name,
+          getMimeType(file),
+          entityType,
+          cityCode,
+        );
 
       if (!signedURLResponse.success) {
         throw new Error(
