@@ -36,7 +36,7 @@ func (d *DBConnector) UpdateImageURL(entityType, entityID, imageURL string) erro
 
 	// Determine which table to update based on entityType
 	if entityType == "ride" {
-		table = "rides"
+		table = "events"
 	} else if entityType == "group" {
 		table = "groups"
 	} else {
