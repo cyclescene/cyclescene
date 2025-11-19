@@ -16,6 +16,7 @@ import (
 	"cloud.google.com/go/storage"
 	"github.com/kolesa-team/go-webp/encoder"
 	"github.com/kolesa-team/go-webp/webp"
+	"golang.org/x/image/draw"
 )
 
 const (
@@ -82,25 +83,44 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 	// Log file info for debugging
 	slog.Info("downloaded image file", "imageUUID", imageUUID, "stagingObjectName", stagingObjectName, "fileSize", len(imageData), "firstBytes", fmt.Sprintf("%x", imageData[:min(8, len(imageData))]))
 
-	// Optimize image and convert to WebP format
-	slog.Info("optimizing image", "imageUUID", imageUUID)
-	optimizedImageData, err := p.optimizeImage(imageData)
+	// Decode the full image once
+	fullImg, _, err := image.Decode(bytes.NewReader(imageData))
 	if err != nil {
-		return "", fmt.Errorf("failed to optimize image: %v", err)
+		return "", fmt.Errorf("failed to decode full image: %v", err)
 	}
 
-	// Build optimized bucket path: {cityCode}/{entityType}s/{entityID}/{entityID}_optimized.webp
+	// Define sizes to generate
+	sizes := []int{400, 800, 1200}
 	entityTypePlural := entityType + "s"
-	optimizedObjectName := filepath.Join(cityCode, entityTypePlural, entityID, fmt.Sprintf("%s_optimized.webp", entityID))
+	var mainPublicURL string
 
-	// Upload to optimized bucket
-	slog.Info("uploading optimized image", "bucket", p.optimizedBucket, "object", optimizedObjectName)
-	if err := p.uploadToGCS(ctx, p.optimizedBucket, optimizedObjectName, optimizedImageData); err != nil {
-		return "", fmt.Errorf("failed to upload optimized image: %v", err)
+	for _, width := range sizes {
+		slog.Info("generating resized image", "width", width)
+
+		resizedImg := resizeImage(fullImg, width)
+		optimizedData, err := encodeWebP(resizedImg)
+		if err != nil {
+			return "", fmt.Errorf("failed to encode resized image (width %d): %v", width, err)
+		}
+
+		// Object name: {cityCode}/{entityType}s/{entityID}/{entityID}_{width}w.webp
+		objectName := filepath.Join(cityCode, entityTypePlural, entityID, fmt.Sprintf("%s_%dw.webp", entityID, width))
+
+		slog.Info("uploading resized image", "bucket", p.optimizedBucket, "object", objectName)
+		if err := p.uploadToGCS(ctx, p.optimizedBucket, objectName, optimizedData); err != nil {
+			return "", fmt.Errorf("failed to upload resized image: %v", err)
+		}
+
+		// If this is the largest size (1200), also save it as the default "optimized" version for backward compatibility
+		if width == 1200 {
+			defaultObjectName := filepath.Join(cityCode, entityTypePlural, entityID, fmt.Sprintf("%s_optimized.webp", entityID))
+			slog.Info("uploading default optimized image", "bucket", p.optimizedBucket, "object", defaultObjectName)
+			if err := p.uploadToGCS(ctx, p.optimizedBucket, defaultObjectName, optimizedData); err != nil {
+				return "", fmt.Errorf("failed to upload default optimized image: %v", err)
+			}
+			mainPublicURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", p.optimizedBucket, defaultObjectName)
+		}
 	}
-
-	// Build public URL
-	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", p.optimizedBucket, optimizedObjectName)
 
 	// Delete staging file
 	slog.Info("deleting staging file", "bucket", p.stagingBucket, "object", stagingObjectName)
@@ -109,7 +129,7 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 		// Don't fail the operation if deletion fails
 	}
 
-	return publicURL, nil
+	return mainPublicURL, nil
 }
 
 // downloadFromGCS reads a file from Google Cloud Storage
@@ -140,44 +160,30 @@ func (p *ImageProcessor) deleteFromGCS(ctx context.Context, bucket, object strin
 	return p.storageClient.Bucket(bucket).Object(object).Delete(ctx)
 }
 
-// optimizeImage compresses and optimizes an image to WebP format
-func (p *ImageProcessor) optimizeImage(imageData []byte) ([]byte, error) {
-	slog.Info("starting image optimization", "dataSize", len(imageData))
+// resizeImage resizes the image to the specified width while maintaining aspect ratio
+func resizeImage(img image.Image, width int) image.Image {
+	bounds := img.Bounds()
+	ratio := float64(bounds.Dy()) / float64(bounds.Dx())
+	height := int(float64(width) * ratio)
 
-	// Decode image config to get format info
-	img, format, err := image.DecodeConfig(bytes.NewReader(imageData))
-	if err != nil {
-		slog.Error("decode config failed", "error", err, "dataSize", len(imageData))
-		return nil, fmt.Errorf("failed to decode image config: %v", err)
-	}
+	dst := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.CatmullRom.Scale(dst, dst.Bounds(), img, bounds, draw.Over, nil)
+	return dst
+}
 
-	slog.Info("image info", "format", format, "width", img.Width, "height", img.Height)
-
-	// Decode the full image
-	fullImg, _, err := image.Decode(bytes.NewReader(imageData))
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode full image: %v", err)
-	}
-
-	// Create a buffer to write WebP data
-	var webpBuffer bytes.Buffer
-
-	// Create WebP encoder options
+// encodeWebP encodes an image to WebP format
+func encodeWebP(img image.Image) ([]byte, error) {
+	var buf bytes.Buffer
 	options, err := encoder.NewLossyEncoderOptions(encoder.PresetDefault, float32(webpQuality))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create WebP encoder options: %v", err)
+		return nil, err
 	}
 
-	// Encode to WebP and write to buffer
-	if err := webp.Encode(&webpBuffer, fullImg, options); err != nil {
-		return nil, fmt.Errorf("failed to encode image to WebP: %v", err)
+	if err := webp.Encode(&buf, img, options); err != nil {
+		return nil, err
 	}
 
-	webpData := webpBuffer.Bytes()
-
-	slog.Info("image compression complete", "originalSize", len(imageData), "compressedSize", len(webpData), "ratio", float64(len(webpData))/float64(len(imageData)), "format", "webp")
-
-	return webpData, nil
+	return buf.Bytes(), nil
 }
 
 // Close closes the storage client

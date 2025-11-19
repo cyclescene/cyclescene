@@ -1,6 +1,10 @@
 package ride
 
-import "database/sql"
+import (
+	"database/sql"
+	"fmt"
+	"strings"
+)
 
 // User-submitted rides
 type Submission struct {
@@ -9,6 +13,7 @@ type Submission struct {
 	TinyTitle   string `json:"tinytitle"`
 	Description string `json:"description"`
 	ImageURL    string `json:"image_url"`
+	ImageSrcSet string `json:"image_srcset,omitempty"`
 	ImageUUID   string `json:"image_uuid"`
 	Audience    string `json:"audience"`
 	RideLength  string `json:"ride_length"`
@@ -113,6 +118,7 @@ type ScrapedRide struct {
 	Email         string  `json:"email"`
 	EventDuration int32   `json:"eventduration"`
 	Image         string  `json:"image"`
+	ImageSrcSet   string  `json:"image_srcset"`
 	LocDetails    string  `json:"locdetails"`
 	LocEnd        string  `json:"locend"`
 	NewsFlash     string  `json:"newsflash"`
@@ -146,6 +152,13 @@ func (rdb *ScrapedRideFromDB) ToScrapedRide() ScrapedRide {
 		r.EventDuration = rdb.EventDuration.Int32
 	}
 	r.Image = rdb.Image.String
+
+	// Generate SrcSet if image is present and is an optimized WebP
+	if r.Image != "" && strings.HasSuffix(r.Image, "_optimized.webp") {
+		base := strings.TrimSuffix(r.Image, "_optimized.webp")
+		r.ImageSrcSet = fmt.Sprintf("%s_400w.webp 400w, %s_800w.webp 800w, %s_1200w.webp 1200w", base, base, base)
+	}
+
 	r.LocDetails = rdb.LocDetails.String
 	r.LocEnd = rdb.LocEnd.String
 	r.NewsFlash = rdb.NewsFlash.String

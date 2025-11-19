@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 )
 
@@ -125,6 +126,12 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 			continue
 		}
 		submission.Occurrences = append(submission.Occurrences, occ)
+	}
+
+	// Generate SrcSet if image is present and is an optimized WebP
+	if submission.ImageURL != "" && strings.HasSuffix(submission.ImageURL, "_optimized.webp") {
+		base := strings.TrimSuffix(submission.ImageURL, "_optimized.webp")
+		submission.ImageSrcSet = fmt.Sprintf("%s_400w.webp 400w, %s_800w.webp 800w, %s_1200w.webp 1200w", base, base, base)
 	}
 
 	return &submission, isPublished == 1, nil
