@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -39,17 +40,23 @@ func getAuthenticatedClient(ctx context.Context) (*http.Client, error) {
 }
 
 type CityDetails struct {
-	CityName string
-	State    string
-	NELat    float64
-	NELng    float64
-	SWLat    float64
-	SWLng    float64
+	CityName string  `json:"cityName"`
+	State    string  `json:"state"`
+	NELat    float64 `json:"neLat"`
+	NELng    float64 `json:"neLng"`
+	SWLat    float64 `json:"swLat"`
+	SWLng    float64 `json:"swLng"`
 }
 
-var cityMap = map[string]CityDetails{
-	"pdx": {CityName: "Portland", State: "OR", SWLat: 45.4325, SWLng: -122.8367, NELat: 46.00, NELng: -121.5},
-	"slc": {CityName: "Salt Lake City", State: "UT", SWLat: 40.6307, SWLng: -112.1, NELat: 41.0, NELng: -111.5},
+//go:embed cities.json
+var citiesJSON []byte
+
+var cityMap map[string]CityDetails
+
+func init() {
+	if err := json.Unmarshal(citiesJSON, &cityMap); err != nil {
+		panic(fmt.Sprintf("failed to parse cities.json: %v", err))
+	}
 }
 
 func GeocodeQuery(query, cityCode string) (float64, float64, error) {

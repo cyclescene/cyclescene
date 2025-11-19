@@ -70,7 +70,9 @@ func buildShift2BikesURLPast() (string, error) {
 func fetchAndDecode(url string, target any) error {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
 
 	res, err := client.Do(req)
 	if err != nil {
