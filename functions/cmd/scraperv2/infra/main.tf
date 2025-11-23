@@ -35,7 +35,7 @@ module "scheduler_service_account" {
 
 # Allow GitHub Actions WIF service account to act as the scheduler service account
 resource "google_service_account_iam_member" "wif_can_act_as_scheduler" {
-  service_account_id = module.scheduler_service_account.account.name
+  service_account_id = module.scheduler_service_account.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
 }
@@ -56,7 +56,7 @@ module "scraper_job_service_account" {
 
 # Allow GitHub Actions WIF service account to act as the scraper job service account
 resource "google_service_account_iam_member" "wif_can_act_as_scraper_job" {
-  service_account_id = module.scraper_job_service_account.account.name
+  service_account_id = module.scraper_job_service_account.name
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
 }
