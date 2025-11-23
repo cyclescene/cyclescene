@@ -1,0 +1,12 @@
+[
+  {
+    "name": "Portland",
+    "code": "pdx",
+    "url": "https://pdx.cyclescene.cc"
+  },
+  {
+    "name": "Salt Lake City",
+    "code": "slc",
+    "url": "https://slc.cyclescene.cc"
+  }
+]

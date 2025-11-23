@@ -1,0 +1,88 @@
+name: Deploy PWA to Vercel
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontends/pwa/**'
+      - '.github/workflows/deploy-pwa.yml'
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: prj_MHzeznQUjC3vPyxeIq2z51Nn7Ami
+  API_BASE_URL: https://api.cyclescene.cc
+  FORM_BASE_URL: https://form.cyclescene.cc
+
+jobs:
+  deploy-pwa:
+    name: Deploy PWA
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: 'frontends/pwa/package-lock.json'
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Read cities configuration
+        id: cities
+        run: |
+          CITIES=$(cat frontends/pwa/cities.json | jq -r '.[].code' | tr '\n' ' ')
+          echo "cities=$CITIES" >> $GITHUB_OUTPUT
+          echo "Cities to deploy: $CITIES"
+
+      - name: Install dependencies
+        working-directory: frontends/pwa
+        run: npm install
+
+      - name: Deploy each city
+        working-directory: frontends/pwa
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          CITIES=$(cat cities.json | jq -c '.[]')
+
+          echo "$CITIES" | while read -r city; do
+            CITY_CODE=$(echo $city | jq -r '.code')
+            CITY_NAME=$(echo $city | jq -r '.name')
+            CITY_URL=$(echo $city | jq -r '.url')
+
+            echo "================================"
+            echo "Deploying $CITY_NAME ($CITY_CODE)"
+            echo "URL: $CITY_URL"
+            echo "================================"
+
+            # Build with city-specific environment variables
+            VITE_CITY_CODE=$CITY_CODE \
+            VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
+            VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }} \
+            npm run build
+
+            # Deploy to Vercel
+            vercel deploy \
+              --prod \
+              --token=$VERCEL_TOKEN \
+              --env VITE_CITY_CODE=$CITY_CODE \
+              --env VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
+              --env VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }}
+
+            echo "✅ Successfully deployed $CITY_NAME"
+          done
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "✅ PWA Deployment Summary"
+          echo "========================="
+          echo "Cities deployed: ${{ steps.cities.outputs.cities }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
