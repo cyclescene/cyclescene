@@ -1,0 +1,10 @@
+project_id                = "cyclescene-479119"
+region                    = "us-west1"
+environment               = "production"
+staging_bucket_name       = "cyclescene-user-media-staging"
+api_service_account_email = "cyclescene-api@cyclescene.iam.gserviceaccount.com"
+optimizer_cpu_limit       = "2"
+optimizer_memory_limit    = "2Gi"
+optimizer_max_instances   = 10
+turso_db_url              = "libsql://cyclescene-spacesedan.aws-us-west-2.turso.io"
+turso_db_rw_token         = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NTk2MDI3NjYsImlkIjoiYTk3MWQ4NjYtNmYyMC00MTliLTg3NzItNjUxOGQwNjFiMWViIiwicmlkIjoiNTM1YzdmY2MtOTFkNi00ZWUzLTlkOGUtMjJhMGNiY2QzNWU0In0.FsnvHvKo6mo15dLttjm1ljUnzjs0XHOHQ0leynLMD_Vj9X4sqwyq_Ve3CA3hOL3BbHlK8nEM226JYLA0ZADFCw"

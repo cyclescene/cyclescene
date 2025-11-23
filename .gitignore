@@ -1,3 +1,5 @@
 **/.env
-./functions/*.yml
-./functions/*.env
+functions/*.yml
+functions/*.env
+**/*.yml
+frontends/**/node_modules

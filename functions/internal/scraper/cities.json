@@ -1,0 +1,18 @@
+{
+  "pdx": {
+    "cityName": "Portland",
+    "state": "OR",
+    "swLat": 45.4325,
+    "swLng": -122.8367,
+    "neLat": 46.00,
+    "neLng": -121.5
+  },
+  "slc": {
+    "cityName": "Salt Lake City",
+    "state": "UT",
+    "swLat": 40.6307,
+    "swLng": -112.1,
+    "neLat": 41.0,
+    "neLng": -111.5
+  }
+}

@@ -3,6 +3,7 @@
   import * as Card from "$lib/components/ui/card";
   import ScrollArea from "$lib/components/ui/scroll-area/scroll-area.svelte";
   import { Separator } from "$lib/components/ui/separator";
+  import { CITY_CODE } from "$lib/config";
   import {
     navigateTo,
     SUB_VIEW_ABOUT,
@@ -17,6 +18,52 @@
     SUB_VIEW_TERMS_OF_USE,
   } from "$lib/stores";
   import IconChevronRight from "~icons/bxs/chevron-right";
+
+  async function handleHostRide() {
+    try {
+      const url = `${import.meta.env.VITE_API_BASE_URL}/v1/tokens/submission`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ city: CITY_CODE }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get sumbmission token");
+      }
+
+      const { token } = await response.json();
+      console.log(
+        `${import.meta.env.VITE_FORM_BASE_URL}?token=${token}&city=${CITY_CODE}`,
+      );
+
+      window.location.href = `${import.meta.env.VITE_FORM_BASE_URL}?token=${token}&city=${CITY_CODE}`;
+    } catch (err) {
+      console.error("Error getting form access: ", err);
+      alert("Unable to access form");
+    }
+  }
+  async function handleRegisterGroup() {
+    try {
+      const url = `${import.meta.env.VITE_API_BASE_URL}/v1/tokens/submission`;
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ city: CITY_CODE }),
+      });
+
+      const { token } = await response.json();
+
+      // Redirect to group registration form
+      window.location.href = `${import.meta.env.VITE_FORM_BASE_URL}/group?token=${token}&city=${CITY_CODE}`;
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
 </script>
 
 <div
@@ -50,16 +97,44 @@
         </Card.Header>
       </Card.Root>
       <Card.Root class="p-2 gap-2">
+        {#if CITY_CODE === "pdx"}
+          <Card.Header class=" flex p-0">
+            <Button
+              disabled={false}
+              variant="ghost"
+              href="https://www.shift2bikes.org/addevent/"
+              ref="noopener noreferrer"
+              target="_blank"
+              class="w-full justify-center"
+            >
+              <Card.Title class="grow text-left"
+                >Host a Ride on Shift2Bikes</Card.Title
+              >
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+          <Separator />
+        {/if}
+        <Card.Header class=" flex p-0">
+          <Button
+            disabled={false}
+            onclick={handleHostRide}
+            variant="ghost"
+            class="w-full justify-center"
+          >
+            <Card.Title class="grow text-left">Host a Ride</Card.Title>
+            <IconChevronRight class="shrink" />
+          </Button>
+        </Card.Header>
+        <Separator />
         <Card.Header class=" flex p-0">
           <Button
             disabled={false}
             variant="ghost"
-            href="https://www.shift2bikes.org/addevent/"
-            ref="noopener noreferrer"
-            target="_blank"
+            onclick={handleRegisterGroup}
             class="w-full justify-center"
           >
-            <Card.Title class="grow text-left">Host a Ride</Card.Title>
+            <Card.Title class="grow text-left">Register Group</Card.Title>
             <IconChevronRight class="shrink" />
           </Button>
         </Card.Header>

@@ -1,0 +1,12 @@
+project_id                = "your-project-id"
+region                    = "us-west1"
+environment               = "dev"
+staging_bucket_name       = "your-project-id-user-media-staging"
+api_service_account_email = "cyclescene-api@your-project-id.iam.gserviceaccount.com"
+optimizer_cpu_limit       = "2"
+optimizer_memory_limit    = "2Gi"
+optimizer_max_instances   = 10
+
+# These should be set via environment variables or secrets management
+# turso_db_url      = "libsql://..."
+# turso_db_rw_token = "..."

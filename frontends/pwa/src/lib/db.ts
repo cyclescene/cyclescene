@@ -86,3 +86,9 @@ export async function savedRideExists(rideId: string) {
   const result = await objectStore.get(rideId)
   return result !== undefined
 }
+
+// clear all rides from the allrides store
+export async function clearAllRides() {
+  const db = await dbPromise
+  return await db.clear(ALLRIDES_STORE_NAME)
+}
