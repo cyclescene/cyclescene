@@ -33,6 +33,13 @@ module "scheduler_service_account" {
   ]
 }
 
+# Allow GitHub Actions WIF service account to act as the scheduler service account
+resource "google_service_account_iam_member" "wif_can_act_as_scheduler" {
+  service_account_id = module.scheduler_service_account.account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Service account for the scraper job itself
 module "scraper_job_service_account" {
   source = "../../../../infrastructure/modules/service-account"
@@ -47,12 +54,19 @@ module "scraper_job_service_account" {
   ]
 }
 
+# Allow GitHub Actions WIF service account to act as the scraper job service account
+resource "google_service_account_iam_member" "wif_can_act_as_scraper_job" {
+  service_account_id = module.scraper_job_service_account.account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Cloud Run Job for PDX scraper
 module "scraper_job" {
   source = "../../../../infrastructure/modules/cloud-run-job"
 
   job_name               = "pdx-scraper"
-  image                  = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/pdx-scraper/scraper-image:latest"
+  image                  = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/scraperv2:${var.image_tag}"
   service_account_email  = module.scraper_job_service_account.email
 
   env_vars = var.env_vars

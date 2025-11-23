@@ -33,6 +33,13 @@ module "optimizer_service_account" {
   ]
 }
 
+# Allow GitHub Actions WIF service account to act as the optimizer service account
+resource "google_service_account_iam_member" "wif_can_act_as_optimizer" {
+  service_account_id = module.optimizer_service_account.account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Optimized media bucket for final processed images
 module "optimized_media_bucket" {
   source = "../../../../infrastructure/modules/storage-bucket"
@@ -56,7 +63,7 @@ module "image_optimizer_service" {
   source = "../../../../infrastructure/modules/cloud-run-service"
 
   service_name          = "cyclescene-image-optimizer"
-  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/image-optimizer/image-optimizer-image:latest"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/image-optimizer:${var.image_tag}"
   service_account_email = module.optimizer_service_account.email
 
   env_vars = merge(

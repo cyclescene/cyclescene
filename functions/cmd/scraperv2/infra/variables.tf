@@ -29,3 +29,9 @@ variable "env_vars" {
     NODE_ENV = "production"
   }
 }
+
+variable "image_tag" {
+  description = "Docker image tag for the scraper service"
+  type        = string
+  default     = "latest"
+}

@@ -60,3 +60,9 @@ variable "turso_db_rw_token" {
   type        = string
   sensitive   = true
 }
+
+variable "image_tag" {
+  description = "Docker image tag for the image optimizer service"
+  type        = string
+  default     = "latest"
+}
