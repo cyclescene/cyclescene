@@ -135,3 +135,9 @@ variable "edit_link_base_url" {
   type        = string
   default     = "https://form.cyclescene.cc/rides/edit"
 }
+
+variable "image_tag" {
+  description = "Docker image tag for the API service"
+  type        = string
+  default     = "latest"
+}

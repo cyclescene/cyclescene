@@ -82,7 +82,7 @@ module "api_service" {
   source = "../../../../infrastructure/modules/cloud-run-service"
 
   service_name          = "cyclescene-api-gateway"
-  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/cyclescene-api-gateway/cyclescene-api-image:latest"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/api:${var.image_tag}"
   service_account_email = module.api_service_account.email
 
   env_vars = merge(
