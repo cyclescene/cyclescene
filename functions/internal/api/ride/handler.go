@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spacesedan/cyclescene/functions/internal/api/events"
@@ -29,6 +30,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Post("/submit", h.SubmitRide)
 		r.Get("/edit/{token}", h.GetRideByEditToken)
 		r.Put("/edit/{token}", h.UpdateRide)
+		r.Patch("/edit/{token}/occurrences/{occurrenceId}", h.UpdateOccurrence)
 
 		// Scraped rides from Shift2Bikes
 		r.Get("/upcoming", h.GetUpcomingRides)
@@ -139,6 +141,41 @@ func (h *Handler) UpdateRide(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+type UpdateOccurrenceRequest struct {
+	StartTime            string `json:"start_time"`
+	EventDurationMinutes int    `json:"event_duration_minutes"`
+	EventTimeDetails     string `json:"event_time_details"`
+	IsCancelled          bool   `json:"is_cancelled"`
+}
+
+func (h *Handler) UpdateOccurrence(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	occurrenceIdStr := chi.URLParam(r, "occurrenceId")
+
+	occurrenceId, err := strconv.ParseInt(occurrenceIdStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid occurrence ID", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateOccurrenceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.UpdateOccurrence(token, occurrenceId, req.StartTime, req.EventDurationMinutes, req.EventTimeDetails, req.IsCancelled); err != nil {
+		slog.Error("Failed to update occurrence", "error", err, "token", token, "occurrence_id", occurrenceId)
+		http.Error(w, "Failed to update occurrence", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Occurrence updated successfully", "token", token, "occurrence_id", occurrenceId)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
 // ============================================================================

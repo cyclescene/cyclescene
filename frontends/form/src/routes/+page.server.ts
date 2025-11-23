@@ -61,6 +61,7 @@ export const load: PageServerLoad = async ({ url, request }) => {
       address: '',
       organizer_name: '',
       organizer_email: '',
+      audience: 'G', // Default to General
       date_type: 'S' as const,
       is_loop_ride: false,
       hide_email: false,
@@ -121,7 +122,8 @@ export const actions = {
 
 
     if (result.success) {
-      throw redirect(303, `/success?token=${result.edit_token}&event_id=${result.event_id}`);
+      const city = form.data.city || 'pdx';
+      throw redirect(303, `/success?token=${result.edit_token}&event_id=${result.event_id}&city=${city}`);
     }
 
   }

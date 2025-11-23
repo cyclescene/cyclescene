@@ -1,6 +1,7 @@
 package ride
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -9,15 +10,26 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
 	"github.com/spacesedan/cyclescene/functions/internal/scraper"
 )
 
 type Service struct {
-	repo *Repository
+	repo           *Repository
+	magicLinkSvc   *magiclink.Service
+	editLinkBaseURL string
 }
 
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
+}
+
+func NewServiceWithMagicLink(repo *Repository, magicLinkSvc *magiclink.Service, editLinkBaseURL string) *Service {
+	return &Service{
+		repo:            repo,
+		magicLinkSvc:    magicLinkSvc,
+		editLinkBaseURL: editLinkBaseURL,
+	}
 }
 
 // User-submitted rides
@@ -47,6 +59,20 @@ func (s *Service) SubmitRide(submission *Submission) (*SubmissionResponse, error
 		return nil, err
 	}
 
+	// Send magic link email if service is configured and organizer email exists
+	if s.magicLinkSvc != nil && submission.OrganizerEmail != "" {
+		// Build the full redirect URL with the edit token
+		redirectURL := fmt.Sprintf("%s?token=%s", s.editLinkBaseURL, editToken)
+		_, err := s.magicLinkSvc.SendMagicLink(context.Background(), magiclink.SendMagicLinkRequest{
+			Email:       submission.OrganizerEmail,
+			RedirectURL: redirectURL,
+		})
+		if err != nil {
+			// Log but don't fail - ride was created successfully
+			slog.Error("Failed to send magic link email", "error", err, "email", submission.OrganizerEmail, "event_id", eventID)
+		}
+	}
+
 	return &SubmissionResponse{
 		Success:   true,
 		EventID:   eventID,
@@ -65,6 +91,11 @@ func (s *Service) GetRideByEditToken(token string) (*EditResponse, error) {
 		Event:       *submission,
 		IsPublished: isPublished,
 	}, nil
+}
+
+// UpdateOccurrence updates a single occurrence's details (time, duration, details, cancelled status)
+func (s *Service) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, isCancelled bool) error {
+	return s.repo.UpdateOccurrence(token, occurrenceID, startTime, eventDurationMinutes, eventTimeDetails, isCancelled)
 }
 
 func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionResponse, error) {

@@ -6,7 +6,18 @@
 
   const editToken = page.url.searchParams.get("token");
   const eventId = page.url.searchParams.get("event_id");
-  const editUrl = editToken ? `/edit/${editToken}` : null;
+  const city = page.url.searchParams.get("city");
+  const editUrl = editToken ? `/rides/edit?token=${editToken}` : null;
+
+  // Map city code to PWA domain
+  const getCycleSceneDomain = (cityCode: string | null): string => {
+    if (!cityCode) return 'https://cyclescene.cc';
+    const cityDomains: Record<string, string> = {
+      pdx: 'https://pdx.cyclescene.cc',
+      slc: 'https://slc.cyclescene.cc',
+    };
+    return cityDomains[cityCode.toLowerCase()] || 'https://cyclescene.cc';
+  };
 </script>
 
 <div class="container max-w-2xl mx-auto py-16 px-4">
@@ -74,7 +85,9 @@
 
   <div class="text-center mt-8">
     <Button variant="ghost">
-      <a href="https://cyclescene.cc"> Back to CycleScene </a>
+      <a href={getCycleSceneDomain(city)}>
+        Back to {city ? city.toUpperCase() : 'CycleScene'}
+      </a>
     </Button>
   </div>
 </div>

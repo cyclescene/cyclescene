@@ -110,7 +110,7 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 
 	// Get occurrences
 	rows, err := r.db.Query(`
-		SELECT start_date, start_time, event_duration_minutes, event_time_details
+		SELECT id, start_date, start_time, event_duration_minutes, event_time_details, is_cancelled
 		FROM event_occurrences WHERE event_id = ?
 		ORDER BY start_datetime ASC
 	`, id)
@@ -122,9 +122,11 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 
 	for rows.Next() {
 		var occ Occurrence
-		if err := rows.Scan(&occ.StartDate, &occ.StartTime, &occ.EventDurationMinutes, &occ.EventTimeDetails); err != nil {
+		var isCancelled int
+		if err := rows.Scan(&occ.ID, &occ.StartDate, &occ.StartTime, &occ.EventDurationMinutes, &occ.EventTimeDetails, &isCancelled); err != nil {
 			continue
 		}
+		occ.IsCancelled = isCancelled == 1
 		submission.Occurrences = append(submission.Occurrences, occ)
 	}
 
@@ -202,6 +204,16 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 	}
 
 	return tx.Commit()
+}
+
+// UpdateOccurrence updates a single occurrence's time and details
+func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, isCancelled bool) error {
+	_, err := r.db.Exec(`
+		UPDATE event_occurrences
+		SET start_time = ?, event_duration_minutes = ?, event_time_details = ?, is_cancelled = ?
+		WHERE id = ? AND event_id = (SELECT id FROM events WHERE edit_token = ?)
+	`, startTime, eventDurationMinutes, eventTimeDetails, boolToInt(isCancelled), occurrenceID, token)
+	return err
 }
 
 // Scraped rides from Shift2Bikes

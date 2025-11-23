@@ -13,6 +13,7 @@ import (
 	"github.com/spacesedan/cyclescene/functions/internal/api/auth"
 	"github.com/spacesedan/cyclescene/functions/internal/api/events"
 	"github.com/spacesedan/cyclescene/functions/internal/api/group"
+	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
 	"github.com/spacesedan/cyclescene/functions/internal/api/ride"
 	"github.com/spacesedan/cyclescene/functions/internal/api/storage"
 )
@@ -64,11 +65,34 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
 
+	// Initialize Resend client for email sending
+	resendAPIKey := os.Getenv("RESEND_API_KEY")
+	if resendAPIKey == "" {
+		slog.Warn("RESEND_API_KEY not configured - magic link emails will not be sent")
+	}
+
+	// Magic link service (email sending)
+	var magicLinkService *magiclink.Service
+	if resendAPIKey != "" {
+		magicLinkService = magiclink.NewService(resendAPIKey)
+	}
+
 	// Create Eventarc client for triggering image optimization
 	eventarcClient := events.NewEventarcClient()
 
 	rideRepo := ride.NewRepository(db)
-	rideService := ride.NewService(rideRepo)
+	// Configure ride service with magic link support if available
+	var rideService *ride.Service
+	if magicLinkService != nil {
+		// Get the edit link base URL from environment or use default
+		editLinkBaseURL := os.Getenv("EDIT_LINK_BASE_URL")
+		if editLinkBaseURL == "" {
+			editLinkBaseURL = "https://form.cyclescene.cc/rides/edit" // Default for production
+		}
+		rideService = ride.NewServiceWithMagicLink(rideRepo, magicLinkService, editLinkBaseURL)
+	} else {
+		rideService = ride.NewService(rideRepo)
+	}
 	rideHandler := ride.NewHandler(rideService, eventarcClient)
 
 	groupRepo := group.NewRepository(db)

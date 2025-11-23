@@ -49,10 +49,12 @@ type Submission struct {
 }
 
 type Occurrence struct {
+	ID                   int64  `json:"id,omitempty"`
 	StartDate            string `json:"start_date"`
 	StartTime            string `json:"start_time"`
 	EventDurationMinutes int    `json:"event_duration_minutes"`
 	EventTimeDetails     string `json:"event_time_details"`
+	IsCancelled          bool   `json:"is_cancelled,omitempty"`
 }
 
 type SubmissionResponse struct {
