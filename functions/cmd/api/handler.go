@@ -68,7 +68,7 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		if _, err := w.Write([]byte(`{"status":"healthy","version":"1.0.0"}`)); err != nil {
+		if _, err := w.Write([]byte(`{"status":"healthy","version":"1.0.1"}`)); err != nil {
 			slog.Error("Failed to write health check response", "error", err)
 		}
 	})
