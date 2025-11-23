@@ -100,6 +100,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.api == 'true'
     uses: ./.github/workflows/deploy-api.yml
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
 
   deploy-image-optimizer:
@@ -107,6 +110,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.image-optimizer == 'true'
     uses: ./.github/workflows/deploy-image-optimizer.yml
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
 
   deploy-scraperv2:
@@ -114,6 +120,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.scraperv2 == 'true'
     uses: ./.github/workflows/deploy-scraperv2.yml
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
 
   deploy-token-cleaner:
@@ -121,6 +130,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.token-cleaner == 'true'
     uses: ./.github/workflows/deploy-token-cleaner.yml
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
 
   deploy-db-backups:
@@ -128,6 +140,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.db-backups == 'true'
     uses: ./.github/workflows/deploy-db-backups.yml
+    permissions:
+      contents: read
+      id-token: write
     secrets: inherit
 
   summary:
