@@ -1,9 +1,8 @@
 # API Gateway Configuration
-project_id                = "cyclescene-479119"
-region                    = "us-west1"
-environment               = "production"
+project_id = "cyclescene-479119"
+region     = "us-west1"
+environment = "production"
 # api_custom_domain         = "api.cyclescene.cc"  # Commented out - domain already mapped in old project
-api_service_account_email = "cyclescene-api@cyclescene.iam.gserviceaccount.com"
 
 # API Service Resources
 api_cpu_limit    = "2"
