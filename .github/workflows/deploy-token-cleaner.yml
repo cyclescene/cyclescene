@@ -1,15 +1,15 @@
-name: Deploy API to Cloud Run
+name: Deploy Token Cleaner to Cloud Run
 
 on:
   push:
     branches:
       - main
     paths:
-      - 'functions/cmd/api/**'
+      - 'functions/cmd/token-cleaner/**'
       - 'functions/internal/**'
       - 'functions/go.mod'
       - 'functions/go.sum'
-      - '.github/workflows/go-services-ci.yml'
+      - '.github/workflows/deploy-token-cleaner.yml'
   workflow_dispatch:
     inputs:
       image_tag:
@@ -19,9 +19,9 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-west1
-  SERVICE_NAME: api
+  SERVICE_NAME: token-cleaner
   ARTIFACT_REGISTRY_REPO: cyclescene
-  IMAGE_NAME: api
+  IMAGE_NAME: token-cleaner
 
 jobs:
   build-and-deploy:
@@ -76,7 +76,7 @@ jobs:
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
       - name: Build Docker image
-        working-directory: functions/cmd/api
+        working-directory: functions/cmd/token-cleaner
         run: |
           docker build \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }} \
@@ -95,18 +95,15 @@ jobs:
           tofu_version: latest
 
       - name: Deploy with OpenTofu
-        working-directory: functions/cmd/api/infra
+        working-directory: functions/cmd/token-cleaner/infra
         env:
           TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
           TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
           TF_VAR_turso_db_ro_token: ${{ secrets.TURSO_DB_RO_TOKEN }}
-          TF_VAR_staging_bucket_name: ${{ secrets.STAGING_BUCKET_NAME }}
-          TF_VAR_edit_link_base_url: ${{ secrets.EDIT_LINK_BASE_URL }}
-          TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY }}
         run: |
           tofu init \
             -backend-config="bucket=${{ env.PROJECT_ID }}-terraform-state" \
-            -backend-config="prefix=services/api"
+            -backend-config="prefix=services/token-cleaner"
           tofu apply \
             -var="image_tag=${{ steps.image-tag.outputs.tag }}" \
             -auto-approve
@@ -119,13 +116,13 @@ jobs:
             --project=${{ env.PROJECT_ID }} \
             --format='value(status.url)')
           echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
-          echo "API deployed to: $SERVICE_URL"
+          echo "Service deployed to: $SERVICE_URL"
 
       - name: Deployment summary
         if: always()
         run: |
-          echo "✅ API Deployment Summary"
-          echo "========================"
+          echo "✅ Token Cleaner Deployment Summary"
+          echo "====================================="
           echo "Service: ${{ env.SERVICE_NAME }}"
           echo "Region: ${{ env.REGION }}"
           echo "Image Tag: ${{ steps.image-tag.outputs.tag }}"

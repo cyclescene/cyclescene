@@ -1,0 +1,131 @@
+name: Deploy Image Optimizer to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/cmd/image-optimizer/**'
+      - 'functions/internal/**'
+      - 'functions/go.mod'
+      - 'functions/go.sum'
+      - '.github/workflows/deploy-image-optimizer.yml'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Custom image tag (default: commit SHA)'
+        required: false
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-west1
+  SERVICE_NAME: image-optimizer
+  ARTIFACT_REGISTRY_REPO: cyclescene
+  IMAGE_NAME: image-optimizer
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: 'functions/go.sum'
+
+      - name: Run linting
+        working-directory: functions
+        run: go vet ./...
+        continue-on-error: true
+
+      - name: Run tests
+        working-directory: functions
+        run: go test ./... -v
+        continue-on-error: true
+
+      - name: Set image tag
+        id: image-tag
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build Docker image
+        working-directory: functions/cmd/image-optimizer
+        run: |
+          docker build \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:latest \
+            -f Dockerfile \
+            ../../
+
+      - name: Push Docker image to Artifact Registry
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: latest
+
+      - name: Deploy with OpenTofu
+        working-directory: functions/cmd/image-optimizer/infra
+        env:
+          TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
+          TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
+          TF_VAR_turso_db_ro_token: ${{ secrets.TURSO_DB_RO_TOKEN }}
+        run: |
+          tofu init \
+            -backend-config="bucket=${{ env.PROJECT_ID }}-terraform-state" \
+            -backend-config="prefix=services/image-optimizer"
+          tofu apply \
+            -var="image_tag=${{ steps.image-tag.outputs.tag }}" \
+            -auto-approve
+
+      - name: Get service URL
+        id: service-url
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --project=${{ env.PROJECT_ID }} \
+            --format='value(status.url)')
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
+          echo "Service deployed to: $SERVICE_URL"
+
+      - name: Deployment summary
+        if: always()
+        run: |
+          echo "✅ Image Optimizer Deployment Summary"
+          echo "========================================"
+          echo "Service: ${{ env.SERVICE_NAME }}"
+          echo "Region: ${{ env.REGION }}"
+          echo "Image Tag: ${{ steps.image-tag.outputs.tag }}"
+          echo "URL: ${{ steps.service-url.outputs.url }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref_name }}"
