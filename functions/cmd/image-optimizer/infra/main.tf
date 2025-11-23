@@ -128,6 +128,20 @@ resource "google_service_account" "eventarc_trigger_sa" {
   project      = var.project_id
 }
 
+# Allow GitHub Actions WIF service account to act as the eventarc trigger service account
+resource "google_service_account_iam_member" "wif_can_act_as_eventarc_trigger" {
+  service_account_id = google_service_account.eventarc_trigger_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
+# Allow GitHub Actions WIF service account to manage Eventarc channels
+resource "google_project_iam_member" "wif_eventarc_admin" {
+  project = var.project_id
+  role    = "roles/eventarc.admin"
+  member  = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Grant Eventarc trigger SA permission to invoke the optimizer service
 resource "google_cloud_run_service_iam_member" "eventarc_invoker" {
   service  = module.image_optimizer_service.service_name
