@@ -48,7 +48,7 @@ func main() {
 	}
 	defer db.Close()
 
-	////// READY TO START /////////////////////////
+	////// READY TO START (v1.1.0) /////////////////////////
 
 	// get all previously saved locations from DB
 	geocodeCache, err := scraper.GetGeocodeCache(db)
