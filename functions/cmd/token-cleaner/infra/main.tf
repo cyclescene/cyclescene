@@ -42,7 +42,7 @@ module "token_cleaner_job" {
   source = "../../../../infrastructure/modules/cloud-run-job"
 
   job_name = "submission-token-cleaner"
-  image    = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/submission-token-cleaner/token-cleaner-image:latest"
+  image    = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/token-cleaner:${var.image_tag}"
 
   env_vars = var.env_vars
 

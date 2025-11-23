@@ -73,7 +73,7 @@ module "db_backup_job" {
   source = "../../../../infrastructure/modules/cloud-run-job"
 
   job_name              = "turso-backup-job"
-  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/turso-backup-job/turso-backup-image:latest"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/db-backups:${var.image_tag}"
   service_account_email = module.backup_service_account.email
 
   env_vars = merge(

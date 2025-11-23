@@ -35,3 +35,9 @@ variable "env_vars" {
     NODE_ENV = "production"
   }
 }
+
+variable "image_tag" {
+  description = "Docker image tag for the backup job"
+  type        = string
+  default     = "latest"
+}

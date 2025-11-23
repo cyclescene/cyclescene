@@ -23,3 +23,9 @@ variable "env_vars" {
     NODE_ENV = "production"
   }
 }
+
+variable "image_tag" {
+  description = "Docker image tag for the token cleaner job"
+  type        = string
+  default     = "latest"
+}
