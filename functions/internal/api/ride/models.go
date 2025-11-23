@@ -70,20 +70,20 @@ type EditResponse struct {
 }
 
 type RideForAdmin struct {
-	ID                  int64         `json:"id"`
-	Title               string        `json:"title"`
-	Description         string        `json:"description"`
-	City                string        `json:"city"`
-	VenueName           string        `json:"venue_name"`
-	OrganizerName       string        `json:"organizer_name"`
-	OrganizerEmail      string        `json:"organizer_email"`
-	ImageURL            string        `json:"image_url"`
-	ImageUUID           string        `json:"image_uuid"`
-	IsPublished         bool          `json:"is_published"`
-	IsLoopRide          bool          `json:"is_loop_ride"`
-	CreatedAt           string        `json:"created_at"`
-	ModerationNotes     string        `json:"moderation_notes"`
-	Occurrences         []Occurrence  `json:"occurrences"`
+	ID              int64        `json:"id"`
+	Title           string       `json:"title"`
+	Description     string       `json:"description"`
+	City            string       `json:"city"`
+	VenueName       string       `json:"venue_name"`
+	OrganizerName   string       `json:"organizer_name"`
+	OrganizerEmail  string       `json:"organizer_email"`
+	ImageURL        string       `json:"image_url"`
+	ImageUUID       string       `json:"image_uuid"`
+	IsPublished     bool         `json:"is_published"`
+	IsLoopRide      bool         `json:"is_loop_ride"`
+	CreatedAt       string       `json:"created_at"`
+	ModerationNotes string       `json:"moderation_notes"`
+	Occurrences     []Occurrence `json:"occurrences"`
 }
 
 // Scraped rides from Shift2Bikes

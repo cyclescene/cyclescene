@@ -262,7 +262,9 @@ func (h *Handler) GenerateICS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s.ics\"", icsData.Filename))
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(icsData.Content))
+	if _, err := w.Write([]byte(icsData.Content)); err != nil {
+		slog.Error("Failed to write ICS response", "error", err)
+	}
 }
 
 // ============================================================================

@@ -37,7 +37,9 @@ func setupRoutes(router *chi.Mux, dbConnector *imageprocessing.DBConnector) {
 func handleHealth(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(HealthResponse{Status: "ok"})
+	if err := json.NewEncoder(w).Encode(HealthResponse{Status: "ok"}); err != nil {
+		slog.Error("failed to encode health response", "error", err)
+	}
 }
 
 func handleOptimize(dbConnector *imageprocessing.DBConnector) http.HandlerFunc {
@@ -48,10 +50,12 @@ func handleOptimize(dbConnector *imageprocessing.DBConnector) http.HandlerFunc {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			slog.Error("failed to decode request", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(OptimizeResponse{
+			if err := json.NewEncoder(w).Encode(OptimizeResponse{
 				Success: false,
 				Error:   "invalid request body",
-			})
+			}); err != nil {
+				slog.Error("failed to encode error response", "error", err)
+			}
 			return
 		}
 
@@ -59,10 +63,12 @@ func handleOptimize(dbConnector *imageprocessing.DBConnector) http.HandlerFunc {
 		if req.ImageUUID == "" || req.CityCode == "" || req.EntityID == "" || req.EntityType == "" {
 			slog.Error("missing required fields", "request", req)
 			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(OptimizeResponse{
+			if err := json.NewEncoder(w).Encode(OptimizeResponse{
 				Success: false,
 				Error:   "missing required fields: imageUUID, cityCode, entityID, entityType",
-			})
+			}); err != nil {
+				slog.Error("failed to encode error response", "error", err)
+			}
 			return
 		}
 

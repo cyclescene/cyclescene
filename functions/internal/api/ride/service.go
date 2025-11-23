@@ -15,8 +15,8 @@ import (
 )
 
 type Service struct {
-	repo           *Repository
-	magicLinkSvc   *magiclink.Service
+	repo            *Repository
+	magicLinkSvc    *magiclink.Service
 	editLinkBaseURL string
 }
 

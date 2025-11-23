@@ -12,13 +12,13 @@ type SignedURLRequest struct {
 
 // SignedURLResponse represents the response containing a signed URL for upload
 type SignedURLResponse struct {
-	Success      bool      `json:"success"`
-	SignedURL    string    `json:"signed_url"`
-	ObjectName   string    `json:"object_name"` // Path in bucket (without gs://)
-	ImageUUID    string    `json:"image_uuid"`  // UUID of the uploaded image
-	ExpiresAt    time.Time `json:"expires_at"`
-	BucketName   string    `json:"bucket_name"`
-	Error        string    `json:"error,omitempty"`
+	Success    bool      `json:"success"`
+	SignedURL  string    `json:"signed_url"`
+	ObjectName string    `json:"object_name"` // Path in bucket (without gs://)
+	ImageUUID  string    `json:"image_uuid"`  // UUID of the uploaded image
+	ExpiresAt  time.Time `json:"expires_at"`
+	BucketName string    `json:"bucket_name"`
+	Error      string    `json:"error,omitempty"`
 }
 
 // UploadedFileMetadata contains metadata about an uploaded file

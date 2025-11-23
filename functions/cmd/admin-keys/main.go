@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"golang.org/x/crypto/bcrypt"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func main() {
@@ -42,7 +42,7 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`Admin API Keys Management
+	fmt.Print(`Admin API Keys Management
 
 Usage:
   admin-keys generate -name <name>    Generate a new API key
@@ -79,7 +79,9 @@ func connectToDB() (*sql.DB, error) {
 func generateKey(args []string) {
 	fs := flag.NewFlagSet("generate", flag.ExitOnError)
 	adminName := fs.String("name", "", "Admin name")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		log.Fatalf("Failed to parse flags: %v", err)
+	}
 
 	if *adminName == "" {
 		fmt.Println("Error: -name flag is required")
@@ -132,7 +134,9 @@ func generateKey(args []string) {
 func revokeKey(args []string) {
 	fs := flag.NewFlagSet("revoke", flag.ExitOnError)
 	apiKey := fs.String("key", "", "API key to revoke")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		log.Fatalf("Failed to parse flags: %v", err)
+	}
 
 	if *apiKey == "" {
 		fmt.Println("Error: -key flag is required")
@@ -176,7 +180,9 @@ func revokeKey(args []string) {
 
 func listKeys(args []string) {
 	fs := flag.NewFlagSet("list", flag.ExitOnError)
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		log.Fatalf("Failed to parse flags: %v", err)
+	}
 
 	// Connect to database using Turso credentials from environment
 	db, err := connectToDB()
@@ -231,13 +237,4 @@ func listKeys(args []string) {
 	} else {
 		fmt.Printf("Total: %d key(s)\n", count)
 	}
-}
-
-func generateRandomKey(length int) string {
-	b := make([]byte, length)
-	_, err := rand.Read(b)
-	if err != nil {
-		log.Fatalf("Failed to generate random key: %v", err)
-	}
-	return base64.URLEncoding.EncodeToString(b)
 }

@@ -97,32 +97,6 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	}, nil
 }
 
-// generateSignedURL creates the actual signed URL using GCS SignedURL function
-func (s *Service) generateSignedURL(ctx context.Context, objectName, contentType string) (string, error) {
-	// Get the default service account credentials
-	credentials, err := getServiceAccountCredentials(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get credentials: %v", err)
-	}
-
-	// Use the storage.SignedURL function with the credentials
-	opts := &storage.SignedURLOptions{
-		Scheme:         storage.SigningSchemeV4,
-		Method:         "PUT",
-		Expires:        time.Now().Add(s.signedURLDuration),
-		ContentType:    contentType,
-		GoogleAccessID: credentials.Email,
-		PrivateKey:     []byte(credentials.PrivateKey),
-	}
-
-	signedURL, err := storage.SignedURL(s.bucketName, objectName, opts)
-	if err != nil {
-		return "", fmt.Errorf("failed to create signed URL: %v", err)
-	}
-
-	return signedURL, nil
-}
-
 // generateSignedURLWithMetadata creates a signed URL with custom metadata
 // Note: Metadata will be set by the frontend when uploading via x-goog-meta-* headers
 func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityType string) (string, error) {

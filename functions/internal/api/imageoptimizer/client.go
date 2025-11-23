@@ -61,7 +61,7 @@ func (rt *idTokenRoundTripper) RoundTrip(req *http.Request) (*http.Response, err
 	ctx := context.Background()
 
 	// Check if we're running in a Cloud environment by trying to get project ID
-	_, err := metadata.ProjectID()
+	_, err := metadata.ProjectIDWithContext(ctx)
 	if err != nil {
 		slog.Warn("not running on GCP, making unauthenticated request to image optimizer")
 		return http.DefaultTransport.RoundTrip(req)

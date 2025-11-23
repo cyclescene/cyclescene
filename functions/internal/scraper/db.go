@@ -47,10 +47,10 @@ func BulkUpsertGeocodeData(db *sql.DB, locations []Location) error {
 
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			panic(r)
 		} else if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 
@@ -101,10 +101,10 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 
 	defer func() {
 		if r := recover(); r != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 			panic(r)
 		} else if err != nil {
-			tx.Rollback()
+			_ = tx.Rollback()
 		}
 	}()
 

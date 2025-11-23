@@ -62,6 +62,9 @@ func init() {
 func GeocodeQuery(query, cityCode string) (float64, float64, error) {
 	ctx := context.Background()
 	client, err := getAuthenticatedClient(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to get authenticated client: %w", err)
+	}
 
 	baseURL := "https://geocode.googleapis.com/v4beta/geocode/address/"
 

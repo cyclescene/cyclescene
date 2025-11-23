@@ -25,7 +25,9 @@ func (r *Repository) CreateRide(submission *Submission, editToken string, latitu
 	if err != nil {
 		return 0, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	result, err := tx.Exec(`
 		INSERT INTO events (
@@ -147,7 +149,9 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 
 	result, err := tx.Exec(`
 		UPDATE events SET

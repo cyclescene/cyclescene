@@ -49,7 +49,9 @@ func (h *Handler) GenerateSubmissionToken(w http.ResponseWriter, r *http.Request
 	slog.Info("Generated submission token", "city", req.City, "expires_at", token.ExpiresAt)
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(token)
+	if err := json.NewEncoder(w).Encode(token); err != nil {
+		slog.Error("Failed to encode token response", "error", err)
+	}
 }
 
 type ValidateTokenRequest struct {
@@ -72,5 +74,7 @@ func (h *Handler) ValidateSubmissionToken(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(validation)
+	if err := json.NewEncoder(w).Encode(validation); err != nil {
+		slog.Error("Failed to encode validation response", "error", err)
+	}
 }
