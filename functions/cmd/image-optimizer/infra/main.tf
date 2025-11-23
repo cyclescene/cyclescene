@@ -142,6 +142,20 @@ resource "google_project_iam_member" "wif_eventarc_admin" {
   member  = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
 }
 
+# Allow WIF service account to view Eventarc resources (needed for state refresh)
+resource "google_project_iam_member" "wif_eventarc_viewer" {
+  project = var.project_id
+  role    = "roles/eventarc.viewer"
+  member  = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
+# Allow WIF service account to publish events to Eventarc
+resource "google_project_iam_member" "wif_eventarc_publisher" {
+  project = var.project_id
+  role    = "roles/eventarc.publisher"
+  member  = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Grant Eventarc trigger SA permission to invoke the optimizer service
 resource "google_cloud_run_service_iam_member" "eventarc_invoker" {
   service  = module.image_optimizer_service.service_name
