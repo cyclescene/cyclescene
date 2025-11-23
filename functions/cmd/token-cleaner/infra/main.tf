@@ -30,6 +30,13 @@ module "scheduler_service_account" {
   ]
 }
 
+# Allow GitHub Actions WIF service account to act as the scheduler service account
+resource "google_service_account_iam_member" "wif_can_act_as_scheduler" {
+  service_account_id = module.scheduler_service_account.account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Token Cleaner - Cloud Run Job that runs daily at midnight
 module "token_cleaner_job" {
   source = "../../../../infrastructure/modules/cloud-run-job"

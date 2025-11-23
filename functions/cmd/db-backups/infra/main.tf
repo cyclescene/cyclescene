@@ -31,6 +31,13 @@ module "backup_service_account" {
   ]
 }
 
+# Allow GitHub Actions WIF service account to act as the backup service account
+resource "google_service_account_iam_member" "wif_can_act_as_backup" {
+  service_account_id = module.backup_service_account.account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Storage bucket for database backups
 module "backup_storage_bucket" {
   source = "../../../../infrastructure/modules/storage-bucket"
