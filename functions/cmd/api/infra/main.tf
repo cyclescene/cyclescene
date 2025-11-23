@@ -8,10 +8,7 @@ terraform {
     }
   }
 
-  backend "gcs" {
-    bucket = "cyclescene-479119-terraform-state"
-    prefix = "terraform/state/api"
-  }
+  backend "gcs" {}
 }
 
 provider "google" {
