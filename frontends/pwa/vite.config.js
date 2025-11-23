@@ -6,6 +6,24 @@ import Icons from "unplugin-icons/vite"
 import path from "path"
 import { ngrok } from 'vite-plugin-ngrok';
 
+// City configurations for PWA manifest
+const cityConfigs = {
+  pdx: {
+    name: "Cycle Scene - PDX",
+    short_name: "CycleScenePDX",
+    description: "Upcoming bike rides in Portland, Oregon"
+  },
+  slc: {
+    name: "Cycle Scene - SLC",
+    short_name: "CycleSceneSLC",
+    description: "Upcoming bike rides in Salt Lake City, Utah"
+  }
+};
+
+// Get city code from environment variable, default to pdx for development
+const cityCode = process.env.VITE_CITY_CODE || 'pdx';
+const cityConfig = cityConfigs[cityCode] || cityConfigs.pdx;
+
 // https://vite.dev/config/
 export default defineConfig({
 
@@ -29,9 +47,9 @@ export default defineConfig({
       filename: "sw.ts",
       includeManifestIcons: false,
       manifest: {
-        name: "Cycle Scene - PDX",
-        short_name: "CycleScenePDX",
-        description: "Upcoming bike rides in Portland, Oregon",
+        name: cityConfig.name,
+        short_name: cityConfig.short_name,
+        description: cityConfig.description,
         theme_color: "#000000",
         background_color: "#000000",
         display: "standalone",
