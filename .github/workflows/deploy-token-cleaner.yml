@@ -61,6 +61,18 @@ jobs:
             echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi
 
+      - name: Debug - Log WIF Configuration
+        run: |
+          echo "WIF_PROVIDER length: ${#WIF_PROVIDER}"
+          echo "WIF_PROVIDER starts with: ${WIF_PROVIDER:0:30}"
+          echo "WIF_SERVICE_ACCOUNT length: ${#WIF_SERVICE_ACCOUNT}"
+          echo "WIF_SERVICE_ACCOUNT: $WIF_SERVICE_ACCOUNT"
+          echo "GCP_PROJECT_ID: $GCP_PROJECT_ID"
+        env:
+          WIF_PROVIDER: ${{ secrets.WIF_PROVIDER }}
+          WIF_SERVICE_ACCOUNT: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
