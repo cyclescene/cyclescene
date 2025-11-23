@@ -1,15 +1,12 @@
 name: Deploy DB Backups to Cloud Run
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - 'functions/cmd/db-backups/**'
-      - 'functions/internal/**'
-      - 'functions/go.mod'
-      - 'functions/go.sum'
-      - '.github/workflows/deploy-db-backups.yml'
+  workflow_call:
+    inputs:
+      image_tag:
+        description: 'Custom image tag (default: commit SHA)'
+        type: string
+        required: false
   workflow_dispatch:
     inputs:
       image_tag:
@@ -56,8 +53,10 @@ jobs:
       - name: Set image tag
         id: image-tag
         run: |
-          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
-            echo "tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          # Support both workflow_dispatch and workflow_call inputs
+          INPUT_TAG="${{ github.event.inputs.image_tag }}${{ inputs.image_tag }}"
+          if [ -n "$INPUT_TAG" ]; then
+            echo "tag=$INPUT_TAG" >> $GITHUB_OUTPUT
           else
             echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
           fi

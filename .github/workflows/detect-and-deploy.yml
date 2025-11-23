@@ -1,0 +1,150 @@
+name: Detect Changes and Deploy Services
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'functions/**'
+      - '.github/workflows/deploy-*.yml'
+      - '.github/workflows/detect-and-deploy.yml'
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to deploy (comma-separated: api,image-optimizer,scraperv2,token-cleaner,db-backups)'
+        required: false
+
+env:
+  SERVICES: api image-optimizer scraperv2 token-cleaner db-backups
+
+jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      api: ${{ steps.detect.outputs.api }}
+      image-optimizer: ${{ steps.detect.outputs.image-optimizer }}
+      scraperv2: ${{ steps.detect.outputs.scraperv2 }}
+      token-cleaner: ${{ steps.detect.outputs.token-cleaner }}
+      db-backups: ${{ steps.detect.outputs.db-backups }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed services
+        id: detect
+        run: |
+          # If manual dispatch with services specified, use those
+          if [ -n "${{ github.event.inputs.services }}" ]; then
+            SERVICES="${{ github.event.inputs.services }}"
+            echo "services=$SERVICES" >> $GITHUB_OUTPUT
+            # Set individual service outputs
+            for service in $SERVICES; do
+              echo "$service=true" >> $GITHUB_OUTPUT
+            done
+            echo "Manually triggered for: $SERVICES"
+            exit 0
+          fi
+
+          # Get changed files since last commit
+          if [ "${{ github.event_name }}" = "push" ]; then
+            CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} 2>/dev/null || echo "")
+          fi
+
+          echo "Changed files: $CHANGED_FILES"
+
+          # Track which services need deployment
+          CHANGED_SERVICES=""
+
+          # Check API service
+          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/api/|functions/internal/api/|functions/go\.)"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES api"
+            echo "api=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check Image Optimizer
+          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/image-optimizer/|functions/internal/|functions/go\.)"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES image-optimizer"
+            echo "image-optimizer=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check Scraperv2
+          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/scraperv2/|functions/internal/scraper/|functions/go\.)"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES scraperv2"
+            echo "scraperv2=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check Token Cleaner
+          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/token-cleaner/|functions/internal/|functions/go\.)"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES token-cleaner"
+            echo "token-cleaner=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check DB Backups
+          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/db-backups/|functions/internal/|functions/go\.)"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES db-backups"
+            echo "db-backups=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Output final service list
+          SERVICES=$(echo $CHANGED_SERVICES | xargs)
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "Services to deploy: $SERVICES"
+
+  deploy-api:
+    name: Deploy API
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true'
+    uses: ./.github/workflows/deploy-api.yml
+    secrets: inherit
+
+  deploy-image-optimizer:
+    name: Deploy Image Optimizer
+    needs: detect-changes
+    if: needs.detect-changes.outputs.image-optimizer == 'true'
+    uses: ./.github/workflows/deploy-image-optimizer.yml
+    secrets: inherit
+
+  deploy-scraperv2:
+    name: Deploy Scraperv2
+    needs: detect-changes
+    if: needs.detect-changes.outputs.scraperv2 == 'true'
+    uses: ./.github/workflows/deploy-scraperv2.yml
+    secrets: inherit
+
+  deploy-token-cleaner:
+    name: Deploy Token Cleaner
+    needs: detect-changes
+    if: needs.detect-changes.outputs.token-cleaner == 'true'
+    uses: ./.github/workflows/deploy-token-cleaner.yml
+    secrets: inherit
+
+  deploy-db-backups:
+    name: Deploy DB Backups
+    needs: detect-changes
+    if: needs.detect-changes.outputs.db-backups == 'true'
+    uses: ./.github/workflows/deploy-db-backups.yml
+    secrets: inherit
+
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: always()
+    steps:
+      - name: Show deployment status
+        run: |
+          echo "🔍 Change Detection Results"
+          echo "=========================="
+          echo "Services to deploy: ${{ needs.detect-changes.outputs.services }}"
+          echo ""
+          echo "Service Status:"
+          echo "- API: ${{ needs.detect-changes.outputs.api }}"
+          echo "- Image Optimizer: ${{ needs.detect-changes.outputs.image-optimizer }}"
+          echo "- Scraperv2: ${{ needs.detect-changes.outputs.scraperv2 }}"
+          echo "- Token Cleaner: ${{ needs.detect-changes.outputs.token-cleaner }}"
+          echo "- DB Backups: ${{ needs.detect-changes.outputs.db-backups }}"
