@@ -18,6 +18,8 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	slog.Info("Starting database backup service")
+
 	// DB Vars
 	if os.Getenv("TURSO_DB_HTTP_URL") == "" || os.Getenv("TURSO_DB_RW_TOKEN") == "" {
 		log.Fatal("FATAL: Turso env variable not set properly")

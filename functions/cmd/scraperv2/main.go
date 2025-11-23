@@ -35,6 +35,7 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 	})))
+	slog.Info("Starting PDX scraper service")
 	//
 	// connect to DB(Turso)
 	dbURL := os.Getenv("TURSO_DB_URL")

@@ -29,6 +29,8 @@ func init() {
 		AddSource: true,
 	})))
 
+	slog.Info("Starting image optimizer service")
+
 	// Connect to database
 	dbConnector, err = imageprocessing.NewDBConnector()
 	if err != nil {
