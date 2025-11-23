@@ -1,0 +1,245 @@
+name: Go Services CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - dev/**
+    paths:
+      - 'functions/**'
+      - '.github/workflows/go-services-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'functions/**'
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+  ARTIFACT_REGISTRY_REGION: us-west1
+  ARTIFACT_REGISTRY_REPO: cyclescene
+
+jobs:
+  detect-changes:
+    name: Detect Changed Services
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+      services_json: ${{ steps.detect.outputs.services_json }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed services
+        id: detect
+        run: |
+          # Get the base commit for comparison
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          else
+            # For push events, compare with previous commit
+            BASE_REF="${{ github.event.before }}"
+          fi
+
+          # If base is empty (initial push), check all services
+          if [[ -z "$BASE_REF" ]] || [[ "$BASE_REF" == "0000000000000000000000000000000000000000" ]]; then
+            BASE_REF="HEAD~1"
+          fi
+
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only $BASE_REF ${{ github.sha }} 2>/dev/null || echo "")
+
+          # Detect which services changed
+          SERVICES=""
+          SERVICES_JSON="[]"
+
+          declare -a ALL_SERVICES=("api" "image-optimizer" "scraperv2" "token-cleaner" "db-backups")
+
+          for service in "${ALL_SERVICES[@]}"; do
+            # Check if service directory or shared code changed
+            if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/$service/|functions/internal/|functions/go\.|\.github/workflows/go-services-ci)"; then
+              SERVICES="$SERVICES $service"
+              SERVICES_JSON=$(echo "$SERVICES_JSON" | jq --arg service "$service" '. += [$service]')
+            fi
+          done
+
+          # If no services detected and workflow file changed, rebuild all
+          if [[ -z "$SERVICES" ]] && echo "$CHANGED_FILES" | grep -q ".github/workflows/go-services-ci"; then
+            SERVICES="api image-optimizer scraperv2 token-cleaner db-backups"
+            SERVICES_JSON='["api", "image-optimizer", "scraperv2", "token-cleaner", "db-backups"]'
+          fi
+
+          echo "services=$SERVICES" >> $GITHUB_OUTPUT
+          echo "services_json=$SERVICES_JSON" >> $GITHUB_OUTPUT
+          echo "Changed services: $SERVICES"
+
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    needs: detect-changes
+    if: needs.detect-changes.outputs.services != ''
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          cache: true
+          cache-dependency-path: 'functions/go.sum'
+
+      - name: Run Go tests
+        run: |
+          cd functions
+          go test -v ./...
+
+      - name: Run Go linter
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: latest
+          working-directory: functions
+
+      - name: Build changed services locally
+        run: |
+          cd functions
+          for service in ${{ needs.detect-changes.outputs.services }}; do
+            echo "Building $service..."
+            cd cmd/$service
+            go build -o bin/$service .
+            cd ../..
+          done
+
+  push-to-registry:
+    name: Push Docker Images
+    runs-on: ubuntu-latest
+    needs: [detect-changes, build-and-test]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/dev/')) && needs.detect-changes.outputs.services != ''
+    permissions:
+      contents: read
+      id-token: write
+
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services_json) }}
+      max-parallel: 3
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker authentication
+        run: |
+          gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev
+
+      - name: Generate image tags
+        id: tags
+        run: |
+          COMMIT_SHA=${{ github.sha }}
+          SHORT_SHA=${COMMIT_SHA:0:7}
+          BRANCH_NAME=$(echo ${{ github.ref }} | sed 's|refs/heads/||')
+
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            PRIMARY_TAG="latest"
+          else
+            PRIMARY_TAG="$BRANCH_NAME"
+          fi
+
+          echo "primary_tag=$PRIMARY_TAG" >> $GITHUB_OUTPUT
+          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+
+      - name: Build and push Docker image
+        working-directory: functions/cmd/${{ matrix.service }}
+        run: |
+          IMAGE_URL="${{ env.ARTIFACT_REGISTRY_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ matrix.service }}/${{ matrix.service }}-image"
+
+          docker build \
+            -t "$IMAGE_URL:${{ steps.tags.outputs.primary_tag }}" \
+            -t "$IMAGE_URL:${{ steps.tags.outputs.short_sha }}" \
+            .
+
+          docker push "$IMAGE_URL:${{ steps.tags.outputs.primary_tag }}"
+          docker push "$IMAGE_URL:${{ steps.tags.outputs.short_sha }}"
+
+          echo "Image pushed: $IMAGE_URL:${{ steps.tags.outputs.primary_tag }}"
+
+  deploy-services:
+    name: Deploy Services
+    runs-on: ubuntu-latest
+    needs: [detect-changes, push-to-registry]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.detect-changes.outputs.services != ''
+    permissions:
+      contents: read
+      id-token: write
+
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services_json) }}
+      max-parallel: 1
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set up OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: latest
+
+      - name: Initialize Terraform backend
+        working-directory: functions/cmd/${{ matrix.service }}/infra
+        run: |
+          tofu init
+
+      - name: Validate Terraform
+        working-directory: functions/cmd/${{ matrix.service }}/infra
+        run: |
+          tofu validate
+
+      - name: Plan and apply changes
+        working-directory: functions/cmd/${{ matrix.service }}/infra
+        env:
+          TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
+          TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
+          TF_VAR_turso_db_ro_token: ${{ secrets.TURSO_DB_RO_TOKEN }}
+          TF_VAR_staging_bucket_name: ${{ secrets.STAGING_BUCKET_NAME }}
+          TF_VAR_edit_link_base_url: ${{ secrets.EDIT_LINK_BASE_URL }}
+        run: |
+          if [ "${{ matrix.service }}" = "api" ]; then
+            tofu plan -lock=false -var="resend_api_key=${{ secrets.RESEND_API_KEY }}"
+            tofu apply -auto-approve -lock=false -var="resend_api_key=${{ secrets.RESEND_API_KEY }}"
+          else
+            tofu plan -lock=false
+            tofu apply -auto-approve -lock=false
+          fi
+
+      - name: Verify deployment
+        run: |
+          gcloud run services describe ${{ matrix.service }} \
+            --region ${{ env.ARTIFACT_REGISTRY_REGION }} \
+            --project ${{ env.GCP_PROJECT_ID }}
