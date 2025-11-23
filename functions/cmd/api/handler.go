@@ -64,6 +64,13 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	r.Use(chimi.Recoverer)
 	r.Use(cors.Handler(corsOptions))
 
+	// Health check endpoint for load balancers and monitoring
+	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"healthy"}`))
+	})
+
 	authRepo := auth.NewRepository(db)
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
