@@ -16,7 +16,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-west1
-  SERVICE_NAME: api
+  SERVICE_NAME: cyclescene-api-gateway
   ARTIFACT_REGISTRY_REPO: cyclescene
   IMAGE_NAME: api
 
