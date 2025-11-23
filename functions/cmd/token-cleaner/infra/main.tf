@@ -37,12 +37,34 @@ resource "google_service_account_iam_member" "wif_can_act_as_scheduler" {
   member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
 }
 
+# Service account for the token cleaner job itself
+module "token_cleaner_sa" {
+  source = "../../../../infrastructure/modules/service-account"
+
+  account_id   = "token-cleaner-job"
+  display_name = "Token Cleaner Job SA"
+  description  = "Service account for token cleaner job to access databases"
+  project_id   = var.project_id
+
+  roles = [
+    "roles/serviceusage.serviceUsageConsumer"  # Required to call Google APIs
+  ]
+}
+
+# Allow GitHub Actions WIF service account to act as the token cleaner job service account
+resource "google_service_account_iam_member" "wif_can_act_as_token_cleaner_job" {
+  service_account_id = module.token_cleaner_sa.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
+}
+
 # Token Cleaner - Cloud Run Job that runs daily at midnight
 module "token_cleaner_job" {
   source = "../../../../infrastructure/modules/cloud-run-job"
 
-  job_name = "submission-token-cleaner"
-  image    = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/token-cleaner:${var.image_tag}"
+  job_name              = "submission-token-cleaner"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/token-cleaner:${var.image_tag}"
+  service_account_email = module.token_cleaner_sa.email
 
   env_vars = var.env_vars
 

@@ -16,7 +16,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-west1
-  SERVICE_NAME: token-cleaner
+  SERVICE_NAME: submission-token-cleaner
   ARTIFACT_REGISTRY_REPO: cyclescene
   IMAGE_NAME: token-cleaner
 

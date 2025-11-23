@@ -16,7 +16,7 @@ on:
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: us-west1
-  SERVICE_NAME: db-backups
+  SERVICE_NAME: turso-backup-job
   ARTIFACT_REGISTRY_REPO: cyclescene
   IMAGE_NAME: db-backups
 
