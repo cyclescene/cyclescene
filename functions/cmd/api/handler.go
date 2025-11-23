@@ -36,6 +36,7 @@ func isAllowedOrigin(_ *http.Request, origin string) bool {
 }
 
 func NewRideAPIRouter(db *sql.DB) http.Handler {
+	slog.Info("Initializing CycleScene API router")
 	var corsOptions cors.Options
 
 	if os.Getenv("APP_ENV") == "dev" {
