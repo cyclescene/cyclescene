@@ -23,3 +23,7 @@ CREATE INDEX idx_token_used ON submission_tokens (used);
 CREATE INDEX idx_token_expiry ON submission_tokens (expires_at);
 CREATE INDEX idx_events_image_uuid ON events (image_uuid);
 CREATE INDEX idx_ride_groups_image_uuid ON ride_groups (image_uuid);
+CREATE TABLE admin_api_keys (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT UNIQUE NOT NULL, admin_name TEXT, created_at TEXT NOT NULL DEFAULT (STRFTIME ('%Y-%m-%d %H:%M:%f', 'NOW')), revoked_at TEXT, last_used_at TEXT);
+CREATE TABLE sqlite_sequence(name,seq);
+CREATE INDEX idx_admin_api_keys_api_key ON admin_api_keys (api_key);
+CREATE INDEX idx_admin_api_keys_revoked ON admin_api_keys (revoked_at);

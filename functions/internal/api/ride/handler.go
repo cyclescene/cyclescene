@@ -9,17 +9,20 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/spacesedan/cyclescene/functions/internal/api/auth"
 	"github.com/spacesedan/cyclescene/functions/internal/api/events"
 )
 
 type Handler struct {
 	service        *Service
+	authService    *auth.Service
 	eventarcClient *events.EventarcClient
 }
 
-func NewHandler(service *Service, eventarcClient *events.EventarcClient) *Handler {
+func NewHandler(service *Service, authService *auth.Service, eventarcClient *events.EventarcClient) *Handler {
 	return &Handler{
 		service:        service,
+		authService:    authService,
 		eventarcClient: eventarcClient,
 	}
 }
@@ -31,6 +34,10 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Get("/edit/{token}", h.GetRideByEditToken)
 		r.Put("/edit/{token}", h.UpdateRide)
 		r.Patch("/edit/{token}/occurrences/{occurrenceId}", h.UpdateOccurrence)
+
+		// Admin endpoints
+		r.Get("/admin/pending", h.GetPendingRides)
+		r.Patch("/admin/{id}/publish", h.PublishRide)
 
 		// Scraped rides from Shift2Bikes
 		r.Get("/upcoming", h.GetUpcomingRides)
@@ -60,6 +67,13 @@ func (h *Handler) SubmitRide(w http.ResponseWriter, r *http.Request) {
 	// Validate required fields
 	if submission.Title == "" || submission.Description == "" || submission.City == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+
+	// Validate the BFF token against database and mark as used
+	if err := h.authService.VerifyAndConsumeToken(bffToken, submission.City); err != nil {
+		slog.Warn("Invalid or expired submission token", "error", err.Error(), "city", submission.City)
+		http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
 		return
 	}
 
@@ -249,4 +263,87 @@ func (h *Handler) GenerateICS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(icsData.Content))
+}
+
+// ============================================================================
+// ADMIN ENDPOINTS
+// ============================================================================
+
+func (h *Handler) validateAdminKey(w http.ResponseWriter, r *http.Request) bool {
+	apiKey := r.Header.Get("X-Admin-Token")
+	if apiKey == "" {
+		http.Error(w, "Missing admin API key", http.StatusUnauthorized)
+		return false
+	}
+
+	// Validate API key against database
+	valid, err := h.service.ValidateAdminKey(apiKey)
+	if err != nil {
+		slog.Error("Error validating admin key", "error", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return false
+	}
+
+	if !valid {
+		http.Error(w, "Invalid admin API key", http.StatusUnauthorized)
+		return false
+	}
+
+	return true
+}
+
+func (h *Handler) GetPendingRides(w http.ResponseWriter, r *http.Request) {
+	// Verify admin API key
+	if !h.validateAdminKey(w, r) {
+		return
+	}
+
+	rides, err := h.service.GetPendingRides()
+	if err != nil {
+		slog.Error("Failed to get pending rides", "error", err)
+		http.Error(w, "Failed to fetch rides", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(rides)
+}
+
+type PublishRequest struct {
+	ModerationNotes string `json:"moderation_notes,omitempty"`
+}
+
+func (h *Handler) PublishRide(w http.ResponseWriter, r *http.Request) {
+	// Verify admin API key
+	if !h.validateAdminKey(w, r) {
+		return
+	}
+
+	rideID := chi.URLParam(r, "id")
+	if rideID == "" {
+		http.Error(w, "Missing ride ID", http.StatusBadRequest)
+		return
+	}
+
+	var req PublishRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	rideIDInt, err := strconv.Atoi(rideID)
+	if err != nil {
+		http.Error(w, "Invalid ride ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.PublishRide(rideIDInt, req.ModerationNotes); err != nil {
+		slog.Error("Failed to publish ride", "error", err, "ride_id", rideID)
+		http.Error(w, "Failed to publish ride", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "Ride published successfully"})
 }

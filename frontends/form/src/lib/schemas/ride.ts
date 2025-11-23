@@ -14,7 +14,7 @@ export const rideSubmissionSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
   tinytitle: z.string().max(50).optional(),
   description: z.string().min(10, 'Description must be at least 10 characters'),
-  image_url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  image_url: z.union([z.httpUrl(), z.literal('')]).optional(),
   image_uuid: z.string().optional(),
   audience: z.enum(['G', 'F', 'A', 'E'], {
     error: () => ({ message: 'Please select an audience type' })
@@ -35,8 +35,10 @@ export const rideSubmissionSchema = z.object({
   // Contact info
   organizer_name: z.string().min(2, 'Organizer name is required').max(100),
   organizer_email: z.email('Must be a valid email'),
-  organizer_phone: z.string().optional(),
-  web_url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  organizer_phone: z.string()
+    .refine(val => !val || /^[\d\-\+\(\)\s]+$/.test(val), 'Invalid phone number format')
+    .optional(),
+  web_url: z.union([z.httpUrl(), z.literal('')]).optional(),
   web_name: z.string().max(100).optional(),
   newsflash: z.string().max(500).optional(),
   hide_email: z.boolean().default(false),
@@ -65,9 +67,9 @@ export const groupRegistrationSchema = z.object({
   name: z.string().min(3, 'Group name must be at least 3 characters').max(100),
   description: z.string().max(500).optional(),
   city: z.string().min(2, 'City is required'),
-  icon_url: z.url('Must be a valid URL').optional().or(z.literal('')),
+  icon_url: z.union([z.httpUrl(), z.literal('')]).optional(),
   icon_uuid: z.string().optional(),
-  web_url: z.url('Must be a valid URL').optional().or(z.literal(''))
+  web_url: z.union([z.httpUrl(), z.literal('')]).optional()
 });
 
 export type GroupRegistration = z.infer<typeof groupRegistrationSchema>;

@@ -9,7 +9,7 @@ terraform {
   }
 
   backend "gcs" {
-    bucket = "cyclescene-terraform-state"
+    bucket = "cyclescene-479119-terraform-state"
     prefix = "terraform/state/token-cleaner"
   }
 }

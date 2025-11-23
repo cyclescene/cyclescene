@@ -116,6 +116,12 @@ self.addEventListener('message', (event) => {
   }
 })
 
+self.addEventListener('sync', (event: any) => {
+  if (event.tag === RIDES_SYNC_TAG) {
+    event.waitUntil(fetchAndNotifyUpdate())
+  }
+})
+
 async function fetchAndNotifyUpdate() {
   try {
     const response = await fetch(API_UPCOMING_URL)
@@ -124,7 +130,7 @@ async function fetchAndNotifyUpdate() {
     self.clients.matchAll().then(clients => {
       clients.forEach(client => {
         client.postMessage({
-          type: "RIDES_UPDTE_SUCCESS",
+          type: "RIDES_UPDATE_SUCCESSFULL",
           data: freshData
         })
       })

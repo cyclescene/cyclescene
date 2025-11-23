@@ -1,4 +1,4 @@
-PROJECT_ID := cyclescene
+PROJECT_ID := cyclescene-479119
 REGION := us-west1
 REPO_NAME := cyclescene
 SERVICE_NAME := submission-token-cleaner

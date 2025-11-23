@@ -54,6 +54,13 @@ export const TILE_URLS = {
 const RIDES_SYNC_TAG = "update-rides-6hr"
 const SYNC_INTERVAL = 6 * 60 * 60 * 1000
 
+// Detect if device is Apple (Safari)
+function isAppleDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent.toLowerCase()
+  return /iphone|ipad|ipod|mac/.test(ua) && /safari/.test(ua) && !/chrome|firefox/.test(ua)
+}
+
 
 function createRidesStore() {
   const { subscribe, set, update } = writable<{
@@ -112,18 +119,23 @@ function createRidesStore() {
         update(store => ({ ...store, loading: false, error: "Unable to get idb ride data" }))
       }
 
-      if ('serviceWorker' in navigator && 'PeriodicSyncManager' in self) {
+      if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready
           .then(registration => {
-            registration.periodicSync.register(
-              RIDES_SYNC_TAG,
-              {
-                minInterval: SYNC_INTERVAL
-              }
-            )
+            // Use Periodic Sync for browsers that support it (Chrome, Firefox)
+            if ('PeriodicSyncManager' in self) {
+              return registration.periodicSync.register(
+                RIDES_SYNC_TAG,
+                { minInterval: SYNC_INTERVAL }
+              )
+            }
+            // Use Background Sync API for Apple devices
+            else if ('SyncManager' in self) {
+              return registration.sync.register(RIDES_SYNC_TAG)
+            }
           })
-          .then(() => console.log("Periodic Sync Registered"))
-          .catch(err => console.error("Periodic Sync Registration Failed: ", err))
+          .then(() => console.log("Sync Registered"))
+          .catch(err => console.error("Sync Registration Failed: ", err))
       }
     },
     refetch: async () => {

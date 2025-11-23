@@ -18,9 +18,13 @@ export const load: PageServerLoad = async ({ url, request }) => {
 
   // Check referrer to ensure request came from PWA
   const referrer = request.headers.get('referer') || '';
-  const isValidReferrer = referrer.includes('pdx.cyclescene.cc') ||
-    referrer.includes('slc.cyclescene.cc') ||
-    referrer.includes('localhost'); // for dev
+  const validReferrers = [
+    'https://pdx.cyclescene.cc',
+    'https://slc.cyclescene.cc',
+    'http://localhost' // for dev only
+  ];
+
+  const isValidReferrer = validReferrers.some(valid => referrer.startsWith(valid));
 
   if (!isValidReferrer) {
     throw redirect(302, '/error?message=Invalid referrer');

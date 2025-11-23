@@ -1,8 +1,8 @@
 # API Gateway Configuration
-project_id                = "cyclescene"
+project_id                = "cyclescene-479119"
 region                    = "us-west1"
 environment               = "production"
-api_custom_domain         = "api.cyclescene.cc"
+# api_custom_domain         = "api.cyclescene.cc"  # Commented out - domain already mapped in old project
 api_service_account_email = "cyclescene-api@cyclescene.iam.gserviceaccount.com"
 
 # API Service Resources
@@ -31,6 +31,12 @@ allowed_origins = [
 turso_db_url       = "libsql://cyclescene-spacesedan.aws-us-west-2.turso.io"
 turso_db_rw_token  = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NTk2MDI3NjYsImlkIjoiYTk3MWQ4NjYtNmYyMC00MTliLTg3NzItNjUxOGQwNjFiMWViIiwicmlkIjoiNTM1YzdmY2MtOTFkNi00ZWUzLTlkOGUtMjJhMGNiY2QzNWU0In0.FsnvHvKo6mo15dLttjm1ljUnzjs0XHOHQ0leynLMD_Vj9X4sqwyq_Ve3CA3hOL3BbHlK8nEM226JYLA0ZADFCw"
 staging_bucket_name = "cyclescene-user-media-staging"
+
+# Email service (Resend)
+resend_api_key = "re_test_placeholder"
+
+# Edit link base URL for magic link emails
+edit_link_base_url = "https://form.cyclescene.cc/rides/edit"
 
 # Image Optimizer
 optimizer_service_account_email = "cyclescene-image-optimizer@cyclescene.iam.gserviceaccount.com"

@@ -6,14 +6,16 @@ import (
 	"net/http"
 	"os"
 	"slices"
+	"time"
 
 	chi "github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	chimi "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/spacesedan/cyclescene/functions/internal/api/auth"
 	"github.com/spacesedan/cyclescene/functions/internal/api/events"
 	"github.com/spacesedan/cyclescene/functions/internal/api/group"
 	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
+	apimi "github.com/spacesedan/cyclescene/functions/internal/api/middleware"
 	"github.com/spacesedan/cyclescene/functions/internal/api/ride"
 	"github.com/spacesedan/cyclescene/functions/internal/api/storage"
 )
@@ -26,6 +28,7 @@ var allowedDomains = []string{
 	"https://slc.cyclescene.cc",
 	"http://localhost:5173",
 	"http://localhost:5174",
+	"http://localhost:5175",
 }
 
 func isAllowedOrigin(_ *http.Request, origin string) bool {
@@ -39,8 +42,8 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 		slog.Info("loading cors with dev options")
 		corsOptions = cors.Options{
 			AllowedOrigins:   []string{"*"},
-			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodOptions},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token"},
+			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch, http.MethodOptions},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token", "X-Admin-Token"},
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: false,
 			MaxAge:           300,
@@ -48,8 +51,8 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	} else {
 		corsOptions = cors.Options{
 			AllowOriginFunc:  isAllowedOrigin,
-			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodOptions},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token"},
+			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch, http.MethodOptions},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token", "X-Admin-Token"},
 			ExposedHeaders:   []string{"Link"},
 			AllowCredentials: false,
 			MaxAge:           300,
@@ -57,8 +60,8 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	}
 
 	r := chi.NewMux()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	r.Use(chimi.Logger)
+	r.Use(chimi.Recoverer)
 	r.Use(cors.Handler(corsOptions))
 
 	authRepo := auth.NewRepository(db)
@@ -93,7 +96,7 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	} else {
 		rideService = ride.NewService(rideRepo)
 	}
-	rideHandler := ride.NewHandler(rideService, eventarcClient)
+	rideHandler := ride.NewHandler(rideService, authService, eventarcClient)
 
 	groupRepo := group.NewRepository(db)
 	groupService := group.NewService(groupRepo)
@@ -107,6 +110,9 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	}
 	storageHandler := storage.NewHandler(storageService)
 
+	// Rate limiter: 10 submissions per minute per IP
+	submissionRateLimiter := apimi.NewRateLimiter(10, time.Minute)
+
 	r.Route("/v1", func(r chi.Router) {
 		// auth handlers -- /tokens
 		authHandler.RegisterRoutes(r)
@@ -115,7 +121,19 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 		storageHandler.RegisterRoutes(r)
 
 		// ride handlers scraped and user submitted -- /rides
-		rideHandler.RegisterRoutes(r)
+		r.Route("/rides", func(r chi.Router) {
+			// Apply rate limiting only to submission endpoint
+			r.Post("/submit", submissionRateLimiter.Middleware(http.HandlerFunc(rideHandler.SubmitRide)).ServeHTTP)
+			// Register other routes without rate limiting
+			r.Get("/edit/{token}", rideHandler.GetRideByEditToken)
+			r.Put("/edit/{token}", rideHandler.UpdateRide)
+			r.Patch("/edit/{token}/occurrences/{occurrenceId}", rideHandler.UpdateOccurrence)
+			r.Get("/admin/pending", rideHandler.GetPendingRides)
+			r.Patch("/admin/{id}/publish", rideHandler.PublishRide)
+			r.Get("/upcoming", rideHandler.GetUpcomingRides)
+			r.Get("/past", rideHandler.GetPastRides)
+			r.Get("/ics", rideHandler.GenerateICS)
+		})
 
 		// group handlers
 		groupHandler.RegisterRoutes(r)

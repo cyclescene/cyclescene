@@ -23,11 +23,11 @@ type Service struct {
 // NewService creates a new storage service
 // Uses Application Default Credentials (will work on Cloud Run with service account)
 func NewService() (*Service, error) {
-	bucketName := os.Getenv("MEDIA_BUCKET")
-	projectID := os.Getenv("PROJECT_ID")
+	bucketName := os.Getenv("STAGING_BUCKET_NAME")
+	projectID := os.Getenv("GCP_PROJECT")
 
 	if bucketName == "" {
-		return nil, fmt.Errorf("MEDIA_BUCKET environment variable not set")
+		return nil, fmt.Errorf("STAGING_BUCKET_NAME environment variable not set")
 	}
 	if projectID == "" {
 		return nil, fmt.Errorf("GCP_PROJECT environment variable not set")

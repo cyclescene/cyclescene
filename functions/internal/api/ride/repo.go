@@ -2,10 +2,13 @@ package ride
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"strings"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Repository struct {
@@ -216,7 +219,7 @@ func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTim
 	return err
 }
 
-// Scraped rides from Shift2Bikes
+// Scraped rides from Shift2Bikes (PDX only) + Published user-submitted rides
 func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) {
 	tzStr := getTimeZone(city)
 	tz, err := time.LoadLocation(tzStr)
@@ -227,15 +230,91 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 	now := time.Now().In(tz)
 	todayStr := now.Format("2006-01-02")
 
-	query := `
-		SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, 
-		       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, 
-		       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
-		FROM shift2bikes_events
-		WHERE citycode = ? AND date >= ?
-		ORDER BY date ASC, starttime ASC
-	`
-	return r.scanScrapedRides(query, city, todayStr)
+	var query string
+	var args []any
+
+	// For PDX, include both shift2bikes_events and user-submitted events
+	// For other cities, only include user-submitted events
+	if city == "pdx" {
+		query = `
+			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
+			       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime,
+			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+			FROM shift2bikes_events
+			WHERE citycode = ? AND date >= ?
+			UNION ALL
+			SELECT
+				CAST(e.id AS TEXT) as composite_event_id,
+				e.title,
+				e.latitude as lat,
+				e.longitude as lng,
+				e.address,
+				e.audience,
+				eo.is_cancelled as cancelled,
+				eo.start_date as date,
+				eo.start_time as starttime,
+				0 as safetyplan,
+				e.description as details,
+				e.venue_name as venue,
+				e.organizer_name as organizer,
+				e.is_loop_ride as loopride,
+				'' as shareable,
+				'user-submitted' as ridesource,
+				'' as endtime,
+				e.organizer_email as email,
+				eo.event_duration_minutes as eventduration,
+				e.image_url as image,
+				e.location_details as locdetails,
+				e.ending_location as locend,
+				e.newsflash,
+				eo.event_time_details as timedetails,
+				e.web_name as webname,
+				e.web_url as weburl
+			FROM events e
+			JOIN event_occurrences eo ON e.id = eo.event_id
+			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+			ORDER BY date ASC, starttime ASC
+		`
+		args = []any{city, todayStr, city, todayStr}
+	} else {
+		// For non-PDX cities, only query user-submitted events
+		query = `
+			SELECT
+				CAST(e.id AS TEXT) as composite_event_id,
+				e.title,
+				e.latitude as lat,
+				e.longitude as lng,
+				e.address,
+				e.audience,
+				eo.is_cancelled as cancelled,
+				eo.start_date as date,
+				eo.start_time as starttime,
+				0 as safetyplan,
+				e.description as details,
+				e.venue_name as venue,
+				e.organizer_name as organizer,
+				e.is_loop_ride as loopride,
+				'' as shareable,
+				'user-submitted' as ridesource,
+				'' as endtime,
+				e.organizer_email as email,
+				eo.event_duration_minutes as eventduration,
+				e.image_url as image,
+				e.location_details as locdetails,
+				e.ending_location as locend,
+				e.newsflash,
+				eo.event_time_details as timedetails,
+				e.web_name as webname,
+				e.web_url as weburl
+			FROM events e
+			JOIN event_occurrences eo ON e.id = eo.event_id
+			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+			ORDER BY date ASC, starttime ASC
+		`
+		args = []any{city, todayStr}
+	}
+
+	return r.scanScrapedRides(query, args...)
 }
 
 func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
@@ -250,15 +329,91 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 	todayStr := now.Format("2006-01-02")
 	sevenDaysAgoStr := sevenDaysAgo.Format("2006-01-02")
 
-	query := `
-		SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, 
-		       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, 
-		       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
-		FROM shift2bikes_events
-		WHERE citycode = ? AND date BETWEEN ? AND ?
-		ORDER BY date DESC, starttime DESC
-	`
-	return r.scanScrapedRides(query, city, sevenDaysAgoStr, todayStr)
+	var query string
+	var args []any
+
+	// For PDX, include both shift2bikes_events and user-submitted events
+	// For other cities, only include user-submitted events
+	if city == "pdx" {
+		query = `
+			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
+			       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime,
+			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+			FROM shift2bikes_events
+			WHERE citycode = ? AND date BETWEEN ? AND ?
+			UNION ALL
+			SELECT
+				CAST(e.id AS TEXT) as composite_event_id,
+				e.title,
+				e.latitude as lat,
+				e.longitude as lng,
+				e.address,
+				e.audience,
+				eo.is_cancelled as cancelled,
+				eo.start_date as date,
+				eo.start_time as starttime,
+				0 as safetyplan,
+				e.description as details,
+				e.venue_name as venue,
+				e.organizer_name as organizer,
+				e.is_loop_ride as loopride,
+				'' as shareable,
+				'user-submitted' as ridesource,
+				'' as endtime,
+				e.organizer_email as email,
+				eo.event_duration_minutes as eventduration,
+				e.image_url as image,
+				e.location_details as locdetails,
+				e.ending_location as locend,
+				e.newsflash,
+				eo.event_time_details as timedetails,
+				e.web_name as webname,
+				e.web_url as weburl
+			FROM events e
+			JOIN event_occurrences eo ON e.id = eo.event_id
+			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date BETWEEN ? AND ?
+			ORDER BY date DESC, starttime DESC
+		`
+		args = []any{city, sevenDaysAgoStr, todayStr, city, sevenDaysAgoStr, todayStr}
+	} else {
+		// For non-PDX cities, only query user-submitted events
+		query = `
+			SELECT
+				CAST(e.id AS TEXT) as composite_event_id,
+				e.title,
+				e.latitude as lat,
+				e.longitude as lng,
+				e.address,
+				e.audience,
+				eo.is_cancelled as cancelled,
+				eo.start_date as date,
+				eo.start_time as starttime,
+				0 as safetyplan,
+				e.description as details,
+				e.venue_name as venue,
+				e.organizer_name as organizer,
+				e.is_loop_ride as loopride,
+				'' as shareable,
+				'user-submitted' as ridesource,
+				'' as endtime,
+				e.organizer_email as email,
+				eo.event_duration_minutes as eventduration,
+				e.image_url as image,
+				e.location_details as locdetails,
+				e.ending_location as locend,
+				e.newsflash,
+				eo.event_time_details as timedetails,
+				e.web_name as webname,
+				e.web_url as weburl
+			FROM events e
+			JOIN event_occurrences eo ON e.id = eo.event_id
+			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date BETWEEN ? AND ?
+			ORDER BY date DESC, starttime DESC
+		`
+		args = []any{city, sevenDaysAgoStr, todayStr}
+	}
+
+	return r.scanScrapedRides(query, args...)
 }
 
 func (r *Repository) GetRide(city, rideID string) ([]ScrapedRideFromDB, error) {
@@ -320,4 +475,94 @@ func nilIfEmpty(s string) any {
 		return nil
 	}
 	return s
+}
+
+// GetPendingRides returns all rides that are not yet published
+func (r *Repository) GetPendingRides() ([]RideForAdmin, error) {
+	rows, err := r.db.Query(`
+		SELECT id, title, description, venue_name, city, organizer_name,
+		       organizer_email, image_url, image_uuid, is_loop_ride, is_published,
+		       created_at, moderation_notes
+		FROM events
+		WHERE is_published = 0
+		ORDER BY created_at DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var rides []RideForAdmin
+	for rows.Next() {
+		var ride RideForAdmin
+		var moderationNotes, imageURL, imageUUID sql.NullString
+
+		if err := rows.Scan(
+			&ride.ID, &ride.Title, &ride.Description, &ride.VenueName, &ride.City,
+			&ride.OrganizerName, &ride.OrganizerEmail, &imageURL, &imageUUID,
+			&ride.IsLoopRide, &ride.IsPublished, &ride.CreatedAt, &moderationNotes,
+		); err != nil {
+			return nil, err
+		}
+
+		if moderationNotes.Valid {
+			ride.ModerationNotes = moderationNotes.String
+		}
+		if imageURL.Valid {
+			ride.ImageURL = imageURL.String
+		}
+		if imageUUID.Valid {
+			ride.ImageUUID = imageUUID.String
+		}
+		rides = append(rides, ride)
+	}
+
+	return rides, rows.Err()
+}
+
+// PublishRide marks a ride as published
+func (r *Repository) PublishRide(rideID int, moderationNotes string) error {
+	now := time.Now().Format(time.RFC3339)
+
+	_, err := r.db.Exec(`
+		UPDATE events
+		SET is_published = 1, moderation_notes = ?, moderated_at = ?
+		WHERE id = ?
+	`, moderationNotes, now, rideID)
+
+	return err
+}
+
+// ValidateAdminKey checks if an API key is valid and not revoked
+func (r *Repository) ValidateAdminKey(apiKey string) (bool, error) {
+	// Decode the provided key from base64 to get raw bytes
+	decodedKey, err := base64.URLEncoding.DecodeString(apiKey)
+	if err != nil {
+		// If it can't be decoded, it's not a valid key format
+		return false, nil
+	}
+
+	// Get all active API keys and compare with provided key using bcrypt
+	rows, err := r.db.Query(`
+		SELECT api_key FROM admin_api_keys WHERE revoked_at IS NULL
+	`)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var hashedKey string
+		if err := rows.Scan(&hashedKey); err != nil {
+			continue
+		}
+
+		// Compare decoded key bytes with hashed key
+		// bcrypt.CompareHashAndPassword expects the raw bytes that were hashed
+		if err := bcrypt.CompareHashAndPassword([]byte(hashedKey), decodedKey); err == nil {
+			return true, nil
+		}
+	}
+
+	return false, rows.Err()
 }

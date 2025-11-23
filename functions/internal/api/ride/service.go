@@ -230,3 +230,18 @@ func generateSecureToken(length int) (string, error) {
 	}
 	return base64.URLEncoding.EncodeToString(b), nil
 }
+
+// GetPendingRides returns all rides that are not yet published
+func (s *Service) GetPendingRides() ([]RideForAdmin, error) {
+	return s.repo.GetPendingRides()
+}
+
+// PublishRide marks a ride as published
+func (s *Service) PublishRide(rideID int, moderationNotes string) error {
+	return s.repo.PublishRide(rideID, moderationNotes)
+}
+
+// ValidateAdminKey checks if an API key is valid
+func (s *Service) ValidateAdminKey(apiKey string) (bool, error) {
+	return s.repo.ValidateAdminKey(apiKey)
+}

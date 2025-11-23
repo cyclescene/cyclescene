@@ -122,3 +122,16 @@ variable "eventarc_channel_name" {
   type        = string
   default     = "image-optimization-events"
 }
+
+variable "resend_api_key" {
+  description = "Resend API key for email service"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "edit_link_base_url" {
+  description = "Base URL for ride edit links in emails"
+  type        = string
+  default     = "https://form.cyclescene.cc/rides/edit"
+}
