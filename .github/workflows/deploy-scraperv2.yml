@@ -119,24 +119,24 @@ jobs:
             -var="image_tag=${{ steps.image-tag.outputs.tag }}" \
             -auto-approve
 
-      - name: Get service URL
-        id: service-url
+      - name: Verify job deployment
+        id: job-status
         run: |
-          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+          JOB=$(gcloud run jobs describe ${{ env.SERVICE_NAME }} \
             --region=${{ env.REGION }} \
             --project=${{ env.PROJECT_ID }} \
-            --format='value(status.url)')
-          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
-          echo "Service deployed to: $SERVICE_URL"
+            --format='value(name)')
+          echo "job=$JOB" >> $GITHUB_OUTPUT
+          echo "Job deployed: $JOB"
 
       - name: Deployment summary
         if: always()
         run: |
           echo "✅ Scraperv2 Deployment Summary"
-          echo "=================================="
-          echo "Service: ${{ env.SERVICE_NAME }}"
+          echo "===================================="
+          echo "Job: ${{ env.SERVICE_NAME }}"
           echo "Region: ${{ env.REGION }}"
           echo "Image Tag: ${{ steps.image-tag.outputs.tag }}"
-          echo "URL: ${{ steps.service-url.outputs.url }}"
+          echo "Status: Deployed (triggered by Cloud Scheduler)"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
