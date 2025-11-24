@@ -51,6 +51,7 @@
   import SubDataView from "./views/sub/subDataView.svelte";
 
   onMount(async () => {
+    console.log("[App.onMount] App mounted!");
     // Set dynamic page title based on city
     const cityCode = import.meta.env.VITE_CITY_CODE || "pdx";
     const cityNames = {
