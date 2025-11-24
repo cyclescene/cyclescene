@@ -70,13 +70,14 @@
   });
 </script>
 
-<MapLibre
-  bind:map={mapInstance}
-  class="w-full"
-  style="height: calc(100vh - var(--header-height) - var(--footer-height)); {source}"
-  onclick={handleMapClick}
-  attributionControl={false}
->
+<div style="height: calc(100vh - var(--header-height) - var(--footer-height)); width: 100%;">
+  <MapLibre
+    bind:map={mapInstance}
+    class="w-full h-full"
+    style={source}
+    onclick={handleMapClick}
+    attributionControl={false}
+  >
   {#if $rideGeoJSON}
     {#if iconLoaded}
       <RideLayers
@@ -94,4 +95,5 @@
 
   <RidesNotShown />
   <LocationCards />
-</MapLibre>
+  </MapLibre>
+</div>
