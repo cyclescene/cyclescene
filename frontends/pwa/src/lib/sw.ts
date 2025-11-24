@@ -33,13 +33,13 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Cache CartoDB map tiles and resources
+// Cache CartoDB map tiles and resources - only cache successful responses
 registerRoute(
   ({ url }) => url.hostname === 'basemaps.cartocdn.com' || url.hostname.endsWith('.basemaps.cartocdn.com'),
   new CacheFirst({
     cacheName: 'cartodb-cache',
     plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new CacheableResponsePlugin({ statuses: [200] }), // Only cache 200 responses, not network errors
       new ExpirationPlugin({
         maxEntries: 5000,
         maxAgeSeconds: ONE_YEAR_IN_SECONDS
@@ -54,7 +54,7 @@ registerRoute(
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [
-      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new CacheableResponsePlugin({ statuses: [200] }), // Only cache 200 responses
       new ExpirationPlugin({ maxAgeSeconds: ONE_HOUR_IN_SECONDS * 6 })
     ]
   })
