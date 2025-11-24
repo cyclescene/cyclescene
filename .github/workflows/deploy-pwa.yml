@@ -111,7 +111,7 @@ jobs:
               --cwd=. \
               --prod \
               --token=$VERCEL_TOKEN \
-              --project-id=$PROJECT_ID \
+              --project=$PROJECT_ID \
               --env VITE_CITY_CODE=$CITY_CODE \
               --env VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
               --env VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }}
