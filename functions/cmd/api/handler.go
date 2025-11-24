@@ -24,6 +24,7 @@ var allowedDomains = []string{
 	"https://cyclescene.cc",
 	"https://www.cyclescene.cc",
 	"https://form.cyclescene.cc",
+	"https://dashboard.cyclescene.cc",
 	"https://pdx.cyclescene.cc",
 	"https://slc.cyclescene.cc",
 	"http://localhost:5173",
