@@ -16,6 +16,16 @@ provider "google" {
   region  = var.region
 }
 
+# Read the image optimizer service account from its state file
+data "terraform_remote_state" "image_optimizer" {
+  backend = "gcs"
+
+  config = {
+    bucket = "${var.project_id}-terraform-state"
+    prefix = "terraform/state/image-optimizer"
+  }
+}
+
 # Service Account for API with storage, geocoding, and signBlob permissions
 module "api_service_account" {
   source = "../../../../infrastructure/modules/service-account"
@@ -147,5 +157,5 @@ module "api_domain" {
 resource "google_storage_bucket_iam_member" "optimizer_staging_read" {
   bucket = module.user_media_bucket.bucket_name
   role   = "roles/storage.objectViewer"
-  member = "serviceAccount:${var.optimizer_service_account_email}"
+  member = "serviceAccount:${data.terraform_remote_state.image_optimizer.outputs.optimizer_service_account_email}"
 }

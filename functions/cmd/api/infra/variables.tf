@@ -66,12 +66,6 @@ variable "api_custom_domain" {
   default     = ""
 }
 
-variable "optimizer_service_account_email" {
-  description = "Email of the image optimizer service account for IAM permissions"
-  type        = string
-  default     = ""
-}
-
 variable "turso_db_url" {
   description = "Turso database URL"
   type        = string

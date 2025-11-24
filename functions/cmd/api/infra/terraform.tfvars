@@ -37,7 +37,6 @@ allowed_origins = [
 edit_link_base_url = "https://form.cyclescene.cc/rides/edit"
 
 # Image Optimizer
-optimizer_service_account_email = "cyclescene-image-optimizer@cyclescene.iam.gserviceaccount.com"
 optimizer_cpu_limit             = "2"
 optimizer_memory_limit          = "2Gi"
 optimizer_max_instances         = 5
