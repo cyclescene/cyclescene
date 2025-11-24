@@ -98,7 +98,7 @@ module "api_service" {
   env_vars = merge(
     var.env_vars,
     {
-      STAGING_BUCKET_NAME   = var.staging_bucket_name
+      STAGING_BUCKET_NAME   = module.user_media_bucket.bucket_name
       GCP_PROJECT           = var.project_id
       SERVICE_ACCOUNT_EMAIL = module.api_service_account.email
       TURSO_DB_URL          = var.turso_db_url
