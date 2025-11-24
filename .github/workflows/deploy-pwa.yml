@@ -84,8 +84,9 @@ jobs:
             VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }} \
             pnpm run build
 
-            # Deploy to Vercel without path argument (Vercel project already knows its root)
+            # Deploy to Vercel
             vercel deploy \
+              --cwd=. \
               --prod \
               --token=$VERCEL_TOKEN \
               --env VITE_CITY_CODE=$CITY_CODE \
