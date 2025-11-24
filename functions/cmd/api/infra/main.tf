@@ -26,8 +26,7 @@ module "api_service_account" {
   project_id   = var.project_id
 
   roles = [
-    "roles/storage.objectCreator",                        # Create objects in bucket
-    "roles/storage.objectViewer",                         # Read objects from bucket
+    "roles/storage.objectUser",                           # Required for creating signed URLs
     "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs (signBlob)
     "roles/serviceusage.serviceUsageConsumer"             # Required to call Google APIs
   ]
