@@ -114,13 +114,13 @@
   $: isDatePickerVisible = $activeView === VIEW_DATE_PICKER;
 </script>
 
-<main class="flex flex-col max-h[100vh]">
+<main>
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
-  <header class="shrink h-(--header-height)">
+  <header>
     <svelte:component this={ActiveHeaderComponent} />
   </header>
 
-  <section class="grow view-container">
+  <section class="view-container">
     <div class:hidden={!isMapVisible}>
       <MapView />
     </div>
@@ -135,7 +135,7 @@
       </div>
     {/if}
   </section>
-  <footer class="shrink">
+  <footer>
     <NavigationBar />
   </footer>
 </main>
@@ -156,14 +156,23 @@
 
   main {
     position: relative;
-    height: 100vh;
-    width: 100vw;
+    height: 100dvh; /* Use dynamic viewport height for mobile */
+    width: 100%;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* Support for notches and safe areas */
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+    padding-left: max(0px, env(safe-area-inset-left));
+    padding-right: max(0px, env(safe-area-inset-right));
   }
 
   header {
-    width: 100vw;
+    width: 100%;
     height: var(--header-height);
+    flex-shrink: 0;
+    box-sizing: border-box;
   }
 
   .hidden {
@@ -172,10 +181,16 @@
 
   .view-container {
     position: relative;
+    flex: 1;
+    overflow: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   footer {
     height: var(--footer-height);
-    width: 100vw;
+    width: 100%;
+    flex-shrink: 0;
+    box-sizing: border-box;
   }
 </style>
