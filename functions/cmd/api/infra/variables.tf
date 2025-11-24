@@ -141,10 +141,3 @@ variable "image_tag" {
   type        = string
   default     = "latest"
 }
-
-variable "service_account_private_key" {
-  description = "Private key for the API service account (for signing storage URLs)"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
