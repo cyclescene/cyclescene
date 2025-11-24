@@ -109,9 +109,10 @@ function createRidesStore() {
         if (cachedRides.length === 0) {
           const upcomingRides = await getUpcomingRides()
           const pastRides = await getPastRides()
-          await saveRidesToDB([...upcomingRides, ...pastRides])
-          // on first load refresh the page so that rides are ready to view
-          location.reload()
+          const freshRides = [...upcomingRides, ...pastRides]
+          await saveRidesToDB(freshRides)
+          // Update store with fresh rides instead of reloading page
+          cachedRides = freshRides
         }
 
         set({ loading: false, rideData: cachedRides, error: null })
