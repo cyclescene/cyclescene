@@ -11,14 +11,6 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 const API_BASE = "https://api.cyclescene.cc"
 let CITY_CODE = "pdx" // fallback, will be updated via postMessage
 
-const TILE_URLS = {
-  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
-};
-const GCP_HOST = 'https:\/\/cyclescene-api-gateway-\\d+\\.us-west1\.run\.app';
-const LOCAL_HOST = 'http:\/\/localhost:8080';
-const RIDES_SYNC_TAG = "update-rides-6hr"
-
 // Compute API URL dynamically based on city code
 function getApiUpcomingUrl() {
   return API_BASE + "/upcoming?city=" + CITY_CODE;
@@ -56,13 +48,9 @@ registerRoute(
   })
 );
 
-const rideDataAPIRegex = new RegExp(
-  `^(${GCP_HOST}|${LOCAL_HOST})\/v1\/rides\/(upcoming|past)$`,
-  'i'
-)
-
+// Cache API responses for ride data
 registerRoute(
-  rideDataAPIRegex,
+  ({ url }) => url.hostname === 'api.cyclescene.cc',
   new NetworkOnly({
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
@@ -70,12 +58,6 @@ registerRoute(
     ]
   })
 )
-
-self.addEventListener('periodicsync', (event: PeriodicSyncEvent) => {
-  if (event.tag === RIDES_SYNC_TAG) {
-    event.waitUntil(fetchAndNotifyUpdate())
-  }
-})
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'FORCE_FOREGROUND_SYNC') {
@@ -87,11 +69,18 @@ self.addEventListener('message', (event) => {
   }
 })
 
-self.addEventListener('sync', (event: any) => {
-  if (event.tag === RIDES_SYNC_TAG) {
-    event.waitUntil(fetchAndNotifyUpdate())
-  }
-})
+// Disabled periodic sync and background sync for now - they were causing issues
+// self.addEventListener('periodicsync', (event: PeriodicSyncEvent) => {
+//   if (event.tag === RIDES_SYNC_TAG) {
+//     event.waitUntil(fetchAndNotifyUpdate())
+//   }
+// })
+//
+// self.addEventListener('sync', (event: any) => {
+//   if (event.tag === RIDES_SYNC_TAG) {
+//     event.waitUntil(fetchAndNotifyUpdate())
+//   }
+// })
 
 async function fetchAndNotifyUpdate() {
   try {
