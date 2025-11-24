@@ -1,6 +1,6 @@
 <script lang="ts">
   import Button from "$lib/components/ui/button/button.svelte";
-  import * as Card from "$lib/components/ui/card";
+  import * as Card from "$lib/components/ui/card/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
   import { currentRide } from "$lib/stores";
   import { formatDate, formatTime } from "$lib/utils";
@@ -127,16 +127,18 @@
           </Card.Header>
         </Card.Root>
 
-        <Button
-          disabled={false}
-          variant="ghost"
-          href="https://www.shift2bikes.org/pages/donate/"
-          ref="noopener noreferrer"
-          target="_blank"
-          class="grow h-full w-full flex flex-row justify-center items-center"
-        >
-          Donate to Shift2Bikes
-        </Button>
+        {#if ride && ride.ridesource === "Shift2Bikes"}
+          <Button
+            disabled={false}
+            variant="ghost"
+            href="https://www.shift2bikes.org/pages/donate/"
+            ref="noopener noreferrer"
+            target="_blank"
+            class="grow h-full w-full flex flex-row justify-center items-center"
+          >
+            Donate to Shift2Bikes
+          </Button>
+        {/if}
       </div>
     </ScrollArea>
   </div>

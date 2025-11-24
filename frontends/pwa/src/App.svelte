@@ -8,6 +8,7 @@
 
   import {
     activeView,
+    mapStore,
     rides,
     savedRidesStore,
     SUB_VIEW_ABOUT,
@@ -79,6 +80,8 @@
           console.error("Service worker error:", err);
         });
     }
+
+    mapStore.fitMap();
   });
 
   const headerMap = {
@@ -131,7 +134,7 @@
 
 <main class="flex flex-col">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
-  <header class="shrink" style="height: var(--header-height)">
+  <header class="shrink">
     <svelte:component this={ActiveHeaderComponent} />
   </header>
 
@@ -150,7 +153,7 @@
       </div>
     {/if}
   </section>
-  <footer class="shrink" style="height: var(--footer-height)">
+  <footer class="shrink">
     <NavigationBar />
   </footer>
 </main>
