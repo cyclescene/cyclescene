@@ -72,12 +72,6 @@ variable "optimizer_service_account_email" {
   default     = ""
 }
 
-variable "staging_bucket_name" {
-  description = "Name of the staging bucket for image uploads"
-  type        = string
-  default     = ""
-}
-
 variable "turso_db_url" {
   description = "Turso database URL"
   type        = string
