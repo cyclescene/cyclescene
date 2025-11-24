@@ -8,10 +8,9 @@ import (
 	"os"
 	"time"
 
-	"cloud.google.com/go/iam"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
-	iamcredentials "google.golang.org/genproto/googleapis/iam/credentials/v1"
+	"golang.org/x/oauth2/google"
 )
 
 type Service struct {
@@ -104,29 +103,34 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	}, nil
 }
 
-// generateSignedURLWithMetadata creates a signed URL using Google's IAM SignBlob API
-// Falls back to private key if GOOGLE_APPLICATION_CREDENTIALS is set (for local testing)
+// generateSignedURLWithMetadata creates a signed URL using service account credentials
+// Works on Cloud Run with Application Default Credentials
 func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityType string) (string, error) {
-	// Check if we have a local private key (for local development)
-	if privateKeyPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); privateKeyPath != "" {
-		slog.Info("using local credentials for signing", "path", privateKeyPath)
-		return s.generateSignedURLWithPrivateKey(privateKeyPath, objectName, contentType, cityCode, entityType)
+	// Get credentials (from GOOGLE_APPLICATION_CREDENTIALS env var or Cloud Run ADC)
+	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return "", fmt.Errorf("failed to get default credentials: %v", err)
 	}
 
-	// Use IAM signBlob API (for Cloud Run)
-	signingMethod := &iamSigningMethod{
-		ctx:            ctx,
-		serviceAccount: s.serviceAccountEmail,
+	// Parse the credentials JSON to get the private key
+	var credFile map[string]interface{}
+	if err := json.Unmarshal(creds.JSON, &credFile); err != nil {
+		return "", fmt.Errorf("failed to parse credentials: %v", err)
 	}
 
-	// Use the storage.SignedURL function with the IAM signing method
+	privateKey, ok := credFile["private_key"].(string)
+	if !ok || privateKey == "" {
+		return "", fmt.Errorf("credentials missing private_key")
+	}
+
+	// Use the storage.SignedURL function with the private key
 	opts := &storage.SignedURLOptions{
 		Scheme:         storage.SigningSchemeV4,
 		Method:         "PUT",
 		Expires:        time.Now().Add(s.signedURLDuration),
 		ContentType:    contentType,
 		GoogleAccessID: s.serviceAccountEmail,
-		SignBytes:      signingMethod.SignBytes,
+		PrivateKey:     []byte(privateKey),
 	}
 
 	signedURL, err := storage.SignedURL(s.bucketName, objectName, opts)
@@ -137,78 +141,6 @@ func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName,
 	slog.Info("generated signed URL with metadata", "object", objectName, "cityCode", cityCode, "entityType", entityType)
 
 	return signedURL, nil
-}
-
-// generateSignedURLWithPrivateKey signs a URL using a local private key (for local development)
-func (s *Service) generateSignedURLWithPrivateKey(keyPath, objectName, contentType, cityCode, entityType string) (string, error) {
-	// Read the key file
-	keyData, err := os.ReadFile(keyPath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read service account key file: %v", err)
-	}
-
-	// Parse the JSON key file
-	var keyFile map[string]interface{}
-	if err := json.Unmarshal(keyData, &keyFile); err != nil {
-		return "", fmt.Errorf("failed to parse service account key file: %v", err)
-	}
-
-	// Extract email and private key
-	email, ok := keyFile["client_email"].(string)
-	if !ok || email == "" {
-		return "", fmt.Errorf("invalid service account key file: missing or invalid client_email")
-	}
-
-	privateKey, ok := keyFile["private_key"].(string)
-	if !ok || privateKey == "" {
-		return "", fmt.Errorf("invalid service account key file: missing or invalid private_key")
-	}
-
-	// Use the storage.SignedURL function with the private key
-	opts := &storage.SignedURLOptions{
-		Scheme:         storage.SigningSchemeV4,
-		Method:         "PUT",
-		Expires:        time.Now().Add(s.signedURLDuration),
-		ContentType:    contentType,
-		GoogleAccessID: email,
-		PrivateKey:     []byte(privateKey),
-	}
-
-	signedURL, err := storage.SignedURL(s.bucketName, objectName, opts)
-	if err != nil {
-		return "", fmt.Errorf("failed to create signed URL: %v", err)
-	}
-
-	slog.Info("generated signed URL with private key (local dev)", "object", objectName, "cityCode", cityCode, "entityType", entityType)
-
-	return signedURL, nil
-}
-
-// iamSigningMethod implements the signing method for Google Cloud IAM signBlob API
-type iamSigningMethod struct {
-	ctx            context.Context
-	serviceAccount string
-}
-
-// SignBytes signs the bytes using the IAM credentials API
-func (sm *iamSigningMethod) SignBytes(b []byte) ([]byte, error) {
-	client, err := iam.NewCredentialsClient(sm.ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create IAM credentials client: %v", err)
-	}
-	defer client.Close()
-
-	req := &iamcredentials.SignBlobRequest{
-		Name:    fmt.Sprintf("projects/-/serviceAccounts/%s", sm.serviceAccount),
-		Payload: b,
-	}
-
-	resp, err := client.SignBlob(sm.ctx, req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to sign bytes with IAM API: %v", err)
-	}
-
-	return resp.Signature, nil
 }
 
 // Close closes the storage client
