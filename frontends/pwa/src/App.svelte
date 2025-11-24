@@ -114,13 +114,13 @@
   $: isDatePickerVisible = $activeView === VIEW_DATE_PICKER;
 </script>
 
-<main>
+<main class="flex flex-col max-h[100vh]">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
-  <header>
+  <header class="shrink h-(--header-height)">
     <svelte:component this={ActiveHeaderComponent} />
   </header>
 
-  <section class="view-container">
+  <section class="grow view-container">
     <div class:hidden={!isMapVisible}>
       <MapView />
     </div>
@@ -135,7 +135,7 @@
       </div>
     {/if}
   </section>
-  <footer>
+  <footer class="shrink">
     <NavigationBar />
   </footer>
 </main>
