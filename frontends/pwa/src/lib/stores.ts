@@ -127,8 +127,6 @@ function createRidesStore() {
               return registration.sync.register(RIDES_SYNC_TAG)
             }
           })
-          .then(() => console.log("Sync Registered"))
-          .catch(err => console.error("Sync Registration Failed: ", err))
       }
     },
     refetch: async () => {
