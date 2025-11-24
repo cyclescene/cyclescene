@@ -1,7 +1,7 @@
 /// <reference lib="webworker" />
 import { precacheAndRoute } from 'workbox-precaching'
 import { registerRoute } from 'workbox-routing'
-import { CacheFirst, NetworkOnly } from 'workbox-strategies'
+import { CacheFirst, NetworkFirst } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
@@ -48,10 +48,11 @@ registerRoute(
   })
 );
 
-// Cache API responses for ride data
+// Cache API responses for ride data - try network first, fall back to cache
 registerRoute(
   ({ url }) => url.hostname === 'api.cyclescene.cc',
-  new NetworkOnly({
+  new NetworkFirst({
+    cacheName: 'api-cache',
     plugins: [
       new CacheableResponsePlugin({ statuses: [0, 200] }),
       new ExpirationPlugin({ maxAgeSeconds: ONE_HOUR_IN_SECONDS * 6 })
