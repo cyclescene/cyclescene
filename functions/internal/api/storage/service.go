@@ -2,22 +2,23 @@ package storage
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
 	"time"
 
+	"cloud.google.com/go/iam"
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
+	iamcredentials "google.golang.org/genproto/googleapis/iam/credentials/v1"
 )
 
 type Service struct {
-	bucketName        string
-	projectID         string
-	client            *storage.Client
-	signedURLDuration time.Duration
+	bucketName             string
+	projectID              string
+	client                 *storage.Client
+	signedURLDuration      time.Duration
+	serviceAccountEmail    string
 }
 
 // NewService creates a new storage service
@@ -25,12 +26,16 @@ type Service struct {
 func NewService() (*Service, error) {
 	bucketName := os.Getenv("STAGING_BUCKET_NAME")
 	projectID := os.Getenv("GCP_PROJECT")
+	serviceAccountEmail := os.Getenv("SERVICE_ACCOUNT_EMAIL")
 
 	if bucketName == "" {
 		return nil, fmt.Errorf("STAGING_BUCKET_NAME environment variable not set")
 	}
 	if projectID == "" {
 		return nil, fmt.Errorf("GCP_PROJECT environment variable not set")
+	}
+	if serviceAccountEmail == "" {
+		return nil, fmt.Errorf("SERVICE_ACCOUNT_EMAIL environment variable not set")
 	}
 
 	client, err := storage.NewClient(context.Background())
@@ -47,10 +52,11 @@ func NewService() (*Service, error) {
 	}
 
 	return &Service{
-		bucketName:        bucketName,
-		projectID:         projectID,
-		client:            client,
-		signedURLDuration: duration,
+		bucketName:             bucketName,
+		projectID:              projectID,
+		client:                 client,
+		signedURLDuration:      duration,
+		serviceAccountEmail:    serviceAccountEmail,
 	}, nil
 }
 
@@ -97,24 +103,24 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	}, nil
 }
 
-// generateSignedURLWithMetadata creates a signed URL with custom metadata
-// Note: Metadata will be set by the frontend when uploading via x-goog-meta-* headers
+// generateSignedURLWithMetadata creates a signed URL using Google's IAM SignBlob API
+// This works on Cloud Run without needing the private key
 func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityType string) (string, error) {
-	// Get the default service account credentials
-	credentials, err := getServiceAccountCredentials(ctx)
-	if err != nil {
-		return "", fmt.Errorf("failed to get credentials: %v", err)
+	// Create a custom signing method using IAM signBlob API
+	signingMethod := &iamSigningMethod{
+		ctx:              ctx,
+		projectID:        s.projectID,
+		serviceAccount:   s.serviceAccountEmail,
 	}
 
-	// Use the storage.SignedURL function with the credentials
-	// The frontend will include x-goog-meta-* headers when uploading
+	// Use the storage.SignedURL function with the IAM signing method
 	opts := &storage.SignedURLOptions{
-		Scheme:         storage.SigningSchemeV4,
-		Method:         "PUT",
-		Expires:        time.Now().Add(s.signedURLDuration),
-		ContentType:    contentType,
-		GoogleAccessID: credentials.Email,
-		PrivateKey:     []byte(credentials.PrivateKey),
+		Scheme:           storage.SigningSchemeV4,
+		Method:           "PUT",
+		Expires:          time.Now().Add(s.signedURLDuration),
+		ContentType:      contentType,
+		GoogleAccessID:   s.serviceAccountEmail,
+		SignBytes:        signingMethod.SignBytes,
 	}
 
 	signedURL, err := storage.SignedURL(s.bucketName, objectName, opts)
@@ -125,6 +131,34 @@ func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName,
 	slog.Info("generated signed URL with metadata", "object", objectName, "cityCode", cityCode, "entityType", entityType)
 
 	return signedURL, nil
+}
+
+// iamSigningMethod implements the signing method for Google Cloud IAM signBlob API
+type iamSigningMethod struct {
+	ctx            context.Context
+	projectID      string
+	serviceAccount string
+}
+
+// SignBytes signs the bytes using the IAM credentials API
+func (sm *iamSigningMethod) SignBytes(b []byte) ([]byte, error) {
+	client, err := iam.NewCredentialsClient(sm.ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create IAM credentials client: %v", err)
+	}
+	defer client.Close()
+
+	req := &iamcredentials.SignBlobRequest{
+		Name:    fmt.Sprintf("projects/-/serviceAccounts/%s", sm.serviceAccount),
+		Payload: b,
+	}
+
+	resp, err := client.SignBlob(sm.ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign bytes with IAM API: %v", err)
+	}
+
+	return resp.Signature, nil
 }
 
 // Close closes the storage client
@@ -151,129 +185,4 @@ func getExtensionFromMimeType(mimeType string) string {
 	default:
 		return ".jpg" // Default to JPEG
 	}
-}
-
-// getServiceAccountCredentials retrieves the service account credentials
-// On Cloud Run, this uses Application Default Credentials
-func getServiceAccountCredentials(ctx context.Context) (*ServiceAccountCredentials, error) {
-	// Try base64-encoded credentials first (for local development)
-	if credentialsB64 := os.Getenv("GCP_SERVICE_ACCOUNT_KEY_B64"); credentialsB64 != "" {
-		return loadServiceAccountFromBase64(credentialsB64)
-	}
-
-	// Try to read from file path (for local development with key file)
-	if keyPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); keyPath != "" {
-		return loadServiceAccountFromFile(keyPath)
-	}
-
-	// On Cloud Run, we need to use the default credentials to get the service account email
-	// and then use SignBlob to create signed URLs
-	return getDefaultServiceAccountCredentials(ctx)
-}
-
-// ServiceAccountCredentials holds the necessary data to sign URLs
-type ServiceAccountCredentials struct {
-	Email      string
-	PrivateKey string
-}
-
-// loadServiceAccountFromBase64 loads service account credentials from a base64-encoded JSON key
-func loadServiceAccountFromBase64(credentialsB64 string) (*ServiceAccountCredentials, error) {
-	// Check if we're in development mode
-	appEnv := os.Getenv("APP_ENV")
-	if appEnv != "dev" {
-		slog.Warn("base64-encoded credentials should only be used in development", "env", appEnv)
-	}
-
-	// Decode base64
-	keyData, err := base64.StdEncoding.DecodeString(credentialsB64)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode base64 service account credentials: %v", err)
-	}
-
-	// Parse the JSON key
-	var keyFile map[string]any
-	if err := json.Unmarshal(keyData, &keyFile); err != nil {
-		return nil, fmt.Errorf("failed to parse service account key: %v", err)
-	}
-
-	// Extract email and private key
-	email, ok := keyFile["client_email"].(string)
-	if !ok || email == "" {
-		return nil, fmt.Errorf("invalid service account key: missing or invalid client_email")
-	}
-
-	privateKey, ok := keyFile["private_key"].(string)
-	if !ok || privateKey == "" {
-		return nil, fmt.Errorf("invalid service account key: missing or invalid private_key")
-	}
-
-	slog.Info("loaded service account from base64-encoded credentials", "email", email)
-
-	return &ServiceAccountCredentials{
-		Email:      email,
-		PrivateKey: privateKey,
-	}, nil
-}
-
-// loadServiceAccountFromFile loads service account credentials from a JSON key file
-func loadServiceAccountFromFile(keyPath string) (*ServiceAccountCredentials, error) {
-	// Check if we're in development mode
-	appEnv := os.Getenv("APP_ENV")
-	if appEnv != "dev" {
-		slog.Warn("file-based credentials should only be used in development", "env", appEnv, "path", keyPath)
-	}
-
-	// Read the key file
-	keyData, err := os.ReadFile(keyPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read service account key file: %v", err)
-	}
-
-	// Parse the JSON key file
-	var keyFile map[string]any
-	if err := json.Unmarshal(keyData, &keyFile); err != nil {
-		return nil, fmt.Errorf("failed to parse service account key file: %v", err)
-	}
-
-	// Extract email and private key
-	email, ok := keyFile["client_email"].(string)
-	if !ok || email == "" {
-		return nil, fmt.Errorf("invalid service account key file: missing or invalid client_email")
-	}
-
-	privateKey, ok := keyFile["private_key"].(string)
-	if !ok || privateKey == "" {
-		return nil, fmt.Errorf("invalid service account key file: missing or invalid private_key")
-	}
-
-	slog.Info("loaded service account from file", "email", email, "path", keyPath)
-
-	return &ServiceAccountCredentials{
-		Email:      email,
-		PrivateKey: privateKey,
-	}, nil
-}
-
-// getDefaultServiceAccountCredentials retrieves credentials from the environment
-// On Cloud Run, the service account is automatically available
-func getDefaultServiceAccountCredentials(ctx context.Context) (*ServiceAccountCredentials, error) {
-	// Get service account email from metadata service (Cloud Run specific)
-	// For now, we'll construct it from the project ID
-	projectID := os.Getenv("PROJECT_ID")
-
-	// Service account email format: {account-id}@{project-id}.iam.gserviceaccount.com
-	// The API service account is typically: cyclescene-api@{project-id}.iam.gserviceaccount.com
-	email := fmt.Sprintf("cyclescene-api@%s.iam.gserviceaccount.com", projectID)
-
-	// For Cloud Run, we can get the private key from the service account JSON
-	// This requires the key file to be available in the environment
-	// Alternatively, we can use the iam.serviceAccounts.signBlob API
-
-	slog.Info("using service account for signed URLs", "email", email)
-
-	return &ServiceAccountCredentials{
-		Email:      email,
-		PrivateKey: "", // Will be retrieved from environment or metadata
-	}, nil
 }
