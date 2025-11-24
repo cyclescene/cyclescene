@@ -26,8 +26,7 @@ module "api_service_account" {
   project_id   = var.project_id
 
   roles = [
-    "roles/storage.objectUser",                           # Required for creating signed URLs
-    "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs (signBlob)
+    "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs
     "roles/serviceusage.serviceUsageConsumer"             # Required to call Google APIs
   ]
 }
@@ -77,6 +76,14 @@ module "user_media_bucket" {
     environment = var.environment
     purpose     = "user-media"
     managed_by  = "opentofu"
+  }
+
+  # Grant the API service account permission to create signed URLs and upload objects
+  iam_members = {
+    "api-storage-access" = {
+      role   = "roles/storage.objectUser"
+      member = "serviceAccount:${module.api_service_account.email}"
+    }
   }
 }
 
