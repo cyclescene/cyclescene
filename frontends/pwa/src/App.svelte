@@ -176,6 +176,7 @@
     width: 100%;
     height: var(--header-height);
     overflow: hidden;
+    padding-top: max(0px, env(safe-area-inset-top));
   }
 
   .hidden {
@@ -201,5 +202,6 @@
     width: 100%;
     height: var(--footer-height);
     overflow: hidden;
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
 </style>

@@ -70,7 +70,7 @@
   });
 </script>
 
-<div style="height: calc(100dvh - var(--header-height) - var(--footer-height)); width: 100%;">
+<div style="height: calc(100dvh - var(--header-height) - var(--footer-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom)); width: 100%;">
   <MapLibre
     bind:map={mapInstance}
     class="w-full h-full"
