@@ -12,7 +12,6 @@ import (
 	"cloud.google.com/go/storage"
 	credentialspb "google.golang.org/genproto/googleapis/iam/credentials/v1"
 	"github.com/google/uuid"
-	"golang.org/x/oauth2/google"
 )
 
 type Service struct {
