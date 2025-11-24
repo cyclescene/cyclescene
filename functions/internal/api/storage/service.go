@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"os"
@@ -144,8 +145,9 @@ func (s *iamSigner) SignBytes(b []byte) ([]byte, error) {
 	}
 
 	resourceName := fmt.Sprintf("projects/-/serviceAccounts/%s", s.serviceAccount)
+	// Payload must be base64-encoded
 	req := &iamcredentials.SignBlobRequest{
-		Payload: string(b),
+		Payload: base64.StdEncoding.EncodeToString(b),
 	}
 
 	resp, err := client.Projects.ServiceAccounts.SignBlob(resourceName, req).Do()
@@ -153,7 +155,13 @@ func (s *iamSigner) SignBytes(b []byte) ([]byte, error) {
 		return nil, fmt.Errorf("failed to sign blob with IAM API: %v", err)
 	}
 
-	return []byte(resp.SignedBlob), nil
+	// SignedBlob is base64-encoded, decode it back to bytes
+	signedBytes, err := base64.StdEncoding.DecodeString(resp.SignedBlob)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode signed blob: %v", err)
+	}
+
+	return signedBytes, nil
 }
 
 // Close closes the storage client
