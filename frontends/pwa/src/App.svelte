@@ -153,7 +153,7 @@
 <style>
   :root {
     --header-height: 55px;
-    --footer-height: 60px;
+    --footer-height: 50px;
   }
 
   :global(html),
@@ -204,6 +204,5 @@
     width: 100%;
     height: var(--footer-height);
     overflow: hidden;
-    padding-bottom: env(safe-area-inset-bottom);
   }
 </style>
