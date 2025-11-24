@@ -41,59 +41,19 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-const tileGroup = `(https:\/\/(\\w+\.)?basemaps\.cartocdn\.com)`
-// Shared plugin in for all tile sources
-const mapAssetCachePlugins = [
-  new CacheableResponsePlugin({ statuses: [0, 200] }),
-  new ExpirationPlugin({
-    maxEntries: 5000,
-    maxAgeSeconds: ONE_YEAR_IN_SECONDS
+// Cache CartoDB map tiles and resources
+registerRoute(
+  ({ url }) => url.hostname === 'basemaps.cartocdn.com' || url.hostname.endsWith('.basemaps.cartocdn.com'),
+  new CacheFirst({
+    cacheName: 'cartodb-cache',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 5000,
+        maxAgeSeconds: ONE_YEAR_IN_SECONDS
+      })
+    ]
   })
-]
-
-const styleCachePlugins = [
-  new CacheableResponsePlugin({ statuses: [0, 200] }),
-]
-
-registerRoute(
-  new RegExp(TILE_URLS.light.replace('/[.*+?^${}()|[\]\\]/g', '\\$&')),
-  new CacheFirst({ cacheName: "cartodb-light-style-cache", plugins: styleCachePlugins })
-)
-
-registerRoute(
-  new RegExp(TILE_URLS.dark.replace('/[.*+?^${}()|[\]\\]/g', '\\$&')),
-  new CacheFirst({ cacheName: 'cartodb-dark-style-cache', plugins: styleCachePlugins })
-)
-
-registerRoute(
-  // Match the host group followed by the rest of the path
-  new RegExp(
-    `^${tileGroup}\/gl\/.*\/\\d+\/\\d+\/\\d+\\.pbf$`,
-    'i' // CRITICAL: Case-insensitive flag
-  ),
-  new CacheFirst({ cacheName: 'cartodb-vector-tiles-cache', plugins: mapAssetCachePlugins })
-);
-
-
-// --- 3. Sprites (Icons and Patterns - .png, .svg) ---
-registerRoute(
-  // Match the host group followed by the rest of the path
-  new RegExp(
-    `^${tileGroup}\/gl\/.*\/sprite.*$`,
-    'i' // CRITICAL: Case-insensitive flag
-  ),
-  new CacheFirst({ cacheName: 'cartodb-sprites-cache', plugins: mapAssetCachePlugins })
-);
-
-
-// --- 4. Glyphs (Fonts - .pbf files for text) ---
-registerRoute(
-  // Match fonts from CartoDB (both /glyphs/ and /fonts/ paths)
-  new RegExp(
-    `^${tileGroup}\/(gl\/.*\/glyphs|fonts)\/.*$`,
-    'i' // CRITICAL: Case-insensitive flag
-  ),
-  new CacheFirst({ cacheName: 'cartodb-glyphs-cache', plugins: mapAssetCachePlugins })
 );
 
 const rideDataAPIRegex = new RegExp(
