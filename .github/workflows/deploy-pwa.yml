@@ -49,99 +49,61 @@ jobs:
       - name: Install Vercel CLI
         run: pnpm add -g vercel
 
-      - name: Read cities configuration
-        id: cities
-        run: |
-          CITIES=$(cat frontends/pwa/cities.json | jq -r '.[].code' | tr '\n' ' ')
-          echo "cities=$CITIES" >> $GITHUB_OUTPUT
-          echo "Cities to deploy: $CITIES"
-
       - name: Install dependencies
         working-directory: frontends/pwa
         run: pnpm install
 
-      - name: Deploy each city
+      - name: Deploy PDX
         working-directory: frontends/pwa
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_PDX }}
         run: |
-          CITIES=$(cat cities.json | jq -c '.[]')
+          echo "================================"
+          echo "Deploying Portland (pdx)"
+          echo "================================"
 
-          echo "$CITIES" | while read -r city; do
-            CITY_CODE=$(echo $city | jq -r '.code')
-            CITY_NAME=$(echo $city | jq -r '.name')
-            CITY_URL=$(echo $city | jq -r '.url')
-            PROJECT_NAME="cyclescene-$CITY_CODE"
+          VITE_CITY_CODE=pdx \
+          VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
+          VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }} \
+          pnpm run build
 
-            echo "================================"
-            echo "Deploying $CITY_NAME ($CITY_CODE)"
-            echo "URL: $CITY_URL"
-            echo "================================"
+          vercel deploy \
+            --cwd=. \
+            --prod \
+            --token=$VERCEL_TOKEN
 
-            # Check if Vercel project exists, create if not
-            echo "Checking if Vercel project exists..."
+          echo "✅ Successfully deployed Portland"
 
-            # List projects and find by name
-            TEAM_PARAM=""
-            if [ -n "${{ env.VERCEL_ORG_ID }}" ]; then
-              TEAM_PARAM="?teamId=${{ env.VERCEL_ORG_ID }}"
-            fi
+      - name: Deploy SLC
+        working-directory: frontends/pwa
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_SLC }}
+        run: |
+          echo "================================"
+          echo "Deploying Salt Lake City (slc)"
+          echo "================================"
 
-            PROJECT_ID=$(curl -s -X GET "https://api.vercel.com/v9/projects${TEAM_PARAM}" \
-              -H "Authorization: Bearer $VERCEL_TOKEN" | jq -r ".projects[] | select(.name == \"$PROJECT_NAME\") | .id" | head -n1)
+          VITE_CITY_CODE=slc \
+          VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
+          VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }} \
+          pnpm run build
 
-            if [ -z "$PROJECT_ID" ]; then
-              echo "Project does not exist, creating new Vercel project..."
-              CREATE_PAYLOAD="{
-                \"name\": \"$PROJECT_NAME\",
-                \"rootDirectory\": \"frontends/pwa\",
-                \"framework\": \"sveltekit\""
+          vercel deploy \
+            --cwd=. \
+            --prod \
+            --token=$VERCEL_TOKEN
 
-              if [ -n "${{ env.VERCEL_ORG_ID }}" ]; then
-                CREATE_PAYLOAD="$CREATE_PAYLOAD,\"teamId\": \"${{ env.VERCEL_ORG_ID }}\""
-              fi
-              CREATE_PAYLOAD="$CREATE_PAYLOAD}"
-
-              PROJECT_ID=$(curl -s -X POST "https://api.vercel.com/v10/projects" \
-                -H "Authorization: Bearer $VERCEL_TOKEN" \
-                -H "Content-Type: application/json" \
-                -d "$CREATE_PAYLOAD" | jq -r '.id')
-              echo "Created project: $PROJECT_ID"
-            else
-              echo "Project exists: $PROJECT_ID"
-            fi
-
-            # Build with city-specific environment variables
-            VITE_CITY_CODE=$CITY_CODE \
-            VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
-            VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }} \
-            pnpm run build
-
-            # Create .vercel/project.json to link this project for deployment
-            echo "Configuring Vercel project..."
-            mkdir -p .vercel
-            echo "{\"projectId\": \"$PROJECT_ID\", \"orgId\": \"${{ env.VERCEL_ORG_ID }}\"}" > .vercel/project.json
-            echo "Project configuration:"
-            cat .vercel/project.json
-
-            # Deploy to Vercel
-            echo "Deploying to project: $PROJECT_ID"
-            vercel deploy \
-              --cwd=. \
-              --prod \
-              --token=$VERCEL_TOKEN \
-              --env VITE_CITY_CODE=$CITY_CODE \
-              --env VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
-              --env VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }}
-
-            echo "✅ Successfully deployed $CITY_NAME to project $PROJECT_ID"
-          done
+          echo "✅ Successfully deployed Salt Lake City"
 
       - name: Deployment summary
         if: always()
         run: |
           echo "✅ PWA Deployment Summary"
           echo "========================="
-          echo "Cities deployed: ${{ steps.cities.outputs.cities }}"
+          echo "Cities deployed: pdx, slc"
           echo "Commit: ${{ github.sha }}"
           echo "Branch: ${{ github.ref_name }}"
