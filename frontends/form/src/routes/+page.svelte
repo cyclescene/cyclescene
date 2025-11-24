@@ -57,6 +57,10 @@
   {/if}
 
   <form method="POST" use:enhance class="space-y-6 sm:space-y-8">
+    <!-- Hidden input to include image_uuid in form submission -->
+    <input type="hidden" name="image_uuid" bind:value={$form.image_uuid} />
+    <input type="hidden" name="city" bind:value={$form.city} />
+
     <!-- Basic Information -->
     <Card.Root>
       <Card.Header>
