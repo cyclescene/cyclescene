@@ -102,6 +102,7 @@ jobs:
           TF_VAR_staging_bucket_name: ${{ secrets.STAGING_BUCKET_NAME }}
           TF_VAR_edit_link_base_url: ${{ secrets.EDIT_LINK_BASE_URL }}
           TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY }}
+          TF_VAR_service_account_private_key: ${{ secrets.SERVICE_ACCOUNT_PRIVATE_KEY }}
         run: |
           tofu init \
             -backend-config="bucket=${{ env.PROJECT_ID }}-terraform-state" \

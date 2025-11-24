@@ -10,7 +10,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
-	"golang.org/x/oauth2/google"
 )
 
 type Service struct {
@@ -104,26 +103,12 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 }
 
 // generateSignedURLWithMetadata creates a signed URL using service account credentials
-// Works on Cloud Run with Application Default Credentials
 func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityType string) (string, error) {
-	// Get credentials (from GOOGLE_APPLICATION_CREDENTIALS env var or Cloud Run ADC)
-	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	privateKey, err := s.getPrivateKey()
 	if err != nil {
-		return "", fmt.Errorf("failed to get default credentials: %v", err)
+		return "", fmt.Errorf("failed to get private key: %v", err)
 	}
 
-	// Parse the credentials JSON to get the private key
-	var credFile map[string]interface{}
-	if err := json.Unmarshal(creds.JSON, &credFile); err != nil {
-		return "", fmt.Errorf("failed to parse credentials: %v", err)
-	}
-
-	privateKey, ok := credFile["private_key"].(string)
-	if !ok || privateKey == "" {
-		return "", fmt.Errorf("credentials missing private_key")
-	}
-
-	// Use the storage.SignedURL function with the private key
 	opts := &storage.SignedURLOptions{
 		Scheme:         storage.SigningSchemeV4,
 		Method:         "PUT",
@@ -139,8 +124,39 @@ func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName,
 	}
 
 	slog.Info("generated signed URL with metadata", "object", objectName, "cityCode", cityCode, "entityType", entityType)
-
 	return signedURL, nil
+}
+
+// getPrivateKey retrieves the service account private key from various sources
+func (s *Service) getPrivateKey() (string, error) {
+	// Try environment variable first (for Cloud Run with injected secret)
+	if key := os.Getenv("SERVICE_ACCOUNT_PRIVATE_KEY"); key != "" {
+		slog.Info("using SERVICE_ACCOUNT_PRIVATE_KEY from environment")
+		return key, nil
+	}
+
+	// Try GOOGLE_APPLICATION_CREDENTIALS file (for local development)
+	if keyPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); keyPath != "" {
+		slog.Info("using GOOGLE_APPLICATION_CREDENTIALS file", "path", keyPath)
+		keyData, err := os.ReadFile(keyPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to read service account key file: %v", err)
+		}
+
+		var keyFile map[string]interface{}
+		if err := json.Unmarshal(keyData, &keyFile); err != nil {
+			return "", fmt.Errorf("failed to parse service account key: %v", err)
+		}
+
+		privateKey, ok := keyFile["private_key"].(string)
+		if !ok || privateKey == "" {
+			return "", fmt.Errorf("service account key missing private_key field")
+		}
+
+		return privateKey, nil
+	}
+
+	return "", fmt.Errorf("no private key found - set SERVICE_ACCOUNT_PRIVATE_KEY env var or GOOGLE_APPLICATION_CREDENTIALS")
 }
 
 // Close closes the storage client
