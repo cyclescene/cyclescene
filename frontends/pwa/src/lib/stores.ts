@@ -54,14 +54,6 @@ export const TILE_URLS = {
 const RIDES_SYNC_TAG = "update-rides-6hr"
 const SYNC_INTERVAL = 6 * 60 * 60 * 1000
 
-// Detect if device is Apple (Safari)
-function isAppleDevice(): boolean {
-  if (typeof navigator === 'undefined') return false
-  const ua = navigator.userAgent.toLowerCase()
-  return /iphone|ipad|ipod|mac/.test(ua) && /safari/.test(ua) && !/chrome|firefox/.test(ua)
-}
-
-
 function createRidesStore() {
   const { subscribe, set, update } = writable<{
     loading: boolean,
@@ -104,20 +96,30 @@ function createRidesStore() {
     subscribe,
     init: async () => {
       try {
+        console.log("[rides.init] Starting initialization")
         let cachedRides = await getRidesfromDB()
+        console.log("[rides.init] Cached rides from DB:", cachedRides.length)
         // only do a manual fetch if cached rides are empty
         if (cachedRides.length === 0) {
+          console.log("[rides.init] DB is empty, fetching from API...")
           const upcomingRides = await getUpcomingRides()
+          console.log("[rides.init] Got upcoming rides:", upcomingRides.length)
           const pastRides = await getPastRides()
+          console.log("[rides.init] Got past rides:", pastRides.length)
           const freshRides = [...upcomingRides, ...pastRides]
           await saveRidesToDB(freshRides)
+          console.log("[rides.init] Saved to DB, total:", freshRides.length)
           // Update store with fresh rides instead of reloading page
           cachedRides = freshRides
+        } else {
+          console.log("[rides.init] Using cached data from DB")
         }
 
+        console.log("[rides.init] Setting store with", cachedRides.length, "rides")
         set({ loading: false, rideData: cachedRides, error: null })
       } catch (err) {
-        update(store => ({ ...store, loading: false, error: "Unable to get idb ride data" }))
+        console.error("[rides.init] Error:", err)
+        update(store => ({ ...store, loading: false, error: "Unable to get idb ride data: " + err }))
       }
 
       if ('serviceWorker' in navigator) {
