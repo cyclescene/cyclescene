@@ -69,6 +69,7 @@ export default defineConfig(({ mode }) => {
           scope: "/",
           orientation: "portrait-primary",
           categories: ["lifestyle", "sports"],
+          "viewport-fit": "cover",
           icons: [
             {
               src: "/icons/manifest-icon-192.maskable.png",
