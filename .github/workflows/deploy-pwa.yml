@@ -120,12 +120,7 @@ jobs:
             # Create .vercel/project.json to link this project for deployment
             echo "Configuring Vercel project..."
             mkdir -p .vercel
-            cat > .vercel/project.json <<EOF
-{
-  "projectId": "$PROJECT_ID",
-  "orgId": "${{ env.VERCEL_ORG_ID }}"
-}
-EOF
+            echo "{\"projectId\": \"$PROJECT_ID\", \"orgId\": \"${{ env.VERCEL_ORG_ID }}\"}" > .vercel/project.json
             echo "Project configuration:"
             cat .vercel/project.json
 
