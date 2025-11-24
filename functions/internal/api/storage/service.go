@@ -2,16 +2,12 @@ package storage
 
 import (
 	"context"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"log/slog"
+	"os"
 	"time"
 
 	"cloud.google.com/go/storage"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	iamcredentials "google.golang.org/api/iamcredentials/v1"
 	"google.golang.org/api/option"
