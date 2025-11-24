@@ -5,8 +5,11 @@ import { CacheFirst, NetworkOnly } from 'workbox-strategies'
 import { ExpirationPlugin } from 'workbox-expiration'
 import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL
-const CITY_CODE = import.meta.env.VITE_CITY_CODE
+// Note: Service workers don't have access to import.meta.env
+// City code should be passed from main app via postMessage during init
+// For now, we'll construct the API URL from the city code if available
+const API_BASE = "https://api.cyclescene.cc"
+let CITY_CODE = "pdx" // fallback, will be updated via postMessage
 
 const TILE_URLS = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
@@ -15,7 +18,11 @@ const TILE_URLS = {
 const GCP_HOST = 'https:\/\/cyclescene-api-gateway-\\d+\\.us-west1\.run\.app';
 const LOCAL_HOST = 'http:\/\/localhost:8080';
 const RIDES_SYNC_TAG = "update-rides-6hr"
-const API_UPCOMING_URL = API_BASE + "/upcoming?city=" + CITY_CODE
+
+// Compute API URL dynamically based on city code
+function getApiUpcomingUrl() {
+  return API_BASE + "/upcoming?city=" + CITY_CODE;
+}
 const ONE_HOUR_IN_SECONDS = 60 * 60
 const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7
 const ONE_YEAR_IN_SECONDS = ONE_WEEK_IN_SECONDS * 52
@@ -114,6 +121,10 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'FORCE_FOREGROUND_SYNC') {
     event.waitUntil(fetchAndNotifyUpdate())
   }
+  if (event.data && event.data.type === 'SET_CITY_CODE') {
+    CITY_CODE = event.data.cityCode;
+    console.log('Service Worker: City code updated to', CITY_CODE);
+  }
 })
 
 self.addEventListener('sync', (event: any) => {
@@ -124,7 +135,8 @@ self.addEventListener('sync', (event: any) => {
 
 async function fetchAndNotifyUpdate() {
   try {
-    const response = await fetch(API_UPCOMING_URL)
+    const url = getApiUpcomingUrl();
+    const response = await fetch(url)
     const freshData = await response.json()
 
     self.clients.matchAll().then(clients => {
@@ -137,6 +149,5 @@ async function fetchAndNotifyUpdate() {
     })
   } catch (e) {
     console.error("Periodic Sync failed to fetch rides: ", e);
-
   }
 }

@@ -49,7 +49,18 @@
   import { SvelteSet } from "svelte/reactivity";
   import SubDataView from "./views/sub/subDataView.svelte";
 
-  onMount(() => {
+  onMount(async () => {
+    // Tell service worker the city code
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration.active) {
+        registration.active.postMessage({
+          type: 'SET_CITY_CODE',
+          cityCode: import.meta.env.VITE_CITY_CODE || 'pdx'
+        });
+      }
+    }
+
     rides.init();
     rides.refetch();
     savedRidesStore.init();
