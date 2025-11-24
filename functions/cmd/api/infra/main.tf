@@ -142,3 +142,10 @@ module "api_domain" {
   domain_name             = var.api_custom_domain
   cloud_run_service_name  = module.api_service.service_name
 }
+
+# Grant image optimizer service account read access to the staging bucket
+resource "google_storage_bucket_iam_member" "optimizer_staging_read" {
+  bucket = module.user_media_bucket.bucket_name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${var.optimizer_service_account_email}"
+}
