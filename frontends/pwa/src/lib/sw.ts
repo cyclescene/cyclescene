@@ -69,24 +69,57 @@ self.addEventListener('message', (event) => {
   }
 })
 
-// Disabled periodic sync and background sync for now - they were causing issues
-// self.addEventListener('periodicsync', (event: PeriodicSyncEvent) => {
-//   if (event.tag === RIDES_SYNC_TAG) {
-//     event.waitUntil(fetchAndNotifyUpdate())
-//   }
-// })
-//
-// self.addEventListener('sync', (event: any) => {
-//   if (event.tag === RIDES_SYNC_TAG) {
-//     event.waitUntil(fetchAndNotifyUpdate())
-//   }
-// })
+const RIDES_SYNC_TAG = "update-rides-6hr"
+
+self.addEventListener('periodicsync', (event: PeriodicSyncEvent) => {
+  console.log('Service Worker: periodicsync event', event.tag);
+  if (event.tag === RIDES_SYNC_TAG) {
+    event.waitUntil(
+      fetchAndNotifyUpdate().catch(err => {
+        console.error('Periodic sync failed:', err);
+        throw err;
+      })
+    )
+  }
+})
+
+self.addEventListener('sync', (event: any) => {
+  console.log('Service Worker: background sync event', event.tag);
+  if (event.tag === RIDES_SYNC_TAG) {
+    event.waitUntil(
+      fetchAndNotifyUpdate().catch(err => {
+        console.error('Background sync failed:', err);
+        throw err;
+      })
+    )
+  }
+})
 
 async function fetchAndNotifyUpdate() {
+  console.log('Service Worker: Attempting to fetch rides update');
+
   try {
+    // Guard: only attempt if city code is set
+    if (!CITY_CODE || CITY_CODE === '') {
+      console.warn('Service Worker: City code not set, skipping sync');
+      return;
+    }
+
     const url = getApiUpcomingUrl();
-    const response = await fetch(url)
-    const freshData = await response.json()
+    console.log('Service Worker: Fetching from', url);
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      console.warn(`Service Worker: API returned ${response.status} ${response.statusText}`);
+      return; // Don't throw, just return gracefully
+    }
+
+    const freshData = await response.json();
+    console.log('Service Worker: Got fresh data, notifying clients');
 
     self.clients.matchAll().then(clients => {
       clients.forEach(client => {
@@ -95,8 +128,11 @@ async function fetchAndNotifyUpdate() {
           data: freshData
         })
       })
-    })
+    }).catch(err => {
+      console.error('Service Worker: Error notifying clients:', err);
+    });
   } catch (e) {
-    console.error("Periodic Sync failed to fetch rides: ", e);
+    console.error("Service Worker: Sync failed to fetch rides:", e);
+    // Don't rethrow - just log the error
   }
 }
