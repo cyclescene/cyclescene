@@ -1,6 +1,12 @@
 **/.env
+**/.env.local
 functions/*.yml
 functions/*.env
 **/*.yml
 !.github/workflows/deploy-*.yml
 frontends/**/node_modules
+frontends/**/dist
+frontends/**/.vite
+functions/bin/
+functions/**/*.db
+*.db

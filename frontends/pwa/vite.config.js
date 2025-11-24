@@ -24,6 +24,9 @@ const cityConfigs = {
 const cityCode = process.env.VITE_CITY_CODE || 'pdx';
 const cityConfig = cityConfigs[cityCode] || cityConfigs.pdx;
 
+// Get ngrok token from environment variable (only for local development)
+const ngrokToken = process.env.NGROK_TOKEN;
+
 // https://vite.dev/config/
 export default defineConfig({
 
@@ -34,7 +37,7 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     svelte(),
-    ngrok('1hwZtwwW6brY5mU9EirSqlr0WtI_x5NNvoe8PcWkKffzmgRU'),
+    ...(ngrokToken ? [ngrok(ngrokToken)] : []),
     Icons({
       compiler: "svelte",
       autoInstall: true,
