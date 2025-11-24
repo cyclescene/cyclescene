@@ -10,7 +10,6 @@ on:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: prj_nq8PDx7uB2YiJ82OE2ehW9WCvQRL
   API_BASE_URL: https://api.cyclescene.cc
   FORM_BASE_URL: https://form.cyclescene.cc
 
@@ -72,11 +71,33 @@ jobs:
             CITY_CODE=$(echo $city | jq -r '.code')
             CITY_NAME=$(echo $city | jq -r '.name')
             CITY_URL=$(echo $city | jq -r '.url')
+            PROJECT_NAME="cyclescene-$CITY_CODE"
 
             echo "================================"
             echo "Deploying $CITY_NAME ($CITY_CODE)"
             echo "URL: $CITY_URL"
             echo "================================"
+
+            # Check if Vercel project exists, create if not
+            echo "Checking if Vercel project exists..."
+            PROJECT_ID=$(curl -s -X GET "https://api.vercel.com/v9/projects/$PROJECT_NAME" \
+              -H "Authorization: Bearer $VERCEL_TOKEN" | jq -r '.id // empty')
+
+            if [ -z "$PROJECT_ID" ]; then
+              echo "Project does not exist, creating new Vercel project..."
+              PROJECT_ID=$(curl -s -X POST "https://api.vercel.com/v10/projects" \
+                -H "Authorization: Bearer $VERCEL_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{
+                  \"name\": \"$PROJECT_NAME\",
+                  \"rootDirectory\": \"frontends/pwa\",
+                  \"framework\": \"sveltekit\",
+                  \"teamId\": \"${{ env.VERCEL_ORG_ID }}\"
+                }" | jq -r '.id')
+              echo "Created project: $PROJECT_ID"
+            else
+              echo "Project exists: $PROJECT_ID"
+            fi
 
             # Build with city-specific environment variables
             VITE_CITY_CODE=$CITY_CODE \
@@ -84,16 +105,18 @@ jobs:
             VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }} \
             pnpm run build
 
-            # Deploy to Vercel
+            # Deploy to Vercel with specific project ID
+            echo "Deploying to project: $PROJECT_ID"
             vercel deploy \
               --cwd=. \
               --prod \
               --token=$VERCEL_TOKEN \
+              --project-id=$PROJECT_ID \
               --env VITE_CITY_CODE=$CITY_CODE \
               --env VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
               --env VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }}
 
-            echo "✅ Successfully deployed $CITY_NAME"
+            echo "✅ Successfully deployed $CITY_NAME to project $PROJECT_ID"
           done
 
       - name: Deployment summary
