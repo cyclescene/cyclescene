@@ -55,7 +55,7 @@ export default defineConfig({
         description: cityConfig.description,
         theme_color: "#000000",
         background_color: "#000000",
-        display: "fullscreen",
+        display: "standalone",
         start_url: "/",
         scope: "/",
         orientation: "portrait-primary",

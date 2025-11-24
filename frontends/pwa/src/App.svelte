@@ -156,23 +156,14 @@
 
   main {
     position: relative;
-    height: 100dvh; /* Use dynamic viewport height for mobile */
-    width: 100%;
+    height: 100vh;
+    width: 100vw;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    /* Support for notches and safe areas */
-    padding-top: max(0px, env(safe-area-inset-top));
-    padding-bottom: max(0px, env(safe-area-inset-bottom));
-    padding-left: max(0px, env(safe-area-inset-left));
-    padding-right: max(0px, env(safe-area-inset-right));
   }
 
   header {
-    width: 100%;
+    width: 100vw;
     height: var(--header-height);
-    flex-shrink: 0;
-    box-sizing: border-box;
   }
 
   .hidden {
@@ -181,16 +172,10 @@
 
   .view-container {
     position: relative;
-    flex: 1;
-    overflow: hidden;
-    width: 100%;
-    box-sizing: border-box;
   }
 
   footer {
     height: var(--footer-height);
-    width: 100%;
-    flex-shrink: 0;
-    box-sizing: border-box;
+    width: 100vw;
   }
 </style>
