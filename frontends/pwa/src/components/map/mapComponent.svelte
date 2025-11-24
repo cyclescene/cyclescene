@@ -72,7 +72,7 @@
 
 <MapLibre
   bind:map={mapInstance}
-  class="w-full h-[calc(100vh-120px)]"
+  class="w-full h-full"
   style={source}
   onclick={handleMapClick}
   attributionControl={false}
