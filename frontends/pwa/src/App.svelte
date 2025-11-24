@@ -181,6 +181,7 @@
 
   .view-container {
     position: relative;
+    overflow: hidden;
   }
 
   footer {
