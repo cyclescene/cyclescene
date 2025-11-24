@@ -95,21 +95,24 @@ jobs:
           echo "services=$SERVICES" >> $GITHUB_OUTPUT
           echo "Services to deploy: $SERVICES"
 
-  deploy-api:
-    name: Deploy API
-    needs: detect-changes
-    if: needs.detect-changes.outputs.api == 'true'
-    uses: ./.github/workflows/deploy-api.yml
-    permissions:
-      contents: read
-      id-token: write
-    secrets: inherit
-
   deploy-image-optimizer:
     name: Deploy Image Optimizer
     needs: detect-changes
     if: needs.detect-changes.outputs.image-optimizer == 'true'
     uses: ./.github/workflows/deploy-image-optimizer.yml
+    permissions:
+      contents: read
+      id-token: write
+    secrets: inherit
+
+  deploy-api:
+    name: Deploy API
+    needs: [detect-changes, deploy-image-optimizer]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.api == 'true' &&
+      (needs.detect-changes.outputs.image-optimizer == 'false' || needs.deploy-image-optimizer.result == 'success')
+    uses: ./.github/workflows/deploy-api.yml
     permissions:
       contents: read
       id-token: write
