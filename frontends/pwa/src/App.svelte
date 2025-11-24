@@ -71,7 +71,7 @@
       }
     }
 
-    rides.init();
+    await rides.init();
     rides.refetch();
     savedRidesStore.init();
   });
