@@ -1,4 +1,5 @@
 <script>
+  // Cycle Scene PWA - Main App
   import { onMount } from "svelte";
   import "./app.css";
   import DatePicker from "./components/datePicker.svelte";
