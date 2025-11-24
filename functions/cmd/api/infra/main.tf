@@ -27,7 +27,8 @@ module "api_service_account" {
 
   roles = [
     "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs
-    "roles/serviceusage.serviceUsageConsumer"            # Required to call Google APIs
+    "roles/serviceusage.serviceUsageConsumer",           # Required to call Google APIs
+    "roles/eventarc.publisher",                          # Required to publish events to Eventarc
   ]
 }
 
