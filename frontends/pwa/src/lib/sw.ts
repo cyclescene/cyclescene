@@ -81,9 +81,9 @@ registerRoute(
 
 // --- 4. Glyphs (Fonts - .pbf files for text) ---
 registerRoute(
-  // Match the host group followed by the rest of the path
+  // Match fonts from CartoDB (both /glyphs/ and /fonts/ paths)
   new RegExp(
-    `^${tileGroup}\/gl\/.*\/glyphs\/.*$`,
+    `^${tileGroup}\/(gl\/.*\/glyphs|fonts)\/.*$`,
     'i' // CRITICAL: Case-insensitive flag
   ),
   new CacheFirst({ cacheName: 'cartodb-glyphs-cache', plugins: mapAssetCachePlugins })
