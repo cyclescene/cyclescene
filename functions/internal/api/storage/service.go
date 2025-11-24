@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"log/slog"
 	"os"
@@ -10,8 +9,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
-	iamcredentials "google.golang.org/api/iamcredentials/v1"
-	"google.golang.org/api/option"
 )
 
 type Service struct {
@@ -104,68 +101,26 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 	}, nil
 }
 
-// generateSignedURLWithMetadata creates a signed URL using the service account
-// On Cloud Run: uses the service account's built-in credentials via metadata service
+// generateSignedURLWithMetadata creates a signed URL using the storage client
+// The client automatically signs URLs using the service account's credentials
+// Works on Cloud Run with Application Default Credentials (service account)
 func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityType string) (string, error) {
-	// Get the service account's credentials from the metadata service
-	// This automatically works on Cloud Run with the service account
-	creds, err := iamcredentials.NewService(ctx, option.WithScopes("https://www.googleapis.com/auth/cloud-platform"))
-	if err != nil {
-		return "", fmt.Errorf("failed to create credentials service: %v", err)
-	}
-
-	// Create a signer using the IAM credentials
-	signer := &iamSigner{
-		ctx:       ctx,
-		credsSvc:  creds,
-		serviceAccount: s.serviceAccountEmail,
-	}
-
 	opts := &storage.SignedURLOptions{
-		Scheme:         storage.SigningSchemeV4,
-		Method:         "PUT",
-		Expires:        time.Now().Add(s.signedURLDuration),
-		ContentType:    contentType,
-		GoogleAccessID: s.serviceAccountEmail,
-		SignBytes:      signer.SignBytes,
+		Scheme:      storage.SigningSchemeV4,
+		Method:      "PUT",
+		Expires:     time.Now().Add(s.signedURLDuration),
+		ContentType: contentType,
 	}
 
-	signedURL, err := storage.SignedURL(s.bucketName, objectName, opts)
+	// Use the storage client's built-in signing with the service account credentials
+	// The client was initialized with Application Default Credentials on Cloud Run
+	signedURL, err := s.client.Bucket(s.bucketName).SignedURL(objectName, opts)
 	if err != nil {
 		return "", fmt.Errorf("failed to create signed URL: %v", err)
 	}
 
 	slog.Info("generated signed URL", "object", objectName, "cityCode", cityCode, "entityType", entityType)
 	return signedURL, nil
-}
-
-// iamSigner signs bytes using the IAM credentials API
-type iamSigner struct {
-	ctx            context.Context
-	credsSvc       *iamcredentials.Service
-	serviceAccount string
-}
-
-// SignBytes signs the input bytes using the IAM API
-func (s *iamSigner) SignBytes(b []byte) ([]byte, error) {
-	resourceName := fmt.Sprintf("projects/-/serviceAccounts/%s", s.serviceAccount)
-	// Payload must be base64-encoded
-	req := &iamcredentials.SignBlobRequest{
-		Payload: base64.StdEncoding.EncodeToString(b),
-	}
-
-	resp, err := s.credsSvc.Projects.ServiceAccounts.SignBlob(resourceName, req).Do()
-	if err != nil {
-		return nil, fmt.Errorf("failed to sign blob with IAM API: %v", err)
-	}
-
-	// SignedBlob is base64-encoded, decode it back to bytes
-	signedBytes, err := base64.StdEncoding.DecodeString(resp.SignedBlob)
-	if err != nil {
-		return nil, fmt.Errorf("failed to decode signed blob: %v", err)
-	}
-
-	return signedBytes, nil
 }
 
 // Close closes the storage client
