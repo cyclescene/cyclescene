@@ -51,7 +51,7 @@ func init() {
 }
 
 func main() {
-	slog.Info("Image Optimizer started", "listening_on", ":8080")
+	slog.Info("Image Optimizer started", "listening_on", ":8080", "storage_permissions_configured", true)
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
 		slog.Error("unable to start server", "error", err)

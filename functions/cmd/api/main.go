@@ -38,7 +38,7 @@ func init() {
 }
 
 func main() {
-	slog.Info("API Gateway started", "listening_on", ":8080")
+	slog.Info("API Gateway started", "listening_on", ":8080", "eventarc_enabled", true)
 	err := http.ListenAndServe(":8080", apiHandler)
 	if err != nil {
 		slog.Error("unable to start server", "error", err)
