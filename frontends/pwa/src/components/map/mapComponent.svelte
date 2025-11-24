@@ -72,8 +72,8 @@
 
 <MapLibre
   bind:map={mapInstance}
-  class="w-full h-full"
-  style={source}
+  class="w-full"
+  style="height: calc(100vh - var(--header-height) - var(--footer-height)); {source}"
   onclick={handleMapClick}
   attributionControl={false}
 >
