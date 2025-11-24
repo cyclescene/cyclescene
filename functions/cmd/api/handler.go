@@ -21,12 +21,15 @@ import (
 )
 
 var allowedDomains = []string{
+	// Production domains
 	"https://cyclescene.cc",
 	"https://www.cyclescene.cc",
 	"https://form.cyclescene.cc",
 	"https://dashboard.cyclescene.cc",
 	"https://pdx.cyclescene.cc",
 	"https://slc.cyclescene.cc",
+	// Local development domains
+	"https://dev.cyclescene.cc",
 	"http://localhost:5173",
 	"http://localhost:5174",
 	"http://localhost:5175",
