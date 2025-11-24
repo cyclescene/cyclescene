@@ -50,13 +50,22 @@
   import SubDataView from "./views/sub/subDataView.svelte";
 
   onMount(async () => {
+    // Set dynamic page title based on city
+    const cityCode = import.meta.env.VITE_CITY_CODE || 'pdx';
+    const cityNames = {
+      pdx: 'Portland',
+      slc: 'Salt Lake City'
+    };
+    const cityName = cityNames[cityCode] || cityCode.toUpperCase();
+    document.title = `Cycle Scene - ${cityName}`;
+
     // Tell service worker the city code
     if ('serviceWorker' in navigator) {
       const registration = await navigator.serviceWorker.ready;
       if (registration.active) {
         registration.active.postMessage({
           type: 'SET_CITY_CODE',
-          cityCode: import.meta.env.VITE_CITY_CODE || 'pdx'
+          cityCode: cityCode
         });
       }
     }
