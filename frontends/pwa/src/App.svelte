@@ -14,7 +14,7 @@
     SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
     SUB_VIEW_CHANGE_LOG,
-    SUB_VIEW_CONTACT,
+    // SUB_VIEW_CONTACT,
     SUB_VIEW_COVID_SAFETY_RIDES,
     SUB_VIEW_DATA,
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
@@ -52,21 +52,21 @@
 
   onMount(async () => {
     // Set dynamic page title based on city
-    const cityCode = import.meta.env.VITE_CITY_CODE || 'pdx';
+    const cityCode = import.meta.env.VITE_CITY_CODE || "pdx";
     const cityNames = {
-      pdx: 'Portland',
-      slc: 'Salt Lake City'
+      pdx: "Portland",
+      slc: "Salt Lake City",
     };
     const cityName = cityNames[cityCode] || cityCode.toUpperCase();
     document.title = `Cycle Scene - ${cityName}`;
 
     // Tell service worker the city code
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.ready;
       if (registration.active) {
         registration.active.postMessage({
-          type: 'SET_CITY_CODE',
-          cityCode: cityCode
+          type: "SET_CITY_CODE",
+          cityCode: cityCode,
         });
       }
     }
