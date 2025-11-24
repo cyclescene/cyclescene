@@ -170,7 +170,6 @@
     width: 100vw;
     overflow: hidden;
     padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
     box-sizing: border-box;
   }
 
@@ -204,5 +203,6 @@
     width: 100%;
     height: var(--footer-height);
     overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom);
   }
 </style>
