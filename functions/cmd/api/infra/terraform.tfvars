@@ -26,9 +26,9 @@ allowed_origins = [
   "http://localhost:5174",
 ]
 
-# Database & API credentials
-turso_db_url       = "libsql://cyclescene-spacesedan.aws-us-west-2.turso.io"
-turso_db_rw_token  = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NTk2MDI3NjYsImlkIjoiYTk3MWQ4NjYtNmYyMC00MTliLTg3NzItNjUxOGQwNjFiMWViIiwicmlkIjoiNTM1YzdmY2MtOTFkNi00ZWUzLTlkOGUtMjJhMGNiY2QzNWU0In0.FsnvHvKo6mo15dLttjm1ljUnzjs0XHOHQ0leynLMD_Vj9X4sqwyq_Ve3CA3hOL3BbHlK8nEM226JYLA0ZADFCw"
+# Database & API credentials (passed via environment variables from GitHub secrets)
+# turso_db_url is passed via TF_VAR_turso_db_url
+# turso_db_rw_token is passed via TF_VAR_turso_db_rw_token
 
 # Email service (Resend)
 # resend_api_key is passed via TF_VAR_resend_api_key environment variable from GitHub secrets
