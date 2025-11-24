@@ -16,11 +16,6 @@ provider "google" {
   region  = var.region
 }
 
-# Enable the Maps/Geocoding API
-resource "google_project_service" "maps_api" {
-  service = "geocoding-api.googleapis.com"
-}
-
 # Service Account for API with storage, geocoding, and signBlob permissions
 module "api_service_account" {
   source = "../../../../infrastructure/modules/service-account"
