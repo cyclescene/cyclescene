@@ -123,9 +123,9 @@
   $: isDatePickerVisible = $activeView === VIEW_DATE_PICKER;
 </script>
 
-<main class="flex flex-col max-h[100vh]">
+<main class="flex flex-col">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
-  <header class="shrink h-(--header-height)">
+  <header class="shrink" style="height: var(--header-height)">
     <svelte:component this={ActiveHeaderComponent} />
   </header>
 
@@ -144,7 +144,7 @@
       </div>
     {/if}
   </section>
-  <footer class="shrink">
+  <footer class="shrink" style="height: var(--footer-height)">
     <NavigationBar />
   </footer>
 </main>
@@ -164,28 +164,42 @@
   }
 
   main {
-    position: relative;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
     width: 100vw;
     overflow: hidden;
   }
 
   header {
-    width: 100vw;
+    flex-shrink: 0;
+    width: 100%;
     height: var(--header-height);
+    overflow: hidden;
   }
 
   .hidden {
     display: none;
   }
 
+  section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   .view-container {
     position: relative;
     overflow: hidden;
+    flex: 1;
+    min-height: 0;
   }
 
   footer {
+    flex-shrink: 0;
+    width: 100%;
     height: var(--footer-height);
-    width: 100vw;
+    overflow: hidden;
   }
 </style>
