@@ -52,6 +52,8 @@
 
   onMount(async () => {
     console.log("[App.onMount] App mounted!");
+    console.log("[App.onMount] rides object:", rides);
+    console.log("[App.onMount] rides.init:", rides.init);
     // Set dynamic page title based on city
     const cityCode = import.meta.env.VITE_CITY_CODE || "pdx";
     const cityNames = {
@@ -61,20 +63,30 @@
     const cityName = cityNames[cityCode] || cityCode.toUpperCase();
     document.title = `Cycle Scene - ${cityName}`;
 
-    // Tell service worker the city code
-    if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      if (registration.active) {
-        registration.active.postMessage({
-          type: "SET_CITY_CODE",
-          cityCode: cityCode,
-        });
-      }
-    }
-
+    console.log("[App.onMount] About to call rides.init()");
     await rides.init();
+    console.log("[App.onMount] Finished rides.init()");
     rides.refetch();
     savedRidesStore.init();
+
+    // Tell service worker the city code (non-blocking)
+    console.log("[App.onMount] About to check service worker");
+    if ("serviceWorker" in navigator) {
+      console.log("[App.onMount] Waiting for serviceWorker.ready...");
+      navigator.serviceWorker.ready
+        .then(registration => {
+          console.log("[App.onMount] Service worker ready!");
+          if (registration.active) {
+            registration.active.postMessage({
+              type: "SET_CITY_CODE",
+              cityCode: cityCode,
+            });
+          }
+        })
+        .catch(err => {
+          console.error("[App.onMount] Service worker error:", err);
+        });
+    }
   });
 
   const headerMap = {
