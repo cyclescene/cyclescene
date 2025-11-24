@@ -105,11 +105,19 @@ func (s *Service) GenerateSignedURL(ctx context.Context, req *SignedURLRequest) 
 }
 
 // generateSignedURLWithMetadata creates a signed URL using the service account
-// Uses the IAM API to sign the blob without needing the private key file
+// On Cloud Run: uses the service account's built-in credentials via metadata service
 func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName, contentType, cityCode, entityType string) (string, error) {
-	// Create a custom signer that uses IAM signBlob
+	// Get the service account's credentials from the metadata service
+	// This automatically works on Cloud Run with the service account
+	creds, err := iamcredentials.NewService(ctx, option.WithScopes("https://www.googleapis.com/auth/cloud-platform"))
+	if err != nil {
+		return "", fmt.Errorf("failed to create credentials service: %v", err)
+	}
+
+	// Create a signer using the IAM credentials
 	signer := &iamSigner{
-		ctx:            ctx,
+		ctx:       ctx,
+		credsSvc:  creds,
 		serviceAccount: s.serviceAccountEmail,
 	}
 
@@ -127,30 +135,26 @@ func (s *Service) generateSignedURLWithMetadata(ctx context.Context, objectName,
 		return "", fmt.Errorf("failed to create signed URL: %v", err)
 	}
 
-	slog.Info("generated signed URL with IAM signBlob", "object", objectName, "cityCode", cityCode, "entityType", entityType)
+	slog.Info("generated signed URL", "object", objectName, "cityCode", cityCode, "entityType", entityType)
 	return signedURL, nil
 }
 
 // iamSigner signs bytes using the IAM credentials API
 type iamSigner struct {
 	ctx            context.Context
+	credsSvc       *iamcredentials.Service
 	serviceAccount string
 }
 
 // SignBytes signs the input bytes using the IAM API
 func (s *iamSigner) SignBytes(b []byte) ([]byte, error) {
-	client, err := iamcredentials.NewService(s.ctx, option.WithScopes(iamcredentials.CloudPlatformScope))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create IAM credentials client: %v", err)
-	}
-
 	resourceName := fmt.Sprintf("projects/-/serviceAccounts/%s", s.serviceAccount)
 	// Payload must be base64-encoded
 	req := &iamcredentials.SignBlobRequest{
 		Payload: base64.StdEncoding.EncodeToString(b),
 	}
 
-	resp, err := client.Projects.ServiceAccounts.SignBlob(resourceName, req).Do()
+	resp, err := s.credsSvc.Projects.ServiceAccounts.SignBlob(resourceName, req).Do()
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign blob with IAM API: %v", err)
 	}
