@@ -1,0 +1,44 @@
+name: Deploy PWA
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontends/pwa/**'
+      - '.github/workflows/deploy-pwa.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy PWA to Vercel
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install dependencies
+        working-directory: frontends/pwa
+        run: pnpm install
+
+      - name: Build PWA
+        working-directory: frontends/pwa
+        run: pnpm run build
+
+      - name: Deploy to Vercel
+        uses: vercel/action@v4
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PWA_PROJECT_ID }}
+          working-directory: frontends/pwa
