@@ -10,7 +10,7 @@ on:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: prj_MHzeznQUjC3vPyxeIq2z51Nn7Ami
+  VERCEL_PROJECT_ID: prj_nq8PDx7uB2YiJ82OE2ehW9WCvQRL
   API_BASE_URL: https://api.cyclescene.cc
   FORM_BASE_URL: https://form.cyclescene.cc
 
