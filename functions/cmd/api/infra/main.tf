@@ -27,8 +27,7 @@ module "api_service_account" {
 
   roles = [
     "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs
-    "roles/serviceusage.serviceUsageConsumer",           # Required to call Google APIs
-    "roles/cloudmaps.viewer"                             # Required for Maps/Geocoding API access
+    "roles/serviceusage.serviceUsageConsumer"            # Required to call Google APIs
   ]
 }
 
