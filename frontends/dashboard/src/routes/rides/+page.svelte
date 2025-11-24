@@ -4,6 +4,8 @@
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
 
+  const API_URL = import.meta.env.PUBLIC_API_URL || "https://api.cyclescene.cc";
+
   interface Ride {
     id: number;
     title: string;
@@ -62,7 +64,7 @@
     try {
       loading = true;
       error = "";
-      const response = await fetch("http://localhost:8080/v1/rides/admin/pending", {
+      const response = await fetch(`${API_URL}/v1/rides/admin/pending`, {
         headers: {
           "X-Admin-Token": adminToken,
         },
@@ -85,7 +87,7 @@
       publishingId = rideId;
       error = "";
 
-      const response = await fetch(`http://localhost:8080/v1/rides/admin/${rideId}/publish`, {
+      const response = await fetch(`${API_URL}/v1/rides/admin/${rideId}/publish`, {
         method: "PATCH",
         headers: {
           "X-Admin-Token": adminToken,
