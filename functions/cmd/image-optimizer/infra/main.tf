@@ -171,3 +171,10 @@ resource "google_cloud_run_service_iam_member" "api_invoker" {
   role     = "roles/run.invoker"
   member   = "serviceAccount:${var.api_service_account_email}"
 }
+
+# Grant image optimizer service account read access to the staging bucket
+resource "google_storage_bucket_iam_member" "optimizer_staging_read" {
+  bucket = var.staging_bucket_name
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${module.optimizer_service_account.email}"
+}
