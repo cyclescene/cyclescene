@@ -125,7 +125,7 @@
   }
 
   /* iOS Safe Area Support */
-  /* Ensure content respects notch and home indicator areas */
+  /* Ensure content respects notch areas */
   html, body {
     padding-top: env(safe-area-inset-top);
     padding-right: env(safe-area-inset-right);

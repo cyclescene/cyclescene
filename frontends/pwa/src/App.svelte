@@ -67,7 +67,7 @@
     // Tell service worker the city code (non-blocking)
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.ready
-        .then(registration => {
+        .then((registration) => {
           if (registration.active) {
             registration.active.postMessage({
               type: "SET_CITY_CODE",
@@ -75,7 +75,7 @@
             });
           }
         })
-        .catch(err => {
+        .catch((err) => {
           console.error("Service worker error:", err);
         });
     }
@@ -157,8 +157,8 @@
 
 <style>
   :root {
-    --header-height: 55px;
-    --footer-height: 50px;
+    --header-height: 60px;
+    --footer-height: 60px;
   }
 
   :global(html),
@@ -209,7 +209,5 @@
     width: 100%;
     height: var(--footer-height);
     overflow: hidden;
-    padding-bottom: env(safe-area-inset-bottom);
-    box-sizing: border-box;
   }
 </style>
