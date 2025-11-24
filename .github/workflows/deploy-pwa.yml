@@ -117,13 +117,24 @@ jobs:
             VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }} \
             pnpm run build
 
-            # Deploy to Vercel with specific project ID
+            # Create .vercel/project.json to link this project for deployment
+            echo "Configuring Vercel project..."
+            mkdir -p .vercel
+            cat > .vercel/project.json <<EOF
+{
+  "projectId": "$PROJECT_ID",
+  "orgId": "${{ env.VERCEL_ORG_ID }}"
+}
+EOF
+            echo "Project configuration:"
+            cat .vercel/project.json
+
+            # Deploy to Vercel
             echo "Deploying to project: $PROJECT_ID"
             vercel deploy \
               --cwd=. \
               --prod \
               --token=$VERCEL_TOKEN \
-              --project=$PROJECT_ID \
               --env VITE_CITY_CODE=$CITY_CODE \
               --env VITE_API_BASE_URL=${{ env.API_BASE_URL }} \
               --env VITE_FORM_BASE_URL=${{ env.FORM_BASE_URL }}
