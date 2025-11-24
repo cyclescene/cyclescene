@@ -44,7 +44,7 @@ export default defineConfig({
       prefix: "i"
     }),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       strategies: "injectManifest",
       srcDir: "src/lib/",
       filename: "sw.ts",
