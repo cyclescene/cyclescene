@@ -51,6 +51,29 @@ module "optimized_media_bucket" {
   force_destroy               = false
   versioning_enabled          = false
 
+  # CORS configuration for browser access to optimized images
+  cors_rules = [
+    {
+      origin          = ["*"]
+      method          = ["GET", "HEAD"]
+      response_header = ["Content-Type", "Content-Length"]
+      max_age_seconds = 3600
+    }
+  ]
+
+  # Lifecycle rule to transition old media to cheaper storage
+  lifecycle_rules = [
+    {
+      action = {
+        type          = "SetStorageClass"
+        storage_class = "NEARLINE"
+      }
+      condition = {
+        age = 90 # Move to nearline after 90 days
+      }
+    }
+  ]
+
   labels = {
     environment = var.environment
     purpose     = "optimized-media"
