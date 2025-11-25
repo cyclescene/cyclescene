@@ -56,6 +56,14 @@ module "optimized_media_bucket" {
     purpose     = "optimized-media"
     managed_by  = "opentofu"
   }
+
+  # Grant the image optimizer service account permission to write optimized images
+  iam_members = {
+    "optimizer-storage-access" = {
+      role   = "roles/storage.objectAdmin"
+      member = "serviceAccount:${module.optimizer_service_account.email}"
+    }
+  }
 }
 
 # Cloud Run Service for Image Optimizer
