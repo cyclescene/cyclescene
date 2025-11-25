@@ -68,6 +68,18 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 		stagingObjectName = fmt.Sprintf("%s%s", imageUUID, ext)
 		slog.Info("attempting to download image from staging", "bucket", p.stagingBucket, "object", stagingObjectName)
 
+		// Check if object exists first
+		exists, err := p.objectExists(ctx, p.stagingBucket, stagingObjectName)
+		if err != nil {
+			slog.Warn("failed to check if object exists", "extension", ext, "error", err)
+			continue
+		}
+
+		if !exists {
+			slog.Info("object does not exist in staging bucket", "extension", ext, "object", stagingObjectName)
+			continue
+		}
+
 		imageData, err = p.downloadFromGCS(ctx, p.stagingBucket, stagingObjectName)
 		if err == nil {
 			slog.Info("found image with extension", "extension", ext)
@@ -130,6 +142,20 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 	}
 
 	return mainPublicURL, nil
+}
+
+// objectExists checks if an object exists in Google Cloud Storage
+func (p *ImageProcessor) objectExists(ctx context.Context, bucket, object string) (bool, error) {
+	_, err := p.storageClient.Bucket(bucket).Object(object).Attrs(ctx)
+	if err != nil {
+		// Check if error is "not found" (object doesn't exist)
+		if err.Error() == "storage: object doesn't exist" {
+			return false, nil
+		}
+		// Return other errors (permissions, network, etc.)
+		return false, err
+	}
+	return true, nil
 }
 
 // downloadFromGCS reads a file from Google Cloud Storage
