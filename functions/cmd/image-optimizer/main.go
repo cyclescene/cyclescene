@@ -51,6 +51,7 @@ func init() {
 }
 
 func main() {
+	// Image optimizer service with proper storage and Eventarc permissions
 	slog.Info("Image Optimizer started", "listening_on", ":8080", "storage_permissions_configured", true)
 	err := http.ListenAndServe(":8080", router)
 	if err != nil {
