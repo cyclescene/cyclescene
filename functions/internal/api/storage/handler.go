@@ -19,6 +19,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoutes(r chi.Router) {
 	r.Route("/storage", func(r chi.Router) {
 		r.Post("/upload-url", h.GenerateUploadURL)
+		r.Post("/image-view-url", h.GetImageViewURL)
 	})
 }
 
@@ -93,6 +94,66 @@ func (h *Handler) GenerateUploadURL(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(SignedURLResponse{
 			Success: false,
 			Error:   "failed to generate signed URL: " + err.Error(),
+		})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(response)
+}
+
+// GetImageViewURL generates a signed URL for viewing an optimized image
+// Request: POST /v1/storage/image-view-url
+//
+//	Body: {
+//	  "object_path": "pdx/rides/1/1_optimized.webp"
+//	}
+//
+// Response: {
+//	  "success": true,
+//	  "signed_url": "https://storage.googleapis.com/...",
+//	  "expires_at": "2024-10-18T18:00:00Z"
+//	}
+func (h *Handler) GetImageViewURL(w http.ResponseWriter, r *http.Request) {
+	var req ImageViewURLRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Error("failed to decode request", "error", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		if err := json.NewEncoder(w).Encode(ImageViewURLResponse{
+			Success: false,
+			Error:   "invalid request body",
+		}); err != nil {
+			slog.Error("failed to encode error response", "error", err)
+		}
+		return
+	}
+
+	// Validate request
+	if req.ObjectPath == "" {
+		slog.Warn("missing required field", "object_path", req.ObjectPath)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		if err := json.NewEncoder(w).Encode(ImageViewURLResponse{
+			Success: false,
+			Error:   "object_path is required",
+		}); err != nil {
+			slog.Error("failed to encode error response", "error", err)
+		}
+		return
+	}
+
+	slog.Info("generating image view URL", "object_path", req.ObjectPath)
+
+	response, err := h.service.GenerateImageViewURL(r.Context(), &req)
+	if err != nil {
+		slog.Error("failed to generate image view URL", "error", err)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ImageViewURLResponse{
+			Success: false,
+			Error:   "failed to generate image view URL: " + err.Error(),
 		})
 		return
 	}

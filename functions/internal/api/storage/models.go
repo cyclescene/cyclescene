@@ -28,3 +28,16 @@ type UploadedFileMetadata struct {
 	BucketName string
 	SignedURL  string
 }
+
+// ImageViewURLRequest represents a request for a signed URL to view an image
+type ImageViewURLRequest struct {
+	ObjectPath string `json:"object_path"` // Path to the image in the optimized bucket
+}
+
+// ImageViewURLResponse represents the response containing a signed URL for viewing
+type ImageViewURLResponse struct {
+	Success   bool      `json:"success"`
+	SignedURL string    `json:"signed_url"`
+	ExpiresAt time.Time `json:"expires_at"`
+	Error     string    `json:"error,omitempty"`
+}
