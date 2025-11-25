@@ -86,6 +86,11 @@ module "optimized_media_bucket" {
       role   = "roles/storage.objectAdmin"
       member = "serviceAccount:${module.optimizer_service_account.email}"
     }
+    # Grant public read access to all users for optimized images
+    "public-read-access" = {
+      role   = "roles/storage.objectViewer"
+      member = "allUsers"
+    }
   }
 }
 
