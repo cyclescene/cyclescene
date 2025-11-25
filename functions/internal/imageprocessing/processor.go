@@ -215,12 +215,12 @@ func encodeWebP(img image.Image) ([]byte, error) {
 }
 
 // GenerateSignedURL creates a signed URL for reading an object from the optimized bucket
-// The signed URL is valid for 100 years (effectively permanent for image display)
+// The signed URL is valid for 7 days (Google Cloud Storage maximum)
 func (p *ImageProcessor) GenerateSignedURL(ctx context.Context, objectPath string) (string, error) {
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
-		Expires: time.Now().Add(100 * 365 * 24 * time.Hour), // 100 years
+		Expires: time.Now().Add(7 * 24 * time.Hour), // 7 days
 	}
 
 	signedURL, err := p.storageClient.Bucket(p.optimizedBucket).SignedURL(objectPath, opts)
