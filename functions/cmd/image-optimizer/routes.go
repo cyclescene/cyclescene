@@ -46,13 +46,49 @@ func handleOptimize(dbConnector *imageprocessing.DBConnector) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
+		// First try to decode as CloudEvent (from Eventarc)
+		var cloudEventData map[string]interface{}
 		var req OptimizeRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+
+		if err := json.NewDecoder(r.Body).Decode(&cloudEventData); err != nil {
 			slog.Error("failed to decode request", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			if err := json.NewEncoder(w).Encode(OptimizeResponse{
 				Success: false,
 				Error:   "invalid request body",
+			}); err != nil {
+				slog.Error("failed to encode error response", "error", err)
+			}
+			return
+		}
+
+		// Check if this is a CloudEvent (has 'data' field) or direct request
+		var dataToUnmarshal interface{} = cloudEventData
+		if data, ok := cloudEventData["data"]; ok && data != nil {
+			// This is a CloudEvent, extract the data field
+			dataToUnmarshal = data
+		}
+
+		// Unmarshal into OptimizeRequest
+		dataBytes, err := json.Marshal(dataToUnmarshal)
+		if err != nil {
+			slog.Error("failed to marshal data", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			if err := json.NewEncoder(w).Encode(OptimizeResponse{
+				Success: false,
+				Error:   "invalid data format",
+			}); err != nil {
+				slog.Error("failed to encode error response", "error", err)
+			}
+			return
+		}
+
+		if err := json.Unmarshal(dataBytes, &req); err != nil {
+			slog.Error("failed to unmarshal request", "error", err)
+			w.WriteHeader(http.StatusBadRequest)
+			if err := json.NewEncoder(w).Encode(OptimizeResponse{
+				Success: false,
+				Error:   "invalid request format",
 			}); err != nil {
 				slog.Error("failed to encode error response", "error", err)
 			}
