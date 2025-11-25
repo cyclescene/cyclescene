@@ -66,12 +66,6 @@ variable "api_custom_domain" {
   default     = ""
 }
 
-variable "optimizer_service_account_email" {
-  description = "Email of the image optimizer service account"
-  type        = string
-  default     = "cyclescene-image-optimizer@cyclescene-479119.iam.gserviceaccount.com"
-}
-
 variable "turso_db_url" {
   description = "Turso database URL"
   type        = string
