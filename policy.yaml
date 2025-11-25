@@ -1,0 +1,3 @@
+constraint: constraints/storage.publicAccessPrevention
+booleanPolicy:
+  enforced: false

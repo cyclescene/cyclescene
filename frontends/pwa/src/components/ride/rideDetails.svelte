@@ -13,6 +13,12 @@
 
   const ride = $derived($currentRide);
 
+  const imageUrl = $derived.by(() =>
+    ride && ride?.ridesource === "Shift2Bikes"
+      ? SHIFT2BIKES_URL + ride?.image
+      : ride?.image,
+  );
+
   function handleOpenNativeMapApp() {
     if (ride) {
       const url = `https://www.google.com/maps/search/?api=1&query=${ride.lat},${ride.lng}`;
@@ -100,10 +106,7 @@
         </Card.Root>
 
         {#if ride.image != ""}
-          <img
-            src={SHIFT2BIKES_URL + ride.image}
-            alt={`Image for ${ride.title} bike ride`}
-          />
+          <img src={imageUrl} alt={`Image for ${ride.title} bike ride`} />
         {/if}
 
         <p class="text-lg">{ride.details}</p>

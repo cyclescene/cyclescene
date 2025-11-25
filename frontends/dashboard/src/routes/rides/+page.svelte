@@ -74,7 +74,8 @@
         throw new Error(`Failed to fetch rides: ${response.statusText}`);
       }
 
-      rides = await response.json();
+      const data = await response.json();
+      rides = Array.isArray(data) ? data : [];
     } catch (err) {
       error = err instanceof Error ? err.message : "Failed to load rides";
     } finally {
@@ -87,16 +88,19 @@
       publishingId = rideId;
       error = "";
 
-      const response = await fetch(`${API_URL}/v1/rides/admin/${rideId}/publish`, {
-        method: "PATCH",
-        headers: {
-          "X-Admin-Token": adminToken,
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${API_URL}/v1/rides/admin/${rideId}/publish`,
+        {
+          method: "PATCH",
+          headers: {
+            "X-Admin-Token": adminToken,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            moderation_notes: "",
+          }),
         },
-        body: JSON.stringify({
-          moderation_notes: "",
-        }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to publish ride: ${response.statusText}`);
@@ -127,7 +131,9 @@
   </div>
 
   {#if error}
-    <div class="mb-4 p-4 border border-destructive bg-destructive/10 rounded-lg">
+    <div
+      class="mb-4 p-4 border border-destructive bg-destructive/10 rounded-lg"
+    >
       <p class="text-sm text-destructive">{error}</p>
     </div>
   {/if}
@@ -151,9 +157,7 @@
             }}
           />
           <div class="flex gap-2">
-            <Button onclick={setApiKey} class="flex-1">
-              Continue
-            </Button>
+            <Button onclick={setApiKey} class="flex-1">Continue</Button>
             <Button variant="outline" onclick={() => (apiKeyInput = "")}>
               Clear
             </Button>
@@ -171,8 +175,12 @@
         <Card.Header class="text-center">
           <Card.Title>No Pending Rides</Card.Title>
           <Card.Description>
-            All submitted rides have been reviewed and published. Check back later for new submissions.
+            All submitted rides have been reviewed and published. Check back
+            later for new submissions.
           </Card.Description>
+          <Card.CardContent>
+            <Button variant="outline" onclick={loadRides}>Refresh</Button>
+          </Card.CardContent>
         </Card.Header>
       </Card.Root>
     </div>
@@ -180,7 +188,8 @@
     <div class="space-y-4">
       {#each rides as ride}
         <button
-          onclick={() => (selectedRideId = selectedRideId === ride.id ? null : ride.id)}
+          onclick={() =>
+            (selectedRideId = selectedRideId === ride.id ? null : ride.id)}
           class="w-full text-left p-4 border rounded-lg hover:bg-accent/50 transition-colors"
         >
           <div class="flex items-center justify-between">
@@ -230,7 +239,9 @@
                   </p>
                 </div>
                 <div>
-                  <p class="text-xs font-medium text-muted-foreground">Organizer</p>
+                  <p class="text-xs font-medium text-muted-foreground">
+                    Organizer
+                  </p>
                   <p class="text-sm mt-1">{ride.organizer_name}</p>
                 </div>
                 <div>
@@ -240,14 +251,22 @@
               </div>
 
               <div>
-                <p class="text-xs font-medium text-muted-foreground">Description</p>
-                <p class="text-sm mt-2 whitespace-pre-wrap">{ride.description}</p>
+                <p class="text-xs font-medium text-muted-foreground">
+                  Description
+                </p>
+                <p class="text-sm mt-2 whitespace-pre-wrap">
+                  {ride.description}
+                </p>
               </div>
 
               {#if ride.image_uuid}
                 <div class="pt-2 border-t">
-                  <p class="text-xs font-medium text-muted-foreground">Image UUID</p>
-                  <p class="text-xs mt-1 break-all text-muted-foreground">{ride.image_uuid}</p>
+                  <p class="text-xs font-medium text-muted-foreground">
+                    Image UUID
+                  </p>
+                  <p class="text-xs mt-1 break-all text-muted-foreground">
+                    {ride.image_uuid}
+                  </p>
                 </div>
               {/if}
             </Card.Content>
