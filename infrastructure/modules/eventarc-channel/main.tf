@@ -28,6 +28,15 @@ resource "google_eventarc_trigger" "trigger" {
     }
   }
 
+  # Retry policy for failed events
+  retry_policy {
+    max_attempts       = 5
+    backoff {
+      min_delay = "5s"
+      max_delay = "60s"
+    }
+  }
+
   labels = var.labels
 }
 
