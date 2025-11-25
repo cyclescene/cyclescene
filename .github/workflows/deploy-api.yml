@@ -104,7 +104,7 @@ jobs:
         run: |
           tofu init \
             -backend-config="bucket=${{ env.PROJECT_ID }}-terraform-state" \
-            -backend-config="prefix=terraform/state/api"
+            -backend-config="prefix=services/api"
           tofu apply \
             -var="image_tag=${{ steps.image-tag.outputs.tag }}" \
             -auto-approve

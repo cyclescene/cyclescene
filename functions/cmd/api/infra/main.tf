@@ -22,7 +22,7 @@ data "terraform_remote_state" "image_optimizer" {
 
   config = {
     bucket = "${var.project_id}-terraform-state"
-    prefix = "terraform/state/image-optimizer"
+    prefix = "services/image-optimizer"
   }
 }
 
