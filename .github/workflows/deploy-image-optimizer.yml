@@ -111,6 +111,8 @@ jobs:
           TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
           TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
           TF_VAR_turso_db_ro_token: ${{ secrets.TURSO_DB_RO_TOKEN }}
+          TF_VAR_staging_bucket_name: ${{ env.PROJECT_ID }}-user-media-staging
+          TF_VAR_api_service_account_email: cyclescene-api@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
         run: |
           tofu init \
             -backend-config="bucket=${{ env.PROJECT_ID }}-terraform-state" \
