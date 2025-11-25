@@ -130,5 +130,17 @@ func processImageOptimization(ctx context.Context, req OptimizeRequest) (string,
 	}
 	defer processor.Close()
 
-	return processor.ProcessImage(ctx, req.ImageUUID, req.CityCode, req.EntityID, req.EntityType)
+	// Get the object path from image processing
+	objectPath, err := processor.ProcessImage(ctx, req.ImageUUID, req.CityCode, req.EntityID, req.EntityType)
+	if err != nil {
+		return "", err
+	}
+
+	// Generate a signed URL for the optimized image
+	signedURL, err := processor.GenerateSignedURL(ctx, objectPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate signed URL for optimized image: %v", err)
+	}
+
+	return signedURL, nil
 }
