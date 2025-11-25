@@ -167,7 +167,14 @@
     </div>
   {:else if rides.length === 0}
     <div class="flex items-center justify-center py-12">
-      <p class="text-muted-foreground">No pending rides</p>
+      <Card.Root class="max-w-md">
+        <Card.Header class="text-center">
+          <Card.Title>No Pending Rides</Card.Title>
+          <Card.Description>
+            All submitted rides have been reviewed and published. Check back later for new submissions.
+          </Card.Description>
+        </Card.Header>
+      </Card.Root>
     </div>
   {:else}
     <div class="space-y-4">
