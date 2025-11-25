@@ -140,9 +140,9 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 		// Don't fail the operation if deletion fails
 	}
 
-	// Return the object path (API will generate signed URL and store it)
-	slog.Info("image optimization complete", "bucket", p.optimizedBucket, "object", defaultObjectName)
-	return defaultObjectName, nil
+	// Return the public URL for the optimized image
+	slog.Info("image optimization complete", "publicURL", mainPublicURL)
+	return mainPublicURL, nil
 }
 
 // objectExists checks if an object exists in Google Cloud Storage
