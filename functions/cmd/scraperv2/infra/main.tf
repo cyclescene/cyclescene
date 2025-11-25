@@ -10,7 +10,7 @@ terraform {
 
   backend "gcs" {
     bucket = "cyclescene-479119-terraform-state"
-    prefix = "terraform/state/scraper"
+    prefix = "services/scraperv2"
   }
 }
 
