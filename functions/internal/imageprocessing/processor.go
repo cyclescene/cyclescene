@@ -11,7 +11,6 @@ import (
 	"io"
 	"log/slog"
 	"path/filepath"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/kolesa-team/go-webp/encoder"
@@ -212,24 +211,6 @@ func encodeWebP(img image.Image) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
-}
-
-// GenerateSignedURL creates a signed URL for reading an object from the optimized bucket
-// The signed URL is valid for 100 years (effectively permanent for image display)
-func (p *ImageProcessor) GenerateSignedURL(ctx context.Context, objectPath string) (string, error) {
-	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add(100 * 365 * 24 * time.Hour), // 100 years
-	}
-
-	signedURL, err := p.storageClient.Bucket(p.optimizedBucket).SignedURL(objectPath, opts)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate signed URL: %v", err)
-	}
-
-	slog.Debug("generated signed URL for optimized image", "object", objectPath, "bucket", p.optimizedBucket)
-	return signedURL, nil
 }
 
 // Close closes the storage client
