@@ -10,6 +10,7 @@
   } from "$lib/stores";
   import { mode } from "mode-watcher";
   import RideLayers from "./rideLayers.svelte";
+  import ParkLayer from "./parkLayer.svelte";
   import RecenterButton from "./recenterButton.svelte";
   import LocationCards from "../locationCards.svelte";
   import RidesNotShown from "../ride/ridesNotShown.svelte";
@@ -70,7 +71,9 @@
   });
 </script>
 
-<div style="height: calc(100dvh - var(--header-height) - var(--footer-height)); width: 100%;">
+<div
+  style="height: calc(100dvh - var(--header-height) - var(--footer-height)); width: 100%;"
+>
   <MapLibre
     bind:map={mapInstance}
     class="w-full h-full"
@@ -78,22 +81,23 @@
     onclick={handleMapClick}
     attributionControl={false}
   >
-  {#if $rideGeoJSON}
-    {#if iconLoaded}
-      <RideLayers
-        sourceId={SOURCE_ID}
-        iconName={ICON_NAME}
-        onRideClick={handleRideClick}
-      />
+    {#if $rideGeoJSON}
+      {#if iconLoaded}
+        <RideLayers
+          sourceId={SOURCE_ID}
+          iconName={ICON_NAME}
+          onRideClick={handleRideClick}
+        />
+      {/if}
+      <GeoJSONSource data={$rideGeoJSON} id={SOURCE_ID} />
     {/if}
-    <GeoJSONSource data={$rideGeoJSON} id={SOURCE_ID} />
-  {/if}
 
-  {#if mapInstance}
-    <RecenterButton map={mapInstance} />
-  {/if}
+    {#if mapInstance}
+      <RecenterButton map={mapInstance} />
+    {/if}
+    <ParkLayer {mapInstance} isDarkMode={mode.current === "dark"} />
 
-  <RidesNotShown />
-  <LocationCards />
+    <RidesNotShown />
+    <LocationCards />
   </MapLibre>
 </div>
