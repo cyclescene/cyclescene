@@ -1,8 +1,8 @@
 project_id                = "cyclescene-479119"
 region                    = "us-west1"
 environment               = "production"
-staging_bucket_name       = "cyclescene-user-media-staging"
-api_service_account_email = "cyclescene-api@cyclescene.iam.gserviceaccount.com"
+staging_bucket_name       = "cyclescene-479119-user-media-staging"
+api_service_account_email = "cyclescene-api@cyclescene-479119.iam.gserviceaccount.com"
 optimizer_cpu_limit       = "2"
 optimizer_memory_limit    = "2Gi"
 optimizer_max_instances   = 10
