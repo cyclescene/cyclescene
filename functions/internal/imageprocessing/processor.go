@@ -11,7 +11,6 @@ import (
 	"io"
 	"log/slog"
 	"path/filepath"
-	"time"
 
 	"cloud.google.com/go/storage"
 	"github.com/kolesa-team/go-webp/encoder"
@@ -141,7 +140,9 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 		// Don't fail the operation if deletion fails
 	}
 
-	return mainPublicURL, nil
+	// Return the object path (API will generate signed URL and store it)
+	slog.Info("image optimization complete", "bucket", p.optimizedBucket, "object", defaultObjectName)
+	return defaultObjectName, nil
 }
 
 // objectExists checks if an object exists in Google Cloud Storage
