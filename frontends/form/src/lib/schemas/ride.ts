@@ -5,7 +5,8 @@ export const rideOccurrenceSchema = z.object({
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   start_time: z.string().regex(/^\d{2}:\d{2}:\d{2}$/, 'Invalid time format'),
   event_duration_minutes: z.number().int().min(0).optional(),
-  event_time_details: z.string().optional()
+  event_time_details: z.string().optional(),
+  newsflash: z.string().max(500).optional()
 });
 
 // Main ride submission schema
