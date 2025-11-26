@@ -86,7 +86,7 @@
   });
 </script>
 
-<canvas bind:this={canvas} class="w-full bg-gradient-to-r from-transparent via-slate-100 to-transparent dark:via-slate-900" />
+<canvas bind:this={canvas} class="w-full bg-gradient-to-r from-transparent via-slate-100 to-transparent dark:via-slate-900"></canvas>
 
 <style>
   :global(canvas) {

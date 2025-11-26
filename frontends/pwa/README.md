@@ -1,47 +1,194 @@
-# Svelte + Vite
+# PWA (Progressive Web App)
 
-This template should help get you started developing with Svelte in Vite.
+Mobile-first application for discovering, viewing, and saving bike rides in a specific city.
 
-## Recommended IDE Setup
+## Overview
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+The PWA is the main user application for browsing and interacting with bike rides. Users can:
+- Browse rides on an interactive map
+- View rides in list format
+- Filter rides by date
+- Save favorite rides locally
+- Use the app offline with cached data
+- Install as a native app on their device
 
-## Need an official Svelte framework?
+**Technology**: Svelte 5, Vite, MapLibre GL, Workbox, IndexedDB
+**URL**: https://pdx.cyclescene.cc (and other cities)
+**Deployment**: Vercel
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+## Getting Started
 
-## Technical considerations
+### Prerequisites
+- Node.js 18+
+- Mapbox API key (for maps)
 
-**Why use this over SvelteKit?**
+### Local Setup
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `checkJs` in the JS template?**
-
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/sveltejs/svelte-hmr/tree/master/packages/svelte-hmr#preservation-of-local-state).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```js
-// store.js
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
+```bash
+cd frontends/pwa
+npm install
+npm run dev
 ```
+
+Access at `http://localhost:5173`
+
+## Features
+
+### Map View
+- Interactive map powered by MapLibre GL
+- Pin drops for each ride
+- Click ride markers for details
+- Geolocation support to find rides near you
+
+### List View
+- Compact ride listing
+- Sortable and filterable
+- Shows distance if location available
+- Quick access to ride details
+
+### Saved Rides
+- Save favorite rides locally (stored in IndexedDB)
+- Access saved rides offline
+- Quick reference for interested rides
+
+### Date Filtering
+- Pick date range to view rides
+- See past and upcoming rides
+- Filter by specific date
+
+### Offline Support
+- Service Worker caching for offline access
+- Works without internet connection
+- Syncs when connection is restored
+
+### Install Prompt
+- Appears on first visit
+- Allows installation as native app
+- Creates persistent local storage
+
+## Project Structure
+
+```
+pwa/
+├── src/
+│   ├── routes/
+│   │   ├── +layout.svelte      # Main layout
+│   │   ├── +page.svelte        # Map/list view
+│   │   ├── [id]/
+│   │   │   └── +page.svelte    # Ride details
+│   │   ├── saved/
+│   │   │   └── +page.svelte    # Saved rides
+│   │   └── settings/
+│   │       └── +page.svelte    # User settings
+│   ├── lib/
+│   │   ├── components/         # UI components
+│   │   ├── api.ts              # API client
+│   │   ├── store.ts            # State management
+│   │   └── db.ts               # IndexedDB operations
+│   └── app.css
+├── public/
+│   ├── manifest.json           # PWA manifest
+│   ├── service-worker.js       # Offline support
+│   └── icons/                  # App icons
+├── package.json
+└── README.md
+```
+
+## Data & Storage
+
+### API Endpoints
+- `GET /api/rides?city={code}` - Get all rides for a city
+- `GET /api/rides/{id}` - Get detailed ride information
+
+### Local Storage
+IndexedDB tables:
+- `rides` - Cached ride data
+- `saved_rides` - User's saved rides
+- `settings` - User preferences
+
+Service Worker caching:
+- Static assets (HTML, CSS, JS)
+- API responses
+- Images for offline viewing
+
+## Deployment
+
+### Local Build
+```bash
+npm run build
+npm run preview
+```
+
+### Vercel Deployment
+```bash
+vercel deploy
+```
+
+Auto-deploys on git push to main branch.
+
+### Environment Variables
+- `VITE_API_URL` - API base URL
+- `VITE_MAPBOX_TOKEN` - Mapbox API key
+
+## Planned Features
+
+### Install Prompt Enhancement
+Add prominent "Install App" button for first-time users with better UX.
+
+### Settings Expansion
+- Units preference (miles/km)
+- Show/hide past rides
+- Notification preferences
+- Dark mode toggle
+
+### Calendar Export
+Export rides to calendar format (ICS).
+
+## Performance
+
+### Optimizations
+- Code splitting for routes
+- Lazy loading images
+- Service Worker caching
+- Minimal bundle size
+
+### Monitoring
+Monitor in Google Analytics:
+- Page load times
+- User interactions
+- Offline usage patterns
+
+## Troubleshooting
+
+### Map Not Showing
+- Verify `VITE_MAPBOX_TOKEN` environment variable is set
+- Check browser console for errors
+- Ensure Mapbox account has sufficient credits
+
+### Offline Not Working
+- Verify service worker is registered in DevTools
+- Check Cache Storage is enabled in browser
+- Clear cache and reload
+
+### Slow Performance
+- Profile with DevTools Performance tab
+- Check for unnecessary re-renders in Svelte components
+- Optimize large images before upload
+
+### Save Feature Not Working
+- Verify IndexedDB is enabled in browser
+- Check browser storage quota
+- Clear cache and try again
+
+## Browser Support
+- Chrome/Edge 90+
+- Firefox 88+
+- Safari 14+
+- Mobile browsers (iOS Safari 14+, Chrome Android)
+
+## Related Documentation
+
+- [Frontend Apps README](../README.md)
+- [API Service README](../../functions/cmd/api/README.md)
+- [Directory README](../directory/README.md)
+- [Project Architecture](../../README.md)

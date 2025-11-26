@@ -1,14 +1,41 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { getAnalyticsDb } from '$lib/server/analytics-db';
 
+// Headers to exclude from analytics (invasive or infrastructure-related)
+const EXCLUDED_HEADERS = new Set([
+  // IP/location headers
+  'x-forwarded-for',
+  'x-real-ip',
+  'cf-connecting-ip',
+  'cf-client-ip',
+  'x-client-ip',
+  'x-original-ip',
+  // Cloudflare/Vercel headers
+  'cf-ray',
+  'cf-request-id',
+  'x-vercel-id',
+  'x-vercel-deployment-url',
+  'x-vercel-forwarded-for',
+  // Auth/cookies
+  'cookie',
+  'authorization',
+  'x-auth-token',
+  // Other potentially invasive headers
+  'x-api-key',
+  'x-api-version',
+  'x-custom-header'
+]);
+
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const { source } = await request.json();
 
-    // Get request headers to store
+    // Get request headers to store, filtering out invasive ones
     const headers: Record<string, string> = {};
     request.headers.forEach((value, key) => {
-      headers[key] = value;
+      if (!EXCLUDED_HEADERS.has(key.toLowerCase())) {
+        headers[key] = value;
+      }
     });
 
     const analyticsDb = getAnalyticsDb();

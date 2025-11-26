@@ -1,38 +1,80 @@
-# sv
+# Form
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+User interface for submitting new bike rides.
 
-## Creating a project
+## Overview
 
-If you're seeing this, you've probably already done this step. Congrats!
+The Form application allows community members to submit bike rides to be displayed across Cycle Scene. Features include:
+- Detailed ride submission form
+- Date and time selection
+- Location picker
+- Image uploads
+- Group selection
+- Shift2Bikes modal redirect (for Portland)
 
-```sh
-# create a new project in the current directory
-npx sv create
+**Technology**: SvelteKit, Svelte 5, TailwindCSS, Zod validation
+**URL**: https://form.cyclescene.cc
+**Deployment**: Vercel
 
-# create a new project in my-app
-npx sv create my-app
-```
+## Getting Started
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+cd frontends/form
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+Access at `http://localhost:5173`
 
-To create a production version of your app:
+## Form Fields
 
-```sh
-npm run build
-```
+- Title: Ride name
+- Description: Detailed description
+- Date & Time: Start and end times
+- Location: Address or coordinates
+- Group: Ride organizer
+- Images: Optional ride photos
+- Category: Type of ride
 
-You can preview the production build with `npm run preview`.
+## Validation
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Form uses Zod for schema validation:
+- Required fields validation
+- Date/time format validation
+- Location geocoding
+- File type validation for images
+
+## Shift2Bikes Integration
+
+For Portland rides, shows modal encouraging users to submit to Shift2Bikes instead (with "don't show again" option).
+
+## API Integration
+
+Submits to: `POST /api/rides`
+
+Returns submission token for tracking.
+
+## Styling
+
+- TailwindCSS for styling
+- Dark mode support
+- Responsive form layout
+- Accessibility features (labels, ARIA)
+
+## Troubleshooting
+
+### Form Not Submitting
+- Check browser console for validation errors
+- Verify API endpoint is accessible
+- Ensure required fields are filled
+
+### Images Not Uploading
+- Check file size (max 10MB)
+- Verify image format (JPEG, PNG, WebP)
+- Check browser file upload permissions
+
+## Related Documentation
+
+- [Frontend Apps README](../README.md)
+- [API Service README](../../functions/cmd/api/README.md)
+- [Project Architecture](../../README.md)

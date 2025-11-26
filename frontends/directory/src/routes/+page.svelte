@@ -62,7 +62,7 @@
 </script>
 
 <div class="flex flex-col min-h-screen" style="padding-bottom: env(safe-area-inset-bottom)">
-  <div class="flex-1 container max-w-4xl mx-auto py-16 px-4">
+  <div class="flex-1 container max-w-4xl mx-auto py-8 px-4">
     <div class="text-center space-y-12">
       <div class="space-y-3">
         <h1 class="text-6xl font-bold tracking-tight">Cycle Scene</h1>

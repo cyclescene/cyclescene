@@ -1,38 +1,100 @@
-# sv
+# Dashboard
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Admin dashboard for viewing analytics and managing rides.
 
-## Creating a project
+## Overview
 
-If you're seeing this, you've probably already done this step. Congrats!
+The Dashboard provides admin access to:
+- Analytics and metrics
+- Ride management
+- User submissions
+- Performance monitoring
+- Content moderation
 
-```sh
-# create a new project in the current directory
-npx sv create
+**Technology**: SvelteKit, Svelte 5, TailwindCSS
+**URL**: https://dashboard.cyclescene.cc
+**Deployment**: Vercel
+**Access**: Admin API key required
 
-# create a new project in my-app
-npx sv create my-app
-```
+## Getting Started
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+cd frontends/dashboard
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+Access at `http://localhost:5173`
 
-To create a production version of your app:
+## Dashboard Views
 
-```sh
-npm run build
+### Analytics
+- Total rides and submissions
+- Traffic trends
+- City-level statistics
+- Source attribution data
+
+### Ride Management
+- View all submitted rides
+- Approve/reject submissions
+- Edit ride details
+- Manage ride images
+
+### User Submissions
+- Queue of pending rides
+- Flagged content
+- Submission timestamps
+- Submitter information
+
+### Performance
+- Page load metrics
+- API response times
+- Error tracking
+- System health
+
+## Authentication
+
+Uses admin API key for access. Admins must provide their API key to authenticate with the dashboard.
+
+Generate admin keys using the admin-keys service:
+```bash
+cd functions/cmd/admin-keys
+go run main.go generate
 ```
 
-You can preview the production build with `npm run preview`.
+## Data Updates
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Dashboard pulls data from:
+- Rides API (authenticated with admin key)
+- Analytics database
+- User submissions queue
+
+## Styling
+
+- TailwindCSS for styling
+- Dark mode support
+- Responsive dashboard layout
+- Charts and data visualizations
+
+## Troubleshooting
+
+### Dashboard Not Loading Data
+- Verify admin API key is valid
+- Check API connectivity
+- Review browser console for errors
+
+### Slow Analytics Loading
+- Check API response times
+- Consider implementing caching
+- Optimize database queries
+
+### Auth Issues
+- Verify admin API key is correct
+- Check key hasn't been revoked
+- Generate new key if needed
+
+## Related Documentation
+
+- [Frontend Apps README](../README.md)
+- [API Service README](../../functions/cmd/api/README.md)
+- [Project Architecture](../../README.md)
