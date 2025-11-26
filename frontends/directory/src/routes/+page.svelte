@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
+  import EmojiBanner from "$lib/components/EmojiBanner.svelte";
   import cities from "$lib/data/cities.json";
   import { onMount } from "svelte";
 
@@ -10,7 +11,7 @@
   }
 
   const cityList: City[] = cities;
-  let analyticsId: number | null = null;
+  let analyticsId: string | null = null;
 
   onMount(async () => {
     // Extract source parameter from URL
@@ -60,23 +61,29 @@
   }
 </script>
 
-<div class="container max-w-4xl mx-auto py-16 px-4">
-  <div class="text-center space-y-12">
-    <div class="space-y-3">
-      <h1 class="text-6xl font-bold tracking-tight">Cycle Scene</h1>
-      <p class="text-xl text-muted-foreground">Discover bike rides in your city</p>
-    </div>
+<div class="flex flex-col min-h-screen">
+  <div class="flex-1 container max-w-4xl mx-auto py-16 px-4">
+    <div class="text-center space-y-12">
+      <div class="space-y-3">
+        <h1 class="text-6xl font-bold tracking-tight">Cycle Scene</h1>
+        <p class="text-xl text-muted-foreground">Discover bike rides in your city</p>
+      </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
-      {#each cityList as city}
-        <Button
-          onclick={() => trackCityClick(city)}
-          size="lg"
-          class="h-24 text-lg"
-        >
-          {city.name}
-        </Button>
-      {/each}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8">
+        {#each cityList as city}
+          <Button
+            onclick={() => trackCityClick(city)}
+            size="lg"
+            class="h-24 text-lg"
+          >
+            {city.name}
+          </Button>
+        {/each}
+      </div>
     </div>
+  </div>
+
+  <div class="mt-auto">
+    <EmojiBanner />
   </div>
 </div>

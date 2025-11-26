@@ -19,7 +19,8 @@ export const POST: RequestHandler = async ({ request }) => {
       args: [source || null, 0, JSON.stringify(headers)]
     });
 
-    const analyticsId = result.lastInsertRowid;
+    // Convert BigInt to string for JSON serialization
+    const analyticsId = result.lastInsertRowid ? String(result.lastInsertRowid) : null;
 
     return json({ success: true, analyticsId }, { status: 201 });
   } catch (error) {
