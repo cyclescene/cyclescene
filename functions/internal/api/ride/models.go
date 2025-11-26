@@ -55,6 +55,7 @@ type Occurrence struct {
 	EventDurationMinutes int    `json:"event_duration_minutes"`
 	EventTimeDetails     string `json:"event_time_details"`
 	IsCancelled          bool   `json:"is_cancelled,omitempty"`
+	Newsflash            string `json:"newsflash,omitempty"`
 }
 
 type SubmissionResponse struct {

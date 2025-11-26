@@ -62,9 +62,9 @@ func (r *Repository) CreateRide(submission *Submission, editToken string, latitu
 		_, err = tx.Exec(`
 			INSERT INTO event_occurrences (
 				event_id, start_date, start_time, start_datetime,
-				event_duration_minutes, event_time_details
-			) VALUES (?, ?, ?, ?, ?, ?)
-		`, eventID, occ.StartDate, occ.StartTime, startDatetime, occ.EventDurationMinutes, occ.EventTimeDetails)
+				event_duration_minutes, event_time_details, newsflash
+			) VALUES (?, ?, ?, ?, ?, ?, ?)
+		`, eventID, occ.StartDate, occ.StartTime, startDatetime, occ.EventDurationMinutes, occ.EventTimeDetails, occ.Newsflash)
 
 		if err != nil {
 			return 0, err
@@ -115,7 +115,7 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 
 	// Get occurrences
 	rows, err := r.db.Query(`
-		SELECT id, start_date, start_time, event_duration_minutes, event_time_details, is_cancelled
+		SELECT id, start_date, start_time, event_duration_minutes, event_time_details, is_cancelled, newsflash
 		FROM event_occurrences WHERE event_id = ?
 		ORDER BY start_datetime ASC
 	`, id)
@@ -128,7 +128,7 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 	for rows.Next() {
 		var occ Occurrence
 		var isCancelled int
-		if err := rows.Scan(&occ.ID, &occ.StartDate, &occ.StartTime, &occ.EventDurationMinutes, &occ.EventTimeDetails, &isCancelled); err != nil {
+		if err := rows.Scan(&occ.ID, &occ.StartDate, &occ.StartTime, &occ.EventDurationMinutes, &occ.EventTimeDetails, &isCancelled, &occ.Newsflash); err != nil {
 			continue
 		}
 		occ.IsCancelled = isCancelled == 1
@@ -201,9 +201,9 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 		_, err = tx.Exec(`
 			INSERT INTO event_occurrences (
 				event_id, start_date, start_time, start_datetime,
-				event_duration_minutes, event_time_details
-			) VALUES (?, ?, ?, ?, ?, ?)
-		`, eventID, occ.StartDate, occ.StartTime, startDatetime, occ.EventDurationMinutes, occ.EventTimeDetails)
+				event_duration_minutes, event_time_details, newsflash
+			) VALUES (?, ?, ?, ?, ?, ?, ?)
+		`, eventID, occ.StartDate, occ.StartTime, startDatetime, occ.EventDurationMinutes, occ.EventTimeDetails, occ.Newsflash)
 
 		if err != nil {
 			return err
@@ -213,13 +213,13 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 	return tx.Commit()
 }
 
-// UpdateOccurrence updates a single occurrence's time and details
-func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, isCancelled bool) error {
+// UpdateOccurrence updates a single occurrence's time, details, and newsflash
+func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, newsflash string, isCancelled bool) error {
 	_, err := r.db.Exec(`
 		UPDATE event_occurrences
-		SET start_time = ?, event_duration_minutes = ?, event_time_details = ?, is_cancelled = ?
+		SET start_time = ?, event_duration_minutes = ?, event_time_details = ?, newsflash = ?, is_cancelled = ?
 		WHERE id = ? AND event_id = (SELECT id FROM events WHERE edit_token = ?)
-	`, startTime, eventDurationMinutes, eventTimeDetails, boolToInt(isCancelled), occurrenceID, token)
+	`, startTime, eventDurationMinutes, eventTimeDetails, newsflash, boolToInt(isCancelled), occurrenceID, token)
 	return err
 }
 
