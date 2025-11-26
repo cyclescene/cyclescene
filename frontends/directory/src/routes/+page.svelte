@@ -61,7 +61,7 @@
   }
 </script>
 
-<div class="flex flex-col min-h-screen">
+<div class="flex flex-col min-h-screen" style="padding-bottom: env(safe-area-inset-bottom)">
   <div class="flex-1 container max-w-4xl mx-auto py-16 px-4">
     <div class="text-center space-y-12">
       <div class="space-y-3">
