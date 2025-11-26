@@ -29,12 +29,10 @@ export const POST: RequestHandler = async ({ request }) => {
   }
 };
 
-export const PATCH: RequestHandler = async ({ request, params }) => {
+export const PATCH: RequestHandler = async ({ request }) => {
   try {
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
     const body = await request.json();
-    const { pwa_clicked } = body;
+    const { id, pwa_clicked } = body;
 
     if (!id) {
       return json({ success: false, error: 'Missing analytics ID' }, { status: 400 });
