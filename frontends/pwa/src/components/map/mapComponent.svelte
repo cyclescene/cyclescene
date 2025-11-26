@@ -11,6 +11,7 @@
   import { mode } from "mode-watcher";
   import RideLayers from "./rideLayers.svelte";
   import ParkLayer from "./parkLayer.svelte";
+  import SpecialEventLayers from "./specialEventLayers.svelte";
   import RecenterButton from "./recenterButton.svelte";
   import LocationCards from "../locationCards.svelte";
   import RidesNotShown from "../ride/ridesNotShown.svelte";
@@ -22,7 +23,7 @@
 
   let mapInstance: Map | undefined = $state(undefined);
   let iconLoaded = $state(false);
-  let source = $derived(TILE_URLS[mode.current]);
+  let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
 
   function handleRideClick(e: MapLayerMouseEvent) {
     if (e.features && e.features.length > 0) {
@@ -95,7 +96,8 @@
     {#if mapInstance}
       <RecenterButton map={mapInstance} />
     {/if}
-    <ParkLayer {mapInstance} isDarkMode={mode.current === "dark"} />
+    <SpecialEventLayers isDarkMode={mode.current === "dark"} />
+    <ParkLayer isDarkMode={mode.current === "dark"} />
 
     <RidesNotShown />
     <LocationCards />

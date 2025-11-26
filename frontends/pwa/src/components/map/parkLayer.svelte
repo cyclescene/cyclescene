@@ -8,7 +8,7 @@ interface Props {
 let { isDarkMode }: Props = $props();
 
 // Dark mode colors for parks
-const darkParkColor = "#34d399";
+const darkParkColor = "#4a7c59";
 const darkParkOpacity = 0.6;
 </script>
 
