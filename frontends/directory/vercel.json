@@ -1,5 +1,6 @@
 {
   "buildCommand": "pnpm run build",
   "outputDirectory": "build",
-  "framework": "sveltekit"
+  "framework": "sveltekit",
+  "ignoreCommand": "git diff --quiet HEAD~1 -- . ':(exclude)../'"
 }
