@@ -93,9 +93,9 @@ func (s *Service) GetRideByEditToken(token string) (*EditResponse, error) {
 	}, nil
 }
 
-// UpdateOccurrence updates a single occurrence's details (time, duration, details, cancelled status)
-func (s *Service) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, isCancelled bool) error {
-	return s.repo.UpdateOccurrence(token, occurrenceID, startTime, eventDurationMinutes, eventTimeDetails, isCancelled)
+// UpdateOccurrence updates a single occurrence's details (time, duration, details, newsflash, cancelled status)
+func (s *Service) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, newsflash string, isCancelled bool) error {
+	return s.repo.UpdateOccurrence(token, occurrenceID, startTime, eventDurationMinutes, eventTimeDetails, newsflash, isCancelled)
 }
 
 func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionResponse, error) {

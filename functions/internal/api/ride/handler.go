@@ -161,6 +161,7 @@ type UpdateOccurrenceRequest struct {
 	StartTime            string `json:"start_time"`
 	EventDurationMinutes int    `json:"event_duration_minutes"`
 	EventTimeDetails     string `json:"event_time_details"`
+	Newsflash            string `json:"newsflash"`
 	IsCancelled          bool   `json:"is_cancelled"`
 }
 
@@ -180,7 +181,7 @@ func (h *Handler) UpdateOccurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.UpdateOccurrence(token, occurrenceId, req.StartTime, req.EventDurationMinutes, req.EventTimeDetails, req.IsCancelled); err != nil {
+	if err := h.service.UpdateOccurrence(token, occurrenceId, req.StartTime, req.EventDurationMinutes, req.EventTimeDetails, req.Newsflash, req.IsCancelled); err != nil {
 		slog.Error("Failed to update occurrence", "error", err, "token", token, "occurrence_id", occurrenceId)
 		http.Error(w, "Failed to update occurrence", http.StatusInternalServerError)
 		return
