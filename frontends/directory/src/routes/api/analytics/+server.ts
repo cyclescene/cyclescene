@@ -1,5 +1,5 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
-import { getTurso } from '$lib/server/db';
+import { getAnalyticsDb } from '$lib/server/analytics-db';
 
 export const POST: RequestHandler = async ({ request }) => {
   try {
@@ -11,8 +11,8 @@ export const POST: RequestHandler = async ({ request }) => {
       headers[key] = value;
     });
 
-    const turso = getTurso();
-    const result = await turso.execute({
+    const analyticsDb = getAnalyticsDb();
+    const result = await analyticsDb.execute({
       sql: `
         INSERT INTO directory_analytics (source, clicked_cta, request_headers)
         VALUES (?, ?, ?)
@@ -39,8 +39,8 @@ export const PATCH: RequestHandler = async ({ request }) => {
       return json({ success: false, error: 'Missing analytics ID' }, { status: 400 });
     }
 
-    const turso = getTurso();
-    await turso.execute({
+    const analyticsDb = getAnalyticsDb();
+    await analyticsDb.execute({
       sql: `
         UPDATE directory_analytics
         SET clicked_cta = 1, pwa_clicked = ?, clicked_at = STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')

@@ -12,7 +12,7 @@ const config = {
     }),
     alias: { '@': './src/lib/*' },
     env: {
-      privatePrefix: 'TURSO_',
+      privatePrefix: 'ANALYTICS_',
       publicPrefix: 'PUBLIC_'
     }
   }
