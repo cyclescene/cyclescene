@@ -37,6 +37,7 @@
     start_time: string;
     event_duration_minutes: number;
     event_time_details: string;
+    newsflash?: string;
     is_cancelled: boolean;
   }
 
@@ -107,6 +108,7 @@
             start_time: occurrence.start_time,
             event_duration_minutes: occurrence.event_duration_minutes,
             event_time_details: occurrence.event_time_details,
+            newsflash: occurrence.newsflash,
             is_cancelled: occurrence.is_cancelled,
           }),
         },
@@ -279,6 +281,11 @@
                             {occurrence.event_time_details}
                           </p>
                         {/if}
+                        {#if occurrence.newsflash}
+                          <p class="text-sm mt-2 text-amber-600 dark:text-amber-500 font-medium">
+                            ⚠️ {occurrence.newsflash}
+                          </p>
+                        {/if}
                       </div>
                     </div>
                   </div>
@@ -323,6 +330,19 @@
                       placeholder="e.g., Meet at the fountain"
                       class="mt-1"
                     />
+                  </div>
+
+                  <div>
+                    <label for={`newsflash-${occurrence.id}`} class="text-sm font-medium">Alert/Update (Optional)</label>
+                    <Input
+                      id={`newsflash-${occurrence.id}`}
+                      type="text"
+                      bind:value={occurrence.newsflash}
+                      placeholder="e.g., Route change due to construction"
+                      maxlength="500"
+                      class="mt-1"
+                    />
+                    <p class="text-xs text-muted-foreground mt-1">Special message or alert for this date (max 500 characters)</p>
                   </div>
 
                   <div class="flex items-center gap-2 p-3 bg-secondary/20 rounded">

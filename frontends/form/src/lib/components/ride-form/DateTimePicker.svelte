@@ -20,6 +20,7 @@
     start_time: string;
     event_duration_minutes?: number;
     event_time_details?: string;
+    newsflash?: string;
   }
 
   interface Props {
@@ -46,6 +47,7 @@
   let selectedTime = $state("18:00");
   let durationMinutes = $state<number>(120);
   let timeDetails = $state("");
+  let newsflash = $state("");
 
   // For recurring rides - day of week selection
   let recurringDay = $state<number | undefined>(undefined);
@@ -63,6 +65,7 @@
       start_time: timeStr,
       event_duration_minutes: durationMinutes || undefined,
       event_time_details: timeDetails || undefined,
+      newsflash: newsflash || undefined,
     };
 
     occurrences = [...occurrences, newOccurrence];
@@ -71,6 +74,7 @@
     // Reset form
     selectedDate = todayDate;
     timeDetails = "";
+    newsflash = "";
   }
 
   function generateRecurringOccurrences() {
@@ -342,6 +346,28 @@
         </p>
       </div>
 
+      <div class="space-y-2">
+        <Label for="newsflash" class="text-sm sm:text-base">
+          Alert/Update (Optional)
+          <span
+            class="text-xs sm:text-sm text-muted-foreground font-normal block sm:inline"
+          >
+            Special message or alert for this specific date
+          </span>
+        </Label>
+        <Input
+          id="newsflash"
+          type="text"
+          bind:value={newsflash}
+          placeholder="Route change due to construction, weather delay, etc."
+          maxlength="500"
+          class="text-base"
+        />
+        <p class="text-xs text-muted-foreground">
+          Display important alerts or updates for this specific date (max 500 characters)
+        </p>
+      </div>
+
       <Button
         type="button"
         onclick={addOccurrence}
@@ -388,6 +414,11 @@
                     >
                   {/if}
                 </div>
+                {#if occurrence.newsflash}
+                  <div class="text-xs sm:text-sm text-amber-600 dark:text-amber-500 mt-1 font-medium">
+                    ⚠️ {occurrence.newsflash}
+                  </div>
+                {/if}
               </div>
               <Button
                 type="button"
