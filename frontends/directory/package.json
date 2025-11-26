@@ -11,6 +11,9 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
+	"dependencies": {
+		"@libsql/client": "^0.15.15"
+	},
 	"devDependencies": {
 		"@internationalized/date": "^3.10.0",
 		"@lucide/svelte": "^0.544.0",
