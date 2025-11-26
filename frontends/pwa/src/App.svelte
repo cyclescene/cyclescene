@@ -159,11 +159,6 @@
 </main>
 
 <style>
-  :root {
-    --header-height: 60px;
-    --footer-height: 60px;
-  }
-
   :global(html),
   :global(body) {
     margin: 0;

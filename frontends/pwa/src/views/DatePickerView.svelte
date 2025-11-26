@@ -25,15 +25,36 @@
   }
 </script>
 
-<div
-  class="date-picker absolute top-0 bottom-[75px] min-h-[calc(100vh_-_115px)] w-full p-5 flex flex-col items-center justify-center z-[1000]"
->
-  <Calendar bind:value class="p-5 rounded-xl text-2xl" />
+<div class="date-picker-container">
+  <div class="date-picker-content">
+    <Calendar bind:value class="p-5 rounded-xl text-2xl" />
 
-  <Button
-    disabled={false}
-    variant="ghost"
-    onclick={onClickToday}
-    class="text-yellow-500 text-xl mt-10">Today</Button
-  >
+    <Button
+      disabled={false}
+      variant="ghost"
+      onclick={onClickToday}
+      class="text-yellow-500 text-xl mt-10">Today</Button
+    >
+  </div>
 </div>
+
+<style>
+  .date-picker-container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    padding-bottom: calc(var(--footer-height) + env(safe-area-inset-bottom) + 10px);
+    overflow: hidden;
+  }
+
+  .date-picker-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+</style>

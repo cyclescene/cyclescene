@@ -10,6 +10,7 @@
 
 <style>
   .saved-view {
-    height: calc(100vh - var(--header-height) - (var(--footer-height)));
+    height: 100%;
+    overflow-y: auto;
   }
 </style>

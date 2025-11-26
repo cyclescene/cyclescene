@@ -66,11 +66,9 @@
   }
 </script>
 
-<div
-  class="absolute top-0 bottom-[55px] min-h-[calc(100vh_-_135px)] w-full p-5"
->
-  <ScrollArea class={`relative`} scrollbarYClasses={`hidden`}>
-    <div class="h-[calc(100vh_-_140px)] flex flex-col gap-4">
+<div class="settings-container">
+  <ScrollArea class="scroll-wrapper">
+    <div class="flex flex-col gap-4 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
       <Card.Root class="p-2 gap-2">
         <Card.Header class=" flex p-0">
           <Button
@@ -272,3 +270,18 @@
     </div>
   </ScrollArea>
 </div>
+
+<style>
+  .settings-container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :global(.scroll-wrapper) {
+    height: 100%;
+    width: 100%;
+  }
+</style>

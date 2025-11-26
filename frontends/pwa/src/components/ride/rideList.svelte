@@ -6,9 +6,9 @@
   export let rides = [];
 </script>
 
-<div class="absolute top-0 bottom-[45px] scroll-area w-full p-5">
+<div class="scroll-area w-full p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
   <ScrollArea class={`relative`} scrollbarYClasses={"hidden"}>
-    <div class="scroll-area flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
       {#if rides && rides.length > 0}
         {#each rides as ride (ride.id)}
           <Card {ride} />
@@ -24,6 +24,7 @@
 
 <style>
   .scroll-area {
-    height: calc(100vh - var(--header-height) - var(--footer-height) - 40px);
+    height: 100%;
+    overflow-y: auto;
   }
 </style>

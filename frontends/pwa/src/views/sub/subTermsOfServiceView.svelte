@@ -5,11 +5,10 @@
 <!-- ============================================== -->
 <!--          TERMS OF USE START                    -->
 <!-- ============================================== -->
-<div
-  class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 absolute top-0 bottom-[75px] min-h-[calc(100vh_-_115px)]"
->
-  <ScrollArea class="relative" scrollbarYClasses={`hidden`}>
-    <section class="space-y-6 h-[calc(100vh_-_160px)] flex flex-col gap-2">
+<div class="terms-container">
+  <ScrollArea class="scroll-wrapper">
+    <div class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
+      <section class="space-y-6">
       <h1 class="text-3xl font-bold tracking-tight text-foreground">
         CycleScene Terms of Use
       </h1>
@@ -77,6 +76,22 @@
         If you have any questions about these Terms, please contact us at:
         <strong>[YOUR EMAIL ADDRESS OR SUPPORT LINK]</strong>
       </p>
-    </section>
+      </section>
+    </div>
   </ScrollArea>
 </div>
+
+<style>
+  .terms-container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :global(.scroll-wrapper) {
+    height: 100%;
+    width: 100%;
+  }
+</style>

@@ -6,11 +6,10 @@
 <!-- ============================================== -->
 <!--          ABOUT SECTION START                   -->
 <!-- ============================================== -->
-<div
-  class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 absolute top-0 bottom-[55px] min-h-[calc(100vh_-_115px)]"
->
-  <ScrollArea class="relative" scrollbarYClasses={`hidden`}>
-    <section class="space-y-6 h-[calc(100vh_-_160px)] flex flex-col gap-2">
+<div class="about-container">
+  <ScrollArea class="scroll-wrapper">
+    <div class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
+      <section class="space-y-6">
       <h1 class="text-3xl font-bold tracking-tight text-foreground">
         About CycleScene
       </h1>
@@ -83,6 +82,22 @@
         to easily submit and update local rides directly.
       </p>
       <p class="text-lg font-bold mt-4">Now go ride!</p>
-    </section>
+      </section>
+    </div>
   </ScrollArea>
 </div>
+
+<style>
+  .about-container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :global(.scroll-wrapper) {
+    height: 100%;
+    width: 100%;
+  }
+</style>

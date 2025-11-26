@@ -62,11 +62,9 @@
 </script>
 
 {#if ride}
-  <div
-    class="absolute top-0 bottom-[75px] min-h-[calc(100vh-115px)] left-0 w-full p-5 overflow-hidden z-50"
-  >
-    <ScrollArea class="h-full w-full" scrollbarYClasses={`hidden`}>
-      <div class=" flex flex-col gap-5">
+  <div class="ride-details-container">
+    <ScrollArea class="scroll-wrapper">
+      <div class="flex flex-col gap-5 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
         <!-- <div -->
         <!--   class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl" -->
         <!-- > -->
@@ -146,3 +144,18 @@
     </ScrollArea>
   </div>
 {/if}
+
+<style>
+  .ride-details-container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :global(.scroll-wrapper) {
+    height: 100%;
+    width: 100%;
+  }
+</style>

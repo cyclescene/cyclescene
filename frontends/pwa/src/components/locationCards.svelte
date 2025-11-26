@@ -4,7 +4,7 @@
   import type { RideData } from "$lib/types";
   import Card from "./card.svelte";
 
-  let ride = $state<RideData>();
+  let ride = $state<RideData | null>();
 
   $effect(() => {
     ride = $currentRide;
@@ -12,13 +12,26 @@
 </script>
 
 {#if $mapStore.showCurrentRide && $currentRide}
-  <div
-    class="absolute bottom-[-20px] mb-14 left-0 w-full bg-transparent py-0 px-5 z-[1000]"
-  >
-    <ScrollArea class={``} scrollbarYClasses={`hidden`}>
-      <div class=" max-h-[35vh] w-full flex flex-col gap-1">
-        <Card {ride} />
-      </div>
+  <div class="location-card-container">
+    <ScrollArea class="location-scroll-area" scrollbarYClasses={`hidden`}>
+      <Card {ride} />
     </ScrollArea>
   </div>
 {/if}
+
+<style>
+  .location-card-container {
+    position: absolute;
+    bottom: calc(var(--footer-height) + 15px);
+    left: 0;
+    width: 100%;
+    background-color: transparent;
+    padding: 0 1.25rem;
+    z-index: 1000;
+    max-height: 35vh;
+  }
+
+  :global(.location-scroll-area) {
+    max-height: 35vh;
+  }
+</style>

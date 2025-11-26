@@ -41,16 +41,18 @@
   }
 </script>
 
-<div class="w-full h-full bg-background flex items-center justify-evenly z-[5]">
+<div
+  class="mt-2 w-full h-full bg-background flex items-center justify-evenly z-[5]"
+>
   {#each controls as view (view.name)}
     <Button
       disabled={false}
       variant="ghost"
-      class="grow h-full rounded-none flex flex-col"
+      class="grow h-full rounded-none flex flex-col justify-center items-center"
       onclick={() => onChangeView(view.view)}
     >
-      <div class="h-5 w-5">
-        <svelte:component this={view.icon} />
+      <div>
+        <svelte:component this={view.icon} style="font-size: 5rem" />
       </div>
       <p class="text-xs">
         {view.name}

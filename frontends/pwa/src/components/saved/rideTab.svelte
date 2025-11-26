@@ -35,6 +35,7 @@
 
 <style>
   .scroll-area {
-    height: calc(100vh - var(--header-height) - var(--footer-height) - 90px);
+    height: 100%;
+    padding-bottom: calc(var(--footer-height) + env(safe-area-inset-bottom) + 10px);
   }
 </style>

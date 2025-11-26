@@ -6,6 +6,26 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.1.0",
+      date: "November 25, 2025",
+      changes: {
+        Added: [
+          "Seasonal event layers with automatic calendar-based triggering.",
+          "Pride Month (June): Falling pride and trans flag emojis with cyclists.",
+          "Halloween (October): Flying bats with cyclists across the map.",
+          "Christmas (December): Falling snowflakes with cyclists.",
+          "Dark mode park styling with distinct color (landcover and landuse layers).",
+          "Vercel deployment optimization across all frontends to prevent unnecessary builds.",
+        ],
+        Changed: [
+          "Dark mode parks now use a darker grayish-green color (#4a7c59) for better visual balance.",
+          "Improved footer layout to prevent safe area inset conflicts on iOS devices.",
+          "Updated all scrollable views to respect safe area insets and prevent footer coverage.",
+          "Location card on map now properly positioned above footer with safe area padding.",
+        ],
+      },
+    },
+    {
       version: "1.0.0",
       date: "September 29, 2025",
       changes: {
@@ -41,11 +61,10 @@
 <!-- ============================================== -->
 <!--          CHANGELOG START                       -->
 <!-- ============================================== -->
-<div
-  class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 absolute top-0 bottom-[75px] min-h-[calc(100vh_-_115px)]"
->
-  <ScrollArea class="relative" scrollbarYClasses={`hidden`}>
-    <section class="space-y-6 h-[calc(100vh_-_160px)] flex flex-col gap-2">
+<div class="changelog-container">
+  <ScrollArea class="scroll-wrapper">
+    <div class="p-6 sm:p-8 max-w-4xl mx-auto space-y-12 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
+      <section class="space-y-6">
       <h1 class="text-3xl font-bold tracking-tight text-foreground">
         Changelog
       </h1>
@@ -113,6 +132,22 @@
       <p class="text-center text-muted-foreground text-sm pt-4">
         — End of Changelog —
       </p>
-    </section>
+      </section>
+    </div>
   </ScrollArea>
 </div>
+
+<style>
+  .changelog-container {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  :global(.scroll-wrapper) {
+    height: 100%;
+    width: 100%;
+  }
+</style>
