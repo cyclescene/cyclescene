@@ -129,6 +129,7 @@
         </Card.Root>
 
         {#if ride && ride.ridesource === "Shift2Bikes"}
+          <p class="text-sm text-gray-500 my-4">Event data provided by Shift2Bikes</p>
           <Button
             disabled={false}
             variant="ghost"
