@@ -1,18 +1,19 @@
 package group
 
 type Registration struct {
-	Code        string `json:"code"`
-	Name        string `json:"name"`
+	Code      string `json:"code"`
+	Name      string `json:"name"`
 	Description string `json:"description"`
-	City        string `json:"city"`
-	IconURL     string `json:"icon_url"`
-	IconUUID    string `json:"icon_uuid"`
-	WebURL      string `json:"web_url"`
+	City      string `json:"city"`
+	WebURL    string `json:"web_url"`
+	ImageUUID string `json:"image_uuid"`
 }
 
 type Response struct {
 	Success   bool   `json:"success"`
 	Code      string `json:"code,omitempty"`
+	ID        string `json:"id,omitempty"`
+	PublicID  string `json:"public_id,omitempty"`
 	EditToken string `json:"edit_token,omitempty"`
 	Message   string `json:"message,omitempty"`
 }
