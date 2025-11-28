@@ -153,6 +153,80 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 	return mainPublicURL, nil
 }
 
+// ProcessMarker handles marker image processing for group spritesheets
+// Steps:
+// 1. Download marker from staging bucket
+// 2. Decode and validate image
+// 3. Resize to 40x40 PNG
+// 4. Regenerate spritesheet for the city (extracts old markers + adds new)
+// 5. Delete staging file
+// 6. Return path to spritesheet PNG
+func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupID string) (string, error) {
+	slog.Info("processing marker", "imageUUID", imageUUID, "cityCode", cityCode, "groupID", groupID)
+
+	// Try to find the image file with common extensions
+	extensions := []string{".png", ".jpg", ".jpeg", ".gif", ".webp"}
+	var imageData []byte
+	var stagingObjectName string
+	var err error
+
+	for _, ext := range extensions {
+		stagingObjectName = fmt.Sprintf("%s%s", imageUUID, ext)
+		slog.Info("attempting to download marker from staging", "bucket", p.stagingBucket, "object", stagingObjectName)
+
+		// Check if object exists first
+		exists, err := p.objectExists(ctx, p.stagingBucket, stagingObjectName)
+		if err != nil {
+			slog.Warn("failed to check if object exists", "extension", ext, "error", err)
+			continue
+		}
+
+		if !exists {
+			slog.Info("object does not exist in staging bucket", "extension", ext, "object", stagingObjectName)
+			continue
+		}
+
+		imageData, err = p.downloadFromGCS(ctx, p.stagingBucket, stagingObjectName)
+		if err == nil {
+			slog.Info("found marker with extension", "extension", ext)
+			break
+		}
+		slog.Warn("failed to download marker with this extension", "extension", ext, "error", err)
+	}
+
+	if imageData == nil {
+		return "", fmt.Errorf("failed to download marker from staging bucket with any common extension")
+	}
+
+	slog.Info("downloaded marker file", "imageUUID", imageUUID, "stagingObjectName", stagingObjectName, "fileSize", len(imageData))
+
+	// Decode the marker image
+	markerImg, _, err := image.Decode(bytes.NewReader(imageData))
+	if err != nil {
+		return "", fmt.Errorf("failed to decode marker image: %v", err)
+	}
+
+	// Resize to 40x40 (marker size)
+	const markerSize = 40
+	resizedMarker := resizeImage(markerImg, markerSize)
+
+	// Regenerate spritesheet with new marker
+	if err := p.RegenerateSpritesheet(ctx, cityCode, groupID, resizedMarker); err != nil {
+		return "", fmt.Errorf("failed to regenerate spritesheet: %v", err)
+	}
+
+	// Delete staging file
+	slog.Info("deleting staging file", "bucket", p.stagingBucket, "object", stagingObjectName)
+	if err := p.deleteFromGCS(ctx, p.stagingBucket, stagingObjectName); err != nil {
+		slog.Warn("failed to delete staging file, continuing anyway", "error", err)
+	}
+
+	// Return the spritesheet PNG path
+	spritesheetPath := fmt.Sprintf("https://storage.googleapis.com/%s/sprites/%s/markers.png", p.optimizedBucket, cityCode)
+	slog.Info("marker processing complete", "spritesheetPath", spritesheetPath)
+	return spritesheetPath, nil
+}
+
 // objectExists checks if an object exists in Google Cloud Storage
 func (p *ImageProcessor) objectExists(ctx context.Context, bucket, object string) (bool, error) {
 	_, err := p.storageClient.Bucket(bucket).Object(object).Attrs(ctx)
