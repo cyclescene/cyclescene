@@ -115,6 +115,7 @@ type ScrapedRideFromDB struct {
 	TimeDetails   sql.NullString `json:"timedetails"`
 	WebURL        sql.NullString `json:"weburl"`
 	WebName       sql.NullString `json:"webname"`
+	GroupMarker   sql.NullString `json:"group_marker"`
 }
 
 type ScrapedRide struct {
@@ -145,6 +146,7 @@ type ScrapedRide struct {
 	TimeDetails   string  `json:"timedetails"`
 	WebURL        string  `json:"weburl"`
 	WebName       string  `json:"webname"`
+	GroupMarker   string  `json:"group_marker"`
 }
 
 func (rdb *ScrapedRideFromDB) ToScrapedRide() ScrapedRide {
@@ -185,6 +187,7 @@ func (rdb *ScrapedRideFromDB) ToScrapedRide() ScrapedRide {
 	r.TimeDetails = rdb.TimeDetails.String
 	r.WebURL = rdb.WebURL.String
 	r.WebName = rdb.WebName.String
+	r.GroupMarker = rdb.GroupMarker.String
 	return r
 }
 

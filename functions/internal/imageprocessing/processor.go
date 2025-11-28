@@ -12,6 +12,8 @@ import (
 	"io"
 	"log/slog"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -29,6 +31,18 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// slugify converts a string to a URL-safe slug
+func slugify(s string) string {
+	// Convert to lowercase
+	slug := strings.ToLower(strings.TrimSpace(s))
+	// Replace spaces and special characters with hyphens
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	slug = re.ReplaceAllString(slug, "-")
+	// Remove leading/trailing hyphens
+	slug = strings.Trim(slug, "-")
+	return slug
 }
 
 type ImageProcessor struct {
@@ -49,6 +63,11 @@ func NewImageProcessor(ctx context.Context, stagingBucket, optimizedBucket strin
 		optimizedBucket: optimizedBucket,
 		storageClient:   client,
 	}, nil
+}
+
+// SetDB sets the database connection for the image processor
+func (p *ImageProcessor) SetDB(db *sql.DB) {
+	p.db = db
 }
 
 // ProcessImage handles the complete image optimization workflow
@@ -159,10 +178,12 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 // 2. Decode and validate image
 // 3. Resize to 40x40 PNG
 // 4. Regenerate spritesheet for the city (extracts old markers + adds new)
-// 5. Delete staging file
-// 6. Return path to spritesheet PNG
-func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupID string) (string, error) {
-	slog.Info("processing marker", "imageUUID", imageUUID, "cityCode", cityCode, "groupID", groupID)
+// 5. Query group by code and slugify name to create public_id
+// 6. Set public_id and marker in database after spritesheet is ready
+// 7. Delete staging file
+// 8. Return path to spritesheet PNG
+func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupCode string) (string, error) {
+	slog.Info("processing marker", "imageUUID", imageUUID, "cityCode", cityCode, "groupCode", groupCode)
 
 	// Try to find the image file with common extensions
 	extensions := []string{".png", ".jpg", ".jpeg", ".gif", ".webp"}
@@ -210,9 +231,38 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 	const markerSize = 40
 	resizedMarker := resizeImage(markerImg, markerSize)
 
+	// Use the slugified group code as the marker key in the spritesheet
+	markerKey := slugify(groupCode)
+	slog.Info("marker key", "markerKey", markerKey)
+
 	// Regenerate spritesheet with new marker
-	if err := p.RegenerateSpritesheet(ctx, cityCode, groupID, resizedMarker); err != nil {
+	if err := p.RegenerateSpritesheet(ctx, cityCode, markerKey, resizedMarker); err != nil {
 		return "", fmt.Errorf("failed to regenerate spritesheet: %v", err)
+	}
+
+	// If database is available, get group details and set public_id and marker
+	if p.db != nil {
+		dbConnector := &DBConnector{db: p.db}
+
+		// Get group by code to retrieve name for public_id generation
+		groupID, groupName, err := dbConnector.GetGroupByCode(groupCode)
+		if err != nil {
+			slog.Warn("failed to get group by code, marker will not be persisted in database", "groupCode", groupCode, "error", err)
+		} else {
+			// Generate public_id by slugifying the group name
+			publicID := slugify(groupName)
+			slog.Info("setting marker for group", "groupCode", groupCode, "publicID", publicID, "markerKey", markerKey, "groupID", groupID)
+
+			// Update group with public_id and marker
+			if err := dbConnector.SetGroupMarkerAndPublicID(groupCode, publicID, markerKey); err != nil {
+				slog.Warn("failed to set group marker and public_id", "groupCode", groupCode, "error", err)
+				// Don't fail the marker processing if DB update fails - spritesheet is already ready
+			} else {
+				slog.Info("successfully set marker for group", "groupCode", groupCode, "publicID", publicID)
+			}
+		}
+	} else {
+		slog.Warn("database connection not available, skipping marker persistence")
 	}
 
 	// Delete staging file

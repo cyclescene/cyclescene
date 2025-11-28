@@ -83,6 +83,40 @@ func (d *DBConnector) UpdateGroupMarker(groupID, publicID, markerKey string) err
 	return nil
 }
 
+// GetGroupByCode retrieves a group by its code
+func (d *DBConnector) GetGroupByCode(code string) (id, name string, err error) {
+	err = d.db.QueryRow(`
+		SELECT id, name FROM ride_groups WHERE code = ?
+	`, code).Scan(&id, &name)
+
+	if err != nil {
+		return "", "", fmt.Errorf("failed to get group by code: %v", err)
+	}
+	return id, name, nil
+}
+
+// SetGroupMarkerAndPublicID sets both the public_id and marker for a group
+func (d *DBConnector) SetGroupMarkerAndPublicID(groupCode, publicID, markerKey string) error {
+	result, err := d.db.Exec(`
+		UPDATE ride_groups SET public_id = ?, marker = ? WHERE code = ?
+	`, publicID, markerKey, groupCode)
+
+	if err != nil {
+		return fmt.Errorf("failed to update group marker and public_id: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("group with code %s not found", groupCode)
+	}
+
+	return nil
+}
+
 // Close closes the database connection
 func (d *DBConnector) Close() error {
 	if d.db != nil {
