@@ -3,6 +3,7 @@ package imageprocessing
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"image"
 	_ "image/gif"
@@ -34,6 +35,7 @@ type ImageProcessor struct {
 	stagingBucket   string
 	optimizedBucket string
 	storageClient   *storage.Client
+	db              *sql.DB
 }
 
 func NewImageProcessor(ctx context.Context, stagingBucket, optimizedBucket string) (*ImageProcessor, error) {
@@ -56,6 +58,11 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 		slog.Info("context deadline set", "deadline", deadline, "timeUntilDeadline", time.Until(deadline))
 	} else {
 		slog.Info("no context deadline set")
+	}
+
+	// Route to appropriate handler based on entity type
+	if entityType == "group" {
+		return p.ProcessMarker(ctx, imageUUID, cityCode, entityID)
 	}
 
 	// Try to find the image file with common extensions since we don't know the exact format

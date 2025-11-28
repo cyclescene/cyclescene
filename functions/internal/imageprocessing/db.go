@@ -38,7 +38,7 @@ func (d *DBConnector) UpdateImageURL(entityType, entityID, imageURL string) erro
 	if entityType == "ride" {
 		table = "events"
 	} else if entityType == "group" {
-		table = "groups"
+		table = "ride_groups"
 	} else {
 		return fmt.Errorf("invalid entityType: %s", entityType)
 	}
@@ -57,6 +57,27 @@ func (d *DBConnector) UpdateImageURL(entityType, entityID, imageURL string) erro
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("%s with id %s not found", table, entityID)
+	}
+
+	return nil
+}
+
+// UpdateGroupMarker updates the public_id and marker fields for a group after marker processing
+func (d *DBConnector) UpdateGroupMarker(groupID, publicID, markerKey string) error {
+	query := "UPDATE ride_groups SET public_id = ?, marker = ? WHERE id = ?"
+
+	result, err := d.db.Exec(query, publicID, markerKey, groupID)
+	if err != nil {
+		return fmt.Errorf("failed to update group marker: %v", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %v", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("group with id %s not found", groupID)
 	}
 
 	return nil
