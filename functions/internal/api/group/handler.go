@@ -104,16 +104,16 @@ func (h *Handler) RegisterGroup(w http.ResponseWriter, r *http.Request) {
 		"city", registration.City,
 	)
 
-	// Trigger image optimization if icon_uuid is provided
-	if registration.IconUUID != "" && h.eventarcClient != nil {
+	// Trigger marker image optimization if image_uuid is provided
+	if registration.ImageUUID != "" && h.eventarcClient != nil {
 		event := &events.ImageOptimizationEvent{
-			ImageUUID:  registration.IconUUID,
+			ImageUUID:  registration.ImageUUID,
 			CityCode:   registration.City,
 			EntityID:   registration.Code,
 			EntityType: "group",
 		}
 		if err := h.eventarcClient.TriggerOptimization(r.Context(), event); err != nil {
-			slog.Warn("failed to trigger image optimization", "error", err, "code", response.Code)
+			slog.Warn("failed to trigger marker optimization", "error", err, "code", response.Code)
 			// Don't fail the request if optimization trigger fails - the image is already uploaded
 		}
 	}

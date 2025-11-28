@@ -230,10 +230,10 @@
       </Card.Content>
     </Card.Root>
 
-    <!-- Group Icon -->
+    <!-- Group Marker -->
     <Card.Root>
       <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Group Icon</Card.Title>
+        <Card.Title class="text-lg sm:text-xl">Group Marker</Card.Title>
         <Card.Description class="text-sm">
           Add a custom marker for your group's rides on the map
         </Card.Description>
@@ -242,8 +242,8 @@
         <ImageUploader
           cityCode={data.city}
           entityType="group"
-          label="Upload Group Icon (Optional)"
-          description="Recommended: 64x64px PNG or SVG for the best results"
+          label="Upload Group Marker (Optional)"
+          description="Recommended: Square image (PNG, JPG, or SVG). Will be resized to 40x40px for the map."
           acceptedTypes={[
             "image/png",
             "image/svg+xml",
@@ -252,44 +252,16 @@
           ]}
           maxSizeMB={5}
           onUploadComplete={(uuid) => {
-            $form.icon_uuid = uuid;
+            $form.image_uuid = uuid;
           }}
           onUploadError={(error) => {
-            console.error("Icon upload error:", error);
+            console.error("Marker upload error:", error);
           }}
         />
 
-        <div class="space-y-2">
-          <Label for="icon_url" class="text-sm sm:text-base"
-            >Icon URL (Optional)
-            <span class="text-xs text-muted-foreground font-normal"
-              >Alternative to upload above</span
-            ></Label
-          >
-          <Input
-            id="icon_url"
-            type="url"
-            bind:value={$form.icon_url}
-            placeholder="https://example.com/icon.png"
-            class="text-base"
-          />
-          {#if $errors.icon_url}
-            <p class="text-xs sm:text-sm text-destructive">
-              {$errors.icon_url}
-            </p>
-          {/if}
-        </div>
-
-        {#if $form.icon_url}
-          <div class="p-4 border rounded-lg bg-muted/50">
-            <p class="text-sm font-medium mb-2">Preview:</p>
-            <img
-              src={$form.icon_url}
-              alt="Group icon preview"
-              class="w-16 h-16 rounded-lg object-cover"
-            />
-          </div>
-        {/if}
+        <p class="text-xs sm:text-sm text-muted-foreground">
+          Your marker image will be automatically resized and added to your city's marker spritesheet for display on the map.
+        </p>
       </Card.Content>
     </Card.Root>
 

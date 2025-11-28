@@ -243,7 +243,8 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 		query = `
 			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
 			       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime,
-			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
+			       NULL as group_marker
 			FROM shift2bikes_events
 			WHERE citycode = ? AND date >= ?
 			UNION ALL
@@ -273,9 +274,11 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 				e.newsflash,
 				eo.event_time_details as timedetails,
 				e.web_name as webname,
-				e.web_url as weburl
+				e.web_url as weburl,
+				rg.marker as group_marker
 			FROM events e
 			JOIN event_occurrences eo ON e.id = eo.event_id
+			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
 			ORDER BY date ASC, starttime ASC
 		`
@@ -309,9 +312,11 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 				e.newsflash,
 				eo.event_time_details as timedetails,
 				e.web_name as webname,
-				e.web_url as weburl
+				e.web_url as weburl,
+				rg.marker as group_marker
 			FROM events e
 			JOIN event_occurrences eo ON e.id = eo.event_id
+			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
 			ORDER BY date ASC, starttime ASC
 		`
@@ -342,7 +347,8 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 		query = `
 			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
 			       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime,
-			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
+			       NULL as group_marker
 			FROM shift2bikes_events
 			WHERE citycode = ? AND date BETWEEN ? AND ?
 			UNION ALL
@@ -372,9 +378,11 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 				e.newsflash,
 				eo.event_time_details as timedetails,
 				e.web_name as webname,
-				e.web_url as weburl
+				e.web_url as weburl,
+				rg.marker as group_marker
 			FROM events e
 			JOIN event_occurrences eo ON e.id = eo.event_id
+			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date BETWEEN ? AND ?
 			ORDER BY date DESC, starttime DESC
 		`
@@ -408,9 +416,11 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 				e.newsflash,
 				eo.event_time_details as timedetails,
 				e.web_name as webname,
-				e.web_url as weburl
+				e.web_url as weburl,
+				rg.marker as group_marker
 			FROM events e
 			JOIN event_occurrences eo ON e.id = eo.event_id
+			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date BETWEEN ? AND ?
 			ORDER BY date DESC, starttime DESC
 		`
@@ -448,6 +458,7 @@ func (r *Repository) scanScrapedRides(query string, args ...any) ([]ScrapedRideF
 			&ride.LoopRide, &ride.Shareable, &ride.RideSource, &ride.EndTime,
 			&ride.Email, &ride.EventDuration, &ride.Image, &ride.LocDetails,
 			&ride.LocEnd, &ride.NewsFlash, &ride.TimeDetails, &ride.WebName, &ride.WebURL,
+			&ride.GroupMarker,
 		); err != nil {
 			return nil, err
 		}
