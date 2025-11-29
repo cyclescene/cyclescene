@@ -84,6 +84,18 @@
               class="text-sm sm:text-base"
               autofocus
             />
+            <div class="flex gap-2 mt-2">
+              <button
+                type="button"
+                onclick={() => {
+                  isEditingName = false;
+                  $form.name = data.groupName;
+                }}
+                class="text-xs text-muted-foreground hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
           {:else}
             <p class="text-sm sm:text-base font-medium">{data.groupName}</p>
             <button
