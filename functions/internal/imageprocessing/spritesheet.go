@@ -21,9 +21,11 @@ const (
 
 // MarkerInfo represents a marker's metadata
 type MarkerInfo struct {
-	X    int    `json:"x"`
-	Y    int    `json:"y"`
-	Path string `json:"path"` // Path to individual marker image in GCS
+	X      int    `json:"x"`
+	Y      int    `json:"y"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
+	Path   string `json:"path"` // Path to individual marker image in GCS
 }
 
 // SpritesheetMetadata represents the complete spritesheet metadata
@@ -130,9 +132,11 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 
 		// Store metadata with path reference
 		newMetadata.Markers[markerID] = MarkerInfo{
-			X:    x,
-			Y:    y,
-			Path: markerPath,
+			X:      x,
+			Y:      y,
+			Width:  markerSize,
+			Height: markerSize,
+			Path:   markerPath,
 		}
 
 		slog.Debug("composited marker", "markerID", markerID, "position", fmt.Sprintf("(%d,%d)", x, y), "path", markerPath)
