@@ -349,9 +349,9 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 		return "", fmt.Errorf("failed to decode marker image: %v", err)
 	}
 
-	// Create teardrop marker with color (64x64)
+	// Resize marker to 64x64 directly (skipping teardrop generation)
 	const markerSize = 64
-	resizedMarker := createTeardropMarker(markerImg, markerSize, markerColor)
+	resizedMarker := resizeImage(markerImg, markerSize)
 
 	// Use the slugified group code as the marker key in the spritesheet
 	markerKey := slugify(groupCode)

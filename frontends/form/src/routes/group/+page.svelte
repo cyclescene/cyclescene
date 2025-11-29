@@ -4,6 +4,7 @@
   import { groupRegistrationSchema } from "$lib/schemas/ride";
   import { checkGroupCodeAvailability } from "$lib/api/client";
   import ImageUploader from "$lib/components/ride-form/ImageUploader.svelte";
+  import CustomMarkerBuilder from "$lib/components/group-form/CustomMarkerBuilder.svelte";
 
   // shadcn imports
   import { Button } from "$lib/components/ui/button";
@@ -240,7 +241,9 @@
       </Card.Header>
       <Card.Content class="space-y-4">
         <div class="space-y-2">
-          <Label for="marker_color" class="text-sm sm:text-base">Marker Color</Label>
+          <Label for="marker_color" class="text-sm sm:text-base"
+            >Marker Color</Label
+          >
           <div class="flex items-center gap-3">
             <div class="flex-1">
               <Input
@@ -258,22 +261,15 @@
             Choose a color for your group's marker teardrop on the map
           </p>
           {#if $errors.marker_color}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.marker_color}</p>
+            <p class="text-xs sm:text-sm text-destructive">
+              {$errors.marker_color}
+            </p>
           {/if}
         </div>
 
-        <ImageUploader
+        <CustomMarkerBuilder
           cityCode={data.city}
-          entityType="group"
-          label="Upload Group Marker (Optional)"
-          description="Recommended: Square image (PNG, JPG, or SVG). Will be resized to 64x64px for the map at high quality."
-          acceptedTypes={[
-            "image/png",
-            "image/svg+xml",
-            "image/jpeg",
-            "image/webp",
-          ]}
-          maxSizeMB={5}
+          markerColor={$form.marker_color}
           onUploadComplete={(uuid) => {
             $form.image_uuid = uuid;
           }}
@@ -283,7 +279,8 @@
         />
 
         <p class="text-xs sm:text-sm text-muted-foreground">
-          Your marker image will be automatically resized to 64x64px and added to your city's marker spritesheet for display on the map.
+          Your marker image will be automatically resized to 64x64px and added
+          to your city's marker spritesheet for display on the map.
         </p>
       </Card.Content>
     </Card.Root>
