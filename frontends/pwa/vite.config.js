@@ -31,8 +31,6 @@ export default defineConfig(({ mode }) => {
   const cityCode = env.VITE_CITY_CODE || 'pdx';
   const cityConfig = cityConfigs[cityCode] || cityConfigs.pdx;
 
-  // dev
-  const cf_token = env.CLOUDFLARE_API_TOKEN;
   return {
 
     server: {
@@ -42,11 +40,6 @@ export default defineConfig(({ mode }) => {
     plugins: [
       tailwindcss(),
       svelte(),
-      cloudflareTunnel({
-        hostname: 'dev.cyclescene.cc',
-        tunnelName: 'cycle-scene-tunnel',
-        apiToken: cf_token,
-      }),
       Icons({
         compiler: "svelte",
         autoInstall: true,
