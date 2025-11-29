@@ -27,6 +27,8 @@
     selectedId = $selectedRideId;
   });
 
+  let mapInstance: any = $state(undefined);
+
   $effect(() => {
     console.log(
       `[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`,

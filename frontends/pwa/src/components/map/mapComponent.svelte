@@ -119,9 +119,19 @@
               const response = await mapInstance!.loadImage(markerDataUrl);
               const imageName = `group-marker-${markerKey}`;
               mapInstance!.addImage(imageName, response.data);
+
+              // Verify the image was added
+              const addedImage = mapInstance!.getImage(imageName);
               console.log(
                 `[MapComponent] ✓ Successfully added image to map: ${imageName}`,
               );
+              console.log(
+                `[MapComponent] Image verification - exists on map:`,
+                !!addedImage,
+              );
+              if (!addedImage) {
+                console.warn(`[MapComponent] ⚠ Image ${imageName} not found on map after adding!`);
+              }
             } catch (error) {
               console.error(
                 `[MapComponent] ✗ Failed to load group marker image for ${markerKey}:`,
