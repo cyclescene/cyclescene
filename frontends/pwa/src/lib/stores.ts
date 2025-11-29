@@ -633,16 +633,19 @@ export const rideGeoJSON = derived(
 
       seenCoords[key] = dupCount + 1
 
-      const groupMarkerIcon = ride.marker_key ? `group-marker-${ride.marker_key}` : "";
+      const properties: any = {
+        id: ride.id,
+        name: ride.name,
+      };
+
+      if (ride.marker_key) {
+        properties.group_marker_icon = `group-marker-${ride.marker_key}`;
+      }
 
       features[i] = {
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
-        properties: {
-          id: ride.id,
-          name: ride.name,
-          // group_marker_icon: groupMarkerIcon
-        }
+        properties
       }
     }
 
