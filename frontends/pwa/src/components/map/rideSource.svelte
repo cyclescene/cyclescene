@@ -32,17 +32,24 @@
 
   const rideGeoJSON = $derived<GeoJSON.FeatureCollection<GeoJSON.Point, any>>({
     type: "FeatureCollection",
-    features: validRides.map((coord) => ({
-      type: "Feature",
-      geometry: {
-        type: "Point",
-        coordinates: [coord.lng, coord.lat],
-      },
-      properties: {
-        id: coord.id,
-        name: coord.name,
-      },
-    })),
+    features: validRides.map((coord) => {
+      // Find the original ride to get group_marker info
+      const originalRide = rides.find(r => r.id === coord.id);
+      const groupMarker = originalRide?.group_marker ? `group-marker-${originalRide.group_marker}` : "";
+
+      return {
+        type: "Feature",
+        geometry: {
+          type: "Point",
+          coordinates: [coord.lng, coord.lat],
+        },
+        properties: {
+          id: coord.id,
+          name: coord.name,
+          group_marker_icon: groupMarker,
+        },
+      };
+    }),
   });
 
   $effect(() => {

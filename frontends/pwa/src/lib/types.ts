@@ -25,6 +25,8 @@ export interface RideData {
   timedetails: string
   weburl: string
   webname: string
+  group_code?: string
+  group_marker?: string
 }
 
 

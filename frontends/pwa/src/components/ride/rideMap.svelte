@@ -18,7 +18,7 @@
     "https://api.geoapify.com/v2/icon/?type=awesome&color=%23ff0000&size=42&icon=bicycle&contentSize=15&strokeColor=%23ff0000&shadowColor=%23ff0000&contentColor=%23ffffff&noShadow&noWhiteCircle&scaleFactor=2&apiKey=d4d9d0642bfc40488a64cd3b43b4a63e";
 
   let map: Map | undefined = $state.raw();
-  let source = $derived(TILE_URLS[mode.current]);
+  let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
   let iconLoaded = $state(false);
 
   $effect(() => {
