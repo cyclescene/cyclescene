@@ -77,7 +77,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	}
 
 	// Save and add the new marker to the collection
-	newMarkerPath := fmt.Sprintf("%s/%s/marker.png", cityCode, newMarkerID)
+	newMarkerPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, newMarkerID)
 	if err := p.saveMarkerImage(ctx, newMarkerPath, newMarkerImg); err != nil {
 		return fmt.Errorf("failed to save new marker image: %v", err)
 	}
@@ -125,7 +125,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 			markerPath = info.Path
 		} else {
 			// This is the new marker
-			markerPath = fmt.Sprintf("%s/%s/marker.png", cityCode, markerID)
+			markerPath = fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
 		}
 
 		// Store metadata with path reference
