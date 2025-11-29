@@ -616,6 +616,9 @@ export const rideGeoJSON = derived(
     const features = new Array($validRides.length)
     const allRideData = $ridesStore.rideData || []
 
+    console.log(`[RideGeoJSON] Creating GeoJSON with ${$validRides.length} valid rides`);
+    console.log(`[RideGeoJSON] Total rides in store: ${allRideData.length}`);
+
     for (let i = 0; i < $validRides.length; i++) {
       const ride = $validRides[i]
       // Find the original ride to get group_marker info
@@ -642,12 +645,19 @@ export const rideGeoJSON = derived(
         geometry: { type: "Point", coordinates: [lng, lat] },
         properties: { id: ride.id, name: ride.name, group_marker_icon: groupMarker }
       }
+
+      if (i === 0) {
+        console.log(`[RideGeoJSON] First feature:`, features[i]);
+      }
     }
 
-    return {
+    const geoJSON = {
       type: "FeatureCollection",
       features
     } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
+
+    console.log(`[RideGeoJSON] Final GeoJSON:`, geoJSON);
+    return geoJSON;
   }
 )
 

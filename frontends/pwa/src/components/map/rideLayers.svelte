@@ -24,6 +24,10 @@
   $effect(() => {
     selectedId = $selectedRideId;
   });
+
+  $effect(() => {
+    console.log(`[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`);
+  });
 </script>
 
 <!-- Unified marker layer: shows group marker if available, otherwise default icon -->
