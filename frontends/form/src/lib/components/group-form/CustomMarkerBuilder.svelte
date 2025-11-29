@@ -19,13 +19,14 @@
 
     interface Props {
         cityCode: string;
-        markerColor?: string;
         onUploadComplete?: (imageUUID: string) => void;
         onUploadError?: (error: string) => void;
     }
 
-    let { cityCode, markerColor = "#3B82F6", onUploadComplete, onUploadError }: Props =
+    let { cityCode, onUploadComplete, onUploadError }: Props =
         $props();
+
+    const DEFAULT_MARKER_COLOR = "#3B82F6";
 
     let imageFile = $state<File | null>(null);
     let imagePreview = $state<string | null>(null);
@@ -87,7 +88,7 @@
         reader.readAsDataURL(file);
     }
 
-    async function renderCanvas(color: string) {
+    async function renderCanvas() {
         if (!canvasRef || !imagePreview) return;
 
         const ctx = canvasRef.getContext("2d");
@@ -103,21 +104,7 @@
         ctx.save();
         ctx.scale(scale, scale);
         const p = new Path2D(SVG_PATH);
-
-        // Ensure color is valid
-        if (!color) {
-            console.warn(
-                "CustomMarkerBuilder: color is missing, defaulting to black",
-            );
-            ctx.fillStyle = "#000000";
-        } else {
-            ctx.fillStyle = color;
-        }
-
-        console.log(
-            "CustomMarkerBuilder: Rendering with color:",
-            ctx.fillStyle,
-        );
+        ctx.fillStyle = DEFAULT_MARKER_COLOR;
         ctx.fill(p);
         ctx.restore();
 
@@ -337,7 +324,7 @@
             const scale = RENDER_SIZE / 24;
             ctx.scale(scale, scale);
             const p = new Path2D(SVG_PATH);
-            ctx.fillStyle = "#3B82F6"; // Default blue
+            ctx.fillStyle = DEFAULT_MARKER_COLOR;
             ctx.fill(p);
             ctx.restore();
 
@@ -424,7 +411,7 @@
                     >
                         <path
                             d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
-                            fill={markerColor}
+                            fill={DEFAULT_MARKER_COLOR}
                         />
                         <circle cx="12" cy="9" r="2.5" fill="white" />
                     </svg>
