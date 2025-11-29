@@ -85,6 +85,10 @@ func createTeardropMarker(userImg image.Image, size int, markerColor string) ima
 
 	// Draw teardrop body (circle in upper part)
 	circleRadius := float64(size) * 0.32
+	// Convert bgColor to RGBA for SetRGBA
+	r, g, b, a := bgColor.RGBA()
+	rgba := color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)}
+
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
 			dx := float64(x) - centerX
@@ -93,16 +97,15 @@ func createTeardropMarker(userImg image.Image, size int, markerColor string) ima
 
 			// Teardrop body - circle part
 			if dist <= circleRadius {
-				teardrop.SetColor(x, y, bgColor)
+				teardrop.SetRGBA(x, y, rgba)
 			}
 
 			// Teardrop point - triangle part (bottom padding)
 			if float64(y) > centerY+circleRadius && float64(y) < centerY+circleRadius*1.95 {
-				pointX := float64(size) / 2.0
 				pointY := centerY + circleRadius*1.95
 				widthAtY := circleRadius * (pointY - float64(y)) / (pointY - (centerY + circleRadius))
 				if math.Abs(dx) <= widthAtY {
-					teardrop.SetColor(x, y, bgColor)
+					teardrop.SetRGBA(x, y, rgba)
 				}
 			}
 		}
