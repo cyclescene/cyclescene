@@ -6,8 +6,8 @@
 
   const DEFAULT_SIZE = 0.4;
   const SELECTED_SIZE = 0.6;
-  const CUSTOM_MARKER_SIZE = 0.6;
-  const CUSTOM_MARKER_SELECTED_SIZE = 0.8;
+  const CUSTOM_MARKER_SIZE = 1.0;
+  const CUSTOM_MARKER_SELECTED_SIZE = 1.2;
 
   const {
     sourceId,
