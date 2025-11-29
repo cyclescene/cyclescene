@@ -31,6 +31,8 @@
       $message = result.error.message;
     },
   });
+
+  const backUrl = data.city ? `https://${data.city}.cyclescene.cc` : "https://cyclescene.cc";
 </script>
 
 <div class="container max-w-3xl mx-auto py-4 sm:py-8 px-4">
@@ -205,5 +207,11 @@
       Your group code and city cannot be changed. Upload a new marker image above
       if you'd like to update your group's appearance on the map.
     </p>
+  </div>
+
+  <div class="text-center mt-8">
+    <Button variant="ghost">
+      <a href={backUrl}> Back to CycleScene </a>
+    </Button>
   </div>
 </div>

@@ -70,6 +70,7 @@ export const actions: Actions = {
     }
 
     const token = url.searchParams.get('token');
+    const city = url.searchParams.get('city');
     if (!token) {
       return fail(400, {
         form,
@@ -90,7 +91,7 @@ export const actions: Actions = {
       return response
     }
 
-    throw redirect(303, `/group/success?token=${response.edit_token}&code=${response.code}`);
+    throw redirect(303, `/group/success?token=${response.edit_token}&code=${response.code}&city=${city}`);
 
   }
 };

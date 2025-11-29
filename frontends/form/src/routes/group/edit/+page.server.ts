@@ -69,9 +69,11 @@ export const actions: Actions = {
       updatePayload.image_uuid = form.data.image_uuid;
     }
 
+    const city = url.searchParams.get('city');
+
     try {
       await updateGroup(token, updatePayload);
-      throw redirect(303, `/group/success?token=${token}&code=${form.data.code}&edited=true`);
+      throw redirect(303, `/group/success?token=${token}&code=${form.data.code}&city=${city}&edited=true`);
     } catch (err) {
       return fail(500, {
         form,

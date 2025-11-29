@@ -6,7 +6,9 @@
 
   const editToken = page.url.searchParams.get("token");
   const groupCode = page.url.searchParams.get("code");
-  const editUrl = editToken ? `/group/edit/${editToken}` : null;
+  const city = page.url.searchParams.get("city");
+  const editUrl = editToken && city ? `/group/edit?token=${editToken}&city=${city}` : null;
+  const backUrl = city ? `https://${city}.cyclescene.cc` : "https://cyclescene.cc";
 
   let copied = $state(false);
 
@@ -109,7 +111,7 @@
 
   <div class="text-center mt-8">
     <Button variant="ghost">
-      <a href="https://cyclescene.cc"> Back to CycleScene </a>
+      <a href={backUrl}> Back to CycleScene </a>
     </Button>
   </div>
 </div>
