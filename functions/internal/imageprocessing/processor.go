@@ -227,8 +227,8 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 		return "", fmt.Errorf("failed to decode marker image: %v", err)
 	}
 
-	// Resize to 40x40 (marker size)
-	const markerSize = 40
+	// Resize to 64x64 (marker size)
+	const markerSize = 64
 	resizedMarker := resizeImage(markerImg, markerSize)
 
 	// Use the slugified group code as the marker key in the spritesheet

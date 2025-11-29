@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	markerSize = 40
+	markerSize = 64
 	padding    = 2
 )
 

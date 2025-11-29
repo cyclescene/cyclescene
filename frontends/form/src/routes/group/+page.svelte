@@ -243,7 +243,7 @@
           cityCode={data.city}
           entityType="group"
           label="Upload Group Marker (Optional)"
-          description="Recommended: Square image (PNG, JPG, or SVG). Will be resized to 40x40px for the map."
+          description="Recommended: Square image (PNG, JPG, or SVG). Will be resized to 64x64px for the map at high quality."
           acceptedTypes={[
             "image/png",
             "image/svg+xml",
@@ -260,7 +260,7 @@
         />
 
         <p class="text-xs sm:text-sm text-muted-foreground">
-          Your marker image will be automatically resized and added to your city's marker spritesheet for display on the map.
+          Your marker image will be automatically resized to 64x64px and added to your city's marker spritesheet for display on the map.
         </p>
       </Card.Content>
     </Card.Root>
