@@ -107,11 +107,10 @@ func (h *Handler) RegisterGroup(w http.ResponseWriter, r *http.Request) {
 	// Trigger marker image optimization if image_uuid is provided
 	if registration.ImageUUID != "" && h.eventarcClient != nil {
 		event := &events.ImageOptimizationEvent{
-			ImageUUID:   registration.ImageUUID,
-			CityCode:    registration.City,
-			EntityID:    registration.Code,
-			EntityType:  "group",
-			MarkerColor: registration.MarkerColor,
+			ImageUUID:  registration.ImageUUID,
+			CityCode:   registration.City,
+			EntityID:   registration.Code,
+			EntityType: "group",
 		}
 		if err := h.eventarcClient.TriggerOptimization(r.Context(), event); err != nil {
 			slog.Warn("failed to trigger marker optimization", "error", err, "code", response.Code)
@@ -162,6 +161,24 @@ func (h *Handler) UpdateGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("Group updated successfully", "token", token)
+
+	// Trigger marker image optimization if a new marker image_uuid is provided
+	if registration.ImageUUID != "" && h.eventarcClient != nil {
+		// Get group info to retrieve city code
+		group, err := h.service.GetGroupByEditToken(token)
+		if err == nil && group != nil {
+			event := &events.ImageOptimizationEvent{
+				ImageUUID:  registration.ImageUUID,
+				CityCode:   group.City,
+				EntityID:   group.Code,
+				EntityType: "group",
+			}
+			if err := h.eventarcClient.TriggerOptimization(r.Context(), event); err != nil {
+				slog.Warn("failed to trigger marker optimization on update", "error", err, "code", group.Code)
+				// Don't fail the request if optimization trigger fails - the image is already uploaded
+			}
+		}
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

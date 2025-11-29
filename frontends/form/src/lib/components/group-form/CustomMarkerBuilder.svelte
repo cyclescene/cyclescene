@@ -18,13 +18,12 @@
     import { onMount } from "svelte";
 
     interface Props {
-        markerColor: string;
         cityCode: string;
         onUploadComplete?: (imageUUID: string) => void;
         onUploadError?: (error: string) => void;
     }
 
-    let { markerColor, cityCode, onUploadComplete, onUploadError }: Props =
+    let { cityCode, onUploadComplete, onUploadError }: Props =
         $props();
 
     let imageFile = $state<File | null>(null);
@@ -46,8 +45,8 @@
 
     // Derived state for canvas updates
     $effect(() => {
-        if (imagePreview && markerColor && canvasRef) {
-            renderCanvas(markerColor);
+        if (imagePreview && canvasRef) {
+            renderCanvas();
         }
     });
 
@@ -55,8 +54,8 @@
     $effect(() => {
         // Dependency on scales to trigger re-render
         if (imageScale || maskScale) {
-            if (imagePreview && markerColor && canvasRef) {
-                renderCanvas(markerColor);
+            if (imagePreview && canvasRef) {
+                renderCanvas();
             }
         }
     });
@@ -309,6 +308,92 @@
         imageScale = 1.0;
         maskScale = 0.8;
         error = null;
+    }
+
+    // Export method to auto-generate and upload marker with default settings
+    export async function autoGenerateAndUploadMarker(): Promise<string | null> {
+        // Create a default marker with default image (placeholder blue teardrop)
+        if (!canvasRef) {
+            error = "Canvas not ready";
+            return null;
+        }
+
+        try {
+            isUploading = true;
+
+            // Create a simple SVG canvas with just the teardrop shape
+            const svgCanvas = document.createElement("canvas");
+            svgCanvas.width = RENDER_SIZE;
+            svgCanvas.height = RENDER_SIZE;
+            const ctx = svgCanvas.getContext("2d");
+            if (!ctx) {
+                error = "Failed to create canvas context";
+                return null;
+            }
+
+            // Draw just the teardrop marker in default blue
+            ctx.save();
+            const scale = RENDER_SIZE / 24;
+            ctx.scale(scale, scale);
+            const p = new Path2D(SVG_PATH);
+            ctx.fillStyle = "#3B82F6"; // Default blue
+            ctx.fill(p);
+            ctx.restore();
+
+            // Draw white circle in the center
+            const centerX = (12 * RENDER_SIZE) / 24;
+            const centerY = (9 * RENDER_SIZE) / 24;
+            const baseRadius = (2.5 * RENDER_SIZE) / 24;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.closePath();
+
+            // Convert canvas to blob
+            const blob = await new Promise<Blob | null>((resolve) =>
+                svgCanvas.toBlob(resolve, "image/png"),
+            );
+
+            if (!blob) {
+                error = "Failed to generate image";
+                return null;
+            }
+
+            const file = new File([blob], "default-marker.png", {
+                type: "image/png",
+            });
+
+            // Generate signed URL
+            const signedURLResponse: SignedURLResponse =
+                await generateSignedUploadURL(
+                    file.name,
+                    file.type,
+                    "group",
+                    cityCode,
+                );
+
+            if (!signedURLResponse.success) {
+                error =
+                    signedURLResponse.error || "Failed to generate upload URL";
+                return null;
+            }
+
+            // Upload to GCS
+            await uploadImageToGCS(signedURLResponse.signed_url, file);
+
+            imageUUID = signedURLResponse.image_uuid;
+            generatedPreviewURL = URL.createObjectURL(blob);
+            onUploadComplete?.(imageUUID);
+
+            return imageUUID;
+        } catch (err) {
+            console.error(err);
+            error = err instanceof Error ? err.message : "Upload failed";
+            return null;
+        } finally {
+            isUploading = false;
+        }
     }
 </script>
 

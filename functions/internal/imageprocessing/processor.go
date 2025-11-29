@@ -191,7 +191,7 @@ func (p *ImageProcessor) SetDB(db *sql.DB) {
 }
 
 // ProcessImage handles the complete image optimization workflow
-func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, entityID, entityType, markerColor string) (string, error) {
+func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, entityID, entityType string) (string, error) {
 	// Check context deadline
 	if deadline, ok := ctx.Deadline(); ok {
 		slog.Info("context deadline set", "deadline", deadline, "timeUntilDeadline", time.Until(deadline))
@@ -201,7 +201,7 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 
 	// Route to appropriate handler based on entity type
 	if entityType == "group" {
-		return p.ProcessMarker(ctx, imageUUID, cityCode, entityID, markerColor)
+		return p.ProcessMarker(ctx, imageUUID, cityCode, entityID)
 	}
 
 	// Try to find the image file with common extensions since we don't know the exact format
@@ -296,15 +296,13 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 // Steps:
 // 1. Download marker from staging bucket
 // 2. Decode and validate image
-// 3. Create teardrop shape container with marker color
-// 4. Draw user's image on teardrop shape
-// 5. Resize to 64x64 PNG
-// 6. Regenerate spritesheet for the city (extracts old markers + adds new)
-// 7. Query group by code and slugify name to create public_id
-// 8. Set public_id and marker in database after spritesheet is ready
-// 9. Delete staging file
-// 10. Return path to spritesheet PNG
-func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupCode, markerColor string) (string, error) {
+// 3. Resize to 64x64 PNG
+// 4. Regenerate spritesheet for the city (extracts old markers + adds new)
+// 5. Query group by code and slugify name to create public_id
+// 6. Set public_id and marker in database after spritesheet is ready
+// 7. Delete staging file
+// 8. Return path to spritesheet PNG
+func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupCode string) (string, error) {
 	slog.Info("processing marker", "imageUUID", imageUUID, "cityCode", cityCode, "groupCode", groupCode)
 
 	// Try to find the image file with common extensions

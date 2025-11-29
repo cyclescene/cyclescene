@@ -13,11 +13,10 @@ import (
 )
 
 type OptimizeRequest struct {
-	ImageUUID   string `json:"imageUUID"`
-	CityCode    string `json:"cityCode"`
-	EntityID    string `json:"entityID"`
-	EntityType  string `json:"entityType"`   // "ride" or "group"
-	MarkerColor string `json:"markerColor"` // Hex color for group markers (e.g., "#FF5733")
+	ImageUUID  string `json:"imageUUID"`
+	CityCode   string `json:"cityCode"`
+	EntityID   string `json:"entityID"`
+	EntityType string `json:"entityType"` // "ride" or "group"
 }
 
 type OptimizeResponse struct {
@@ -131,5 +130,5 @@ func processImageOptimization(ctx context.Context, req OptimizeRequest) (string,
 	}
 	defer processor.Close()
 
-	return processor.ProcessImage(ctx, req.ImageUUID, req.CityCode, req.EntityID, req.EntityType, req.MarkerColor)
+	return processor.ProcessImage(ctx, req.ImageUUID, req.CityCode, req.EntityID, req.EntityType)
 }

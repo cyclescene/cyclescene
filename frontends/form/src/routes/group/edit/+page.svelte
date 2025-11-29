@@ -2,8 +2,6 @@
   import { superForm } from "sveltekit-superforms";
   import { zod4Client as zodClient } from "sveltekit-superforms/adapters";
   import { groupRegistrationSchema } from "$lib/schemas/ride";
-  import { checkGroupCodeAvailability } from "$lib/api/client";
-  import ImageUploader from "$lib/components/ride-form/ImageUploader.svelte";
   import CustomMarkerBuilder from "$lib/components/group-form/CustomMarkerBuilder.svelte";
 
   // shadcn imports
@@ -12,13 +10,14 @@
   import { Label } from "$lib/components/ui/label";
   import { Textarea } from "$lib/components/ui/textarea";
   import * as Card from "$lib/components/ui/card";
-  import { CircleCheck, CircleX, Loader, Users } from "@lucide/svelte";
+  import { Edit, Loader } from "@lucide/svelte";
 
   interface Props {
     data: {
       form: any;
       token: string;
       city: string;
+      groupCode: string;
     };
   }
 
@@ -31,89 +30,21 @@
     onError({ result }) {
       $message = result.error.message;
     },
-    onSubmit({ formData }) {
-      // Check if marker image has been uploaded
-      if (!markerImageUUID) {
-        // Auto-generate and upload default marker
-        return new Promise((resolve, reject) => {
-          customMarkerBuilderRef?.autoGenerateAndUploadMarker().then((uuid) => {
-            if (uuid) {
-              markerImageUUID = uuid;
-              $form.image_uuid = uuid;
-              resolve(formData);
-            } else {
-              $message =
-                "Failed to generate marker. Please upload a custom marker or try again.";
-              reject(new Error("Marker generation failed"));
-            }
-          });
-        });
-      }
-    },
   });
-
-  // Code availability checking
-  let codeCheckState = $state<
-    "idle" | "checking" | "available" | "unavailable"
-  >("idle");
-  let debounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
-
-  // Marker image tracking
-  let markerImageUUID = $state<string | null>(null);
-  let customMarkerBuilderRef = $state<InstanceType<typeof CustomMarkerBuilder>>();
-
-  async function checkCodeAvailability(code: string) {
-    if (!code || code.length !== 4) {
-      codeCheckState = "idle";
-      return;
-    }
-
-    codeCheckState = "checking";
-
-    try {
-      const result = await checkGroupCodeAvailability(code);
-      codeCheckState = result.available ? "available" : "unavailable";
-    } catch (err) {
-      codeCheckState = "unavailable";
-      console.error("Code check error:", err);
-    }
-  }
-
-  function handleCodeInput(e: Event) {
-    const target = e.target as HTMLInputElement;
-    const newValue = target.value.toUpperCase().slice(0, 4);
-    $form.code = newValue;
-
-    // Clear existing timer
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    // Reset check state while typing
-    if (newValue.length < 4) {
-      codeCheckState = "idle";
-      return;
-    }
-
-    // Debounce check
-    debounceTimer = setTimeout(() => {
-      checkCodeAvailability(newValue);
-    }, 500);
-  }
 </script>
 
 <div class="container max-w-3xl mx-auto py-4 sm:py-8 px-4">
   <div class="mb-6 sm:mb-8">
     <div class="flex items-start sm:items-center gap-3 mb-4">
       <div class="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-        <Users class="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+        <Edit class="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
       </div>
       <div class="min-w-0">
         <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          Register Your Group
+          Edit Group Settings
         </h1>
         <p class="text-sm sm:text-base text-muted-foreground mt-1">
-          Create a group for your cycling community in {data.city.toUpperCase()}
+          Update your group information for {data.city.toUpperCase()}
         </p>
       </div>
     </div>
@@ -133,64 +64,23 @@
       <Card.Header>
         <Card.Title class="text-lg sm:text-xl">Group Identity</Card.Title>
         <Card.Description class="text-sm">
-          Choose a unique 4-character code and name for your group
+          Your group code and name
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         <div class="space-y-2">
           <Label for="code" class="text-sm sm:text-base">
-            Group Code *
-            <span
-              class="text-xs sm:text-sm text-muted-foreground font-normal block sm:inline"
-            >
-              4 characters (letters and numbers only)
-            </span>
+            Group Code
           </Label>
-          <div class="relative">
-            <Input
-              id="code"
-              type="text"
-              value={$form.code}
-              oninput={handleCodeInput}
-              placeholder="BIKE"
-              maxlength={4}
-              class={`uppercase pr-10 text-base ${$errors.code ? "border-destructive" : ""}`}
-            />
-
-            <div class="absolute right-3 top-1/2 -translate-y-1/2">
-              {#if codeCheckState === "checking"}
-                <Loader class="h-4 w-4 animate-spin text-muted-foreground" />
-              {:else if codeCheckState === "available"}
-                <CircleCheck class="h-4 w-4 text-green-600" />
-              {:else if codeCheckState === "unavailable"}
-                <CircleX class="h-4 w-4 text-destructive" />
-              {/if}
-            </div>
-          </div>
-
-          {#if codeCheckState === "available"}
-            <p
-              class="text-xs sm:text-sm text-green-600 flex items-center gap-1"
-            >
-              <CircleX class="h-3 w-3 flex-shrink-0" />
-              Code is available!
-            </p>
-          {:else if codeCheckState === "unavailable"}
-            <p
-              class="text-xs sm:text-sm text-destructive flex items-center gap-1"
-            >
-              <CircleX class="h-3 w-3 flex-shrink-0" />
-              Code is already taken
-            </p>
-          {/if}
-
-          {#if $errors.code}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.code}</p>
-          {/if}
-
+          <Input
+            id="code"
+            type="text"
+            value={$form.code}
+            disabled
+            class="text-base bg-muted"
+          />
           <p class="text-xs text-muted-foreground">
-            This code will be used by ride organizers to associate rides with
-            your group
+            The group code cannot be changed
           </p>
         </div>
 
@@ -215,7 +105,7 @@
       <Card.Header>
         <Card.Title class="text-lg sm:text-xl">About Your Group</Card.Title>
         <Card.Description class="text-sm">
-          Tell the community what your group is about
+          Update your group description and website
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
@@ -257,17 +147,15 @@
     <!-- Group Marker -->
     <Card.Root>
       <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Group Marker</Card.Title>
+        <Card.Title class="text-lg sm:text-xl">Group Marker (Optional)</Card.Title>
         <Card.Description class="text-sm">
-          Add a custom marker for your group's rides on the map
+          Update your group's marker with a new image
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
         <CustomMarkerBuilder
-          bind:this={customMarkerBuilderRef}
           cityCode={data.city}
           onUploadComplete={(uuid) => {
-            markerImageUUID = uuid;
             $form.image_uuid = uuid;
           }}
           onUploadError={(error) => {
@@ -276,8 +164,9 @@
         />
 
         <p class="text-xs sm:text-sm text-muted-foreground">
-          Your marker image will be automatically resized to 64x64px and added
-          to your city's marker spritesheet for display on the map.
+          If you upload a new marker image, it will be automatically resized to 64x64px and added
+          to your city's marker spritesheet. This is optional - you can leave this blank to keep
+          your current marker.
         </p>
       </Card.Content>
     </Card.Root>
@@ -296,27 +185,25 @@
         </p>
         <Button
           type="submit"
-          disabled={$delayed ||
-            codeCheckState === "checking" ||
-            codeCheckState === "unavailable"}
+          disabled={$delayed}
           size="lg"
           class="w-full sm:w-auto touch-manipulation"
         >
           {#if $delayed}
-            {#if !markerImageUUID}
-              Generating marker...
-            {:else}
-              Registering...
-            {/if}
+            <Loader class="mr-2 h-4 w-4 animate-spin" />
+            Saving Changes...
           {:else}
-            Register Group
+            Save Changes
           {/if}
         </Button>
       </div>
     </div>
-
-    <div class="text-center text-xs sm:text-sm text-muted-foreground pb-4">
-      You'll receive a magic link via email to edit your group information.
-    </div>
   </form>
+
+  <div class="text-center text-xs sm:text-sm text-muted-foreground pb-4 mt-6">
+    <p>
+      Your group code and city cannot be changed. Upload a new marker image above
+      if you'd like to update your group's appearance on the map.
+    </p>
+  </div>
 </div>
