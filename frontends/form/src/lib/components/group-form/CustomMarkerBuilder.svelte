@@ -184,10 +184,35 @@
         // Draw image centered at centerX, centerY
         const img = new Image();
         img.src = imagePreview;
-        await new Promise((resolve) => {
-            if (img.complete) resolve(null);
-            else img.onload = () => resolve(null);
+
+        console.log("CustomMarkerBuilder: Loading image...", {
+            srcLength: imagePreview.length,
         });
+
+        await new Promise((resolve) => {
+            if (img.complete) {
+                console.log("CustomMarkerBuilder: Image already complete");
+                resolve(null);
+            } else {
+                img.onload = () => {
+                    console.log("CustomMarkerBuilder: Image loaded", {
+                        width: img.width,
+                        height: img.height,
+                    });
+                    resolve(null);
+                };
+                img.onerror = (e) => {
+                    console.error("CustomMarkerBuilder: Image load error", e);
+                    resolve(null); // Resolve anyway to avoid hanging
+                };
+            }
+        });
+
+        if (img.width === 0 || img.height === 0) {
+            console.error("CustomMarkerBuilder: Image has 0 dimensions");
+            ctx.restore();
+            return;
+        }
 
         // Calculate aspect ratio to fit
         const aspect = img.width / img.height;
@@ -207,6 +232,15 @@
         // Apply image scale (zoom)
         drawWidth *= imageScale;
         drawHeight *= imageScale;
+
+        console.log("CustomMarkerBuilder: Drawing image", {
+            centerX,
+            centerY,
+            drawWidth,
+            drawHeight,
+            destX: centerX - drawWidth / 2,
+            destY: centerY - drawHeight / 2,
+        });
 
         ctx.drawImage(
             img,
