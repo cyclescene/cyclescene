@@ -36,9 +36,10 @@
   source={sourceId}
   layout={{
     "icon-image": [
-      "coalesce",
-      ["case", ["!=", ["get", "group_marker_icon"], ""], ["get", "group_marker_icon"], null],
-      defaultIconName,
+      "case",
+      ["!=", ["get", "group_marker_icon"], ""],
+      ["get", "group_marker_icon"],
+      defaultIconName
     ],
     "icon-size": [
       "match",
