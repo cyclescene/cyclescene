@@ -65,7 +65,14 @@
     ],
     "icon-allow-overlap": true,
   }}
-  paint={{}}
+  paint={{
+    "icon-color": [
+      "case",
+      ["!=", ["get", "group_marker_icon"], ""],
+      "rgba(0, 0, 0, 0)", // No color tint for custom markers (transparent)
+      "#0000ff" // Blue tint for default icons
+    ]
+  }}
   onclick={onRideClick}
 />
 <SymbolLayer
