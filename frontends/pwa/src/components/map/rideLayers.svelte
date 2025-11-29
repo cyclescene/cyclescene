@@ -46,15 +46,15 @@
   id="ride-icons"
   source={sourceId}
   layout={{
-    "icon-image": defaultIconName,
+    "icon-image": [
+      "coalesce",
+      ["get", "group_marker_icon"],
+      defaultIconName
+    ],
     "icon-size": [
       "case",
-      // If it's a custom marker (has group_marker_icon and it's not empty)
-      [
-        "all",
-        ["has", "group_marker_icon"],
-        ["!=", ["get", "group_marker_icon"], ""],
-      ],
+      // If it has a group_marker_icon property (custom marker)
+      ["!=", ["coalesce", ["get", "group_marker_icon"], ""], ""],
       [
         "match",
         ["to-string", ["get", "id"]],
@@ -76,12 +76,8 @@
   paint={{
     "icon-color": [
       "case",
-      // If it's a custom marker (has group_marker_icon and it's not empty)
-      [
-        "all",
-        ["has", "group_marker_icon"],
-        ["!=", ["get", "group_marker_icon"], ""],
-      ],
+      // If it has a group_marker_icon property (custom marker)
+      ["!=", ["coalesce", ["get", "group_marker_icon"], ""], ""],
       "rgba(0, 0, 0, 0)", // No color tint for custom markers (transparent)
       "#0000ff", // Blue tint for default icons
     ],
