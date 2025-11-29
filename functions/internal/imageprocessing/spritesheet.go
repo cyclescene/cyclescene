@@ -112,7 +112,9 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		y := row * (markerSize + padding)
 
 		// Draw marker onto spritesheet
-		draw.Draw(spritesheet, markerImg.Bounds().Add(image.Pt(x, y)), markerImg, image.Pt(0, 0), draw.Over)
+		// Use a normalized destination rect to handle both fresh images and extracted subimages
+		dstRect := image.Rect(x, y, x+markerSize, y+markerSize)
+		draw.Draw(spritesheet, dstRect, markerImg, image.Pt(0, 0), draw.Over)
 
 		// Store metadata
 		newMetadata.Markers[markerID] = MarkerInfo{
