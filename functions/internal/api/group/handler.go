@@ -124,18 +124,21 @@ func (h *Handler) RegisterGroup(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) GetGroupByEditToken(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
+	slog.Info("GetGroupByEditToken called", "token", token)
 
 	group, err := h.service.GetGroupByEditToken(token)
 	if err == sql.ErrNoRows {
+		slog.Warn("Group not found for token", "token", token)
 		http.Error(w, "Group not found", http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		slog.Error("Failed to get group", "error", err)
+		slog.Error("Failed to get group", "token", token, "error", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
+	slog.Info("Successfully retrieved group", "token", token, "code", group.Code)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(group)
 }
