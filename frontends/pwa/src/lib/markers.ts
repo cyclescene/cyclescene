@@ -99,7 +99,10 @@ export function extractMarkerFromSpritesheet(
     markerInfo.height
   )
 
-  return canvas.toDataURL("image/png")
+  const dataUrl = canvas.toDataURL("image/png")
+  console.log(`[Markers] Extracted marker from spritesheet at (${markerInfo.x}, ${markerInfo.y}), size: ${markerInfo.width}x${markerInfo.height}`)
+  console.log(`[Markers] DataURL length: ${dataUrl.length}, first 100 chars: ${dataUrl.substring(0, 100)}`)
+  return dataUrl
 }
 
 /**
