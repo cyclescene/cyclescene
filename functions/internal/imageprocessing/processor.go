@@ -385,11 +385,12 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 		slog.Warn("database connection not available, skipping marker persistence")
 	}
 
-	// Delete staging file
-	slog.Info("deleting staging file", "bucket", p.stagingBucket, "object", stagingObjectName)
-	if err := p.deleteFromGCS(ctx, p.stagingBucket, stagingObjectName); err != nil {
-		slog.Warn("failed to delete staging file, continuing anyway", "error", err)
-	}
+	// Delete staging file - TEMPORARILY DISABLED FOR DEBUGGING
+	// Keep staging file to inspect what was actually uploaded
+	// slog.Info("deleting staging file", "bucket", p.stagingBucket, "object", stagingObjectName)
+	// if err := p.deleteFromGCS(ctx, p.stagingBucket, stagingObjectName); err != nil {
+	// 	slog.Warn("failed to delete staging file, continuing anyway", "error", err)
+	// }
 
 	// Return the spritesheet PNG path
 	spritesheetPath := fmt.Sprintf("https://storage.googleapis.com/%s/sprites/%s/markers.png", p.optimizedBucket, cityCode)
