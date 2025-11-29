@@ -65,9 +65,7 @@
     ],
     "icon-allow-overlap": true,
   }}
-  paint={{
-    "icon-color": "#0000ff",
-  }}
+  paint={{}}
   onclick={onRideClick}
 />
 <SymbolLayer
