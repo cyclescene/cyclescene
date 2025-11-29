@@ -235,6 +235,7 @@ export interface GroupRegistrationPayload {
   name: string;
   description?: string;
   city: string;
+  email?: string;
   icon_url?: string;
   icon_uuid?: string;
   image_uuid?: string;
