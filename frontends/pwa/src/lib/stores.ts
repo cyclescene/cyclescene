@@ -610,13 +610,17 @@ export const validRides = derived([ridesWithLocations], ([$rides]) => {
 })
 
 export const rideGeoJSON = derived(
-  validRides, ($rides) => {
+  [validRides, ridesWithLocations], ($rides, $allRides) => {
 
     const seenCoords: Record<string, number> = {}
     const features = new Array($rides.length)
 
     for (let i = 0; i < $rides.length; i++) {
       const ride = $rides[i]
+      // Find the original ride to get group_marker info
+      const originalRide = $allRides.find(r => r.id === ride.id);
+      const groupMarker = originalRide?.group_marker ? `group-marker-${originalRide.group_marker}` : "";
+
       let lng = ride.lng
       let lat = ride.lat
 
@@ -635,7 +639,7 @@ export const rideGeoJSON = derived(
       features[i] = {
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
-        properties: { id: ride.id, name: ride.name }
+        properties: { id: ride.id, name: ride.name, group_marker_icon: groupMarker }
       }
     }
 
@@ -754,12 +758,14 @@ export const singleRideGeoJSON = derived(
       } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
     }
 
+    const groupMarker = $currentRide.group_marker ? `group-marker-${$currentRide.group_marker}` : "";
+
     return {
       type: "FeatureCollection",
       features: [{
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
-        properties: { id: $currentRide.id, name: $currentRide.title }
+        properties: { id: $currentRide.id, name: $currentRide.title, group_marker_icon: groupMarker }
       }]
     } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
   }

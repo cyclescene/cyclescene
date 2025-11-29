@@ -3,7 +3,10 @@
   import { mode } from "mode-watcher";
   import { GeoJSONSource, MapLibre } from "svelte-maplibre-gl";
   import RideLayers from "../map/rideLayers.svelte";
+  import GroupMarkerLayers from "../map/groupMarkerLayers.svelte";
   import { Map } from "maplibre-gl";
+  import { loadMarkerByKey } from "$lib/markers";
+  import { CITY_CODE } from "$lib/config";
 
   const { ride } = $props();
 
@@ -20,6 +23,7 @@
   let map: Map | undefined = $state.raw();
   let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
   let iconLoaded = $state(false);
+  let groupMarkerLoaded = $state(false);
 
   $effect(() => {
     if (map && !iconLoaded) {
@@ -34,6 +38,23 @@
       }
 
       loadCustomIcon();
+    }
+  });
+
+  $effect(() => {
+    if (map && !groupMarkerLoaded && ride?.group_marker) {
+      async function loadGroupMarker() {
+        try {
+          const markerDataUrl = await loadMarkerByKey(CITY_CODE, ride.group_marker);
+          const response = await map!.loadImage(markerDataUrl);
+          map!.addImage(`group-marker-${ride.group_marker}`, response.data);
+          groupMarkerLoaded = true;
+        } catch (error) {
+          console.error("failed to load group marker: ", error);
+        }
+      }
+
+      loadGroupMarker();
     }
   });
 </script>
@@ -54,6 +75,9 @@
   {#if $singleRideGeoJSON}
     {#if iconLoaded}
       <RideLayers sourceId={SOURCE_ID} iconName={ICON_NAME} />
+    {/if}
+    {#if groupMarkerLoaded && ride?.group_marker}
+      <GroupMarkerLayers sourceId={SOURCE_ID} />
     {/if}
     <GeoJSONSource data={$singleRideGeoJSON} id={SOURCE_ID} />
   {/if}
