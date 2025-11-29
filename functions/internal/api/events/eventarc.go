@@ -90,10 +90,11 @@ func (ec *EventarcClient) TriggerOptimization(ctx context.Context, event *ImageO
 		Time:            time.Now().UTC().Format(time.RFC3339),
 		DataContentType: "application/json",
 		Data: map[string]any{
-			"imageUUID":  event.ImageUUID,
-			"cityCode":   event.CityCode,
-			"entityID":   event.EntityID,
-			"entityType": event.EntityType,
+			"imageUUID":   event.ImageUUID,
+			"cityCode":    event.CityCode,
+			"entityID":    event.EntityID,
+			"entityType":  event.EntityType,
+			"markerColor": event.MarkerColor,
 		},
 	}
 
