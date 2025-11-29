@@ -82,15 +82,20 @@
       return;
 
     const newOccurrences: Occurrence[] = [];
+    // Create dates using UTC to avoid timezone offset issues
     let currentDate = new Date(
-      recurringStartDate.year,
-      recurringStartDate.month - 1,
-      recurringStartDate.day,
+      Date.UTC(
+        recurringStartDate.year,
+        recurringStartDate.month - 1,
+        recurringStartDate.day,
+      )
     );
     const endDate = new Date(
-      recurringEndDate.year,
-      recurringEndDate.month - 1,
-      recurringEndDate.day,
+      Date.UTC(
+        recurringEndDate.year,
+        recurringEndDate.month - 1,
+        recurringEndDate.day,
+      )
     );
 
     // Find the first occurrence of the selected day of week
@@ -284,7 +289,7 @@
               <CalendarIcon class="mr-2 h-4 w-4 flex-shrink-0" />
               <span class="truncate">
                 {selectedDate
-                  ? df.format(selectedDate.toDate(getLocalTimeZone()))
+                  ? `${selectedDate.month}/${selectedDate.day}/${selectedDate.year}`
                   : "Pick a date"}
               </span>
             </Button>
@@ -396,12 +401,15 @@
             >
               <div class="flex-1 min-w-0">
                 <div class="font-medium text-sm sm:text-base truncate">
-                  {new Date(occurrence.start_date).toLocaleDateString("en-US", {
-                    weekday: "short",
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {(() => {
+                    const [year, month, day] = occurrence.start_date.split('-').map(Number);
+                    return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    });
+                  })()}
                 </div>
                 <div class="text-xs sm:text-sm text-muted-foreground">
                   {occurrence.start_time.slice(0, 5)}
