@@ -47,7 +47,7 @@
     // Derived state for canvas updates
     $effect(() => {
         if (imagePreview && markerColor && canvasRef) {
-            renderCanvas();
+            renderCanvas(markerColor);
         }
     });
 
@@ -56,7 +56,7 @@
         // Dependency on scales to trigger re-render
         if (imageScale || maskScale) {
             if (imagePreview && markerColor && canvasRef) {
-                renderCanvas();
+                renderCanvas(markerColor);
             }
         }
     });
@@ -87,7 +87,7 @@
         reader.readAsDataURL(file);
     }
 
-    async function renderCanvas() {
+    async function renderCanvas(color: string) {
         if (!canvasRef || !imagePreview) return;
 
         const ctx = canvasRef.getContext("2d");
@@ -103,7 +103,21 @@
         ctx.save();
         ctx.scale(scale, scale);
         const p = new Path2D(SVG_PATH);
-        ctx.fillStyle = markerColor;
+
+        // Ensure color is valid
+        if (!color) {
+            console.warn(
+                "CustomMarkerBuilder: color is missing, defaulting to black",
+            );
+            ctx.fillStyle = "#000000";
+        } else {
+            ctx.fillStyle = color;
+        }
+
+        console.log(
+            "CustomMarkerBuilder: Rendering with color:",
+            ctx.fillStyle,
+        );
         ctx.fill(p);
         ctx.restore();
 
