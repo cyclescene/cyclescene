@@ -125,19 +125,26 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		markerPath := ""
 		if info, exists := existingMetadata.Markers[markerID]; exists {
 			markerPath = info.Path
+			// Normalize old path format (slc/frog/marker.png) to new format (slc/groups/frog/marker.png)
+			if !strings.Contains(markerPath, "/groups/") {
+				markerPath = fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
+				slog.Info("normalized old marker path format", "markerID", markerID, "newPath", markerPath)
+			}
 		} else {
 			// This is the new marker
 			markerPath = fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
 		}
 
-		// Store metadata with path reference
-		newMetadata.Markers[markerID] = MarkerInfo{
+		// Store metadata with path reference - ensure width/height are always set
+		info := MarkerInfo{
 			X:      x,
 			Y:      y,
 			Width:  markerSize,
 			Height: markerSize,
 			Path:   markerPath,
 		}
+		newMetadata.Markers[markerID] = info
+		slog.Info("marker metadata created", "markerID", markerID, "x", x, "y", y, "width", markerSize, "height", markerSize, "path", markerPath)
 
 		slog.Debug("composited marker", "markerID", markerID, "position", fmt.Sprintf("(%d,%d)", x, y), "path", markerPath)
 	}
