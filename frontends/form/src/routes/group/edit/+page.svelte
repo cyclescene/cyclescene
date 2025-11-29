@@ -33,6 +33,8 @@
   });
 
   const backUrl = data.city ? `https://${data.city}.cyclescene.cc` : "https://cyclescene.cc";
+
+  let isEditingName = $state(false);
 </script>
 
 <div class="container max-w-3xl mx-auto py-4 sm:py-8 px-4">
@@ -60,47 +62,41 @@
     </div>
   {/if}
 
-  <form method="POST" use:enhance class="space-y-6">
-    <!-- Group Code & Name -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Group Identity</Card.Title>
-        <Card.Description class="text-sm">
-          Your group code and name
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
-        <div class="space-y-2">
-          <Label for="code" class="text-sm sm:text-base">
-            Group Code
-          </Label>
-          <Input
-            id="code"
-            type="text"
-            value={$form.code}
-            disabled
-            class="text-base bg-muted"
-          />
-          <p class="text-xs text-muted-foreground">
-            The group code cannot be changed
-          </p>
+  <!-- Group Summary Card -->
+  <Card.Root class="mb-6">
+    <Card.Header>
+      <Card.Title class="text-lg sm:text-xl">Group Summary</Card.Title>
+    </Card.Header>
+    <Card.Content class="space-y-4">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <p class="text-xs sm:text-sm text-muted-foreground mb-1">Group Code</p>
+          <p class="text-sm sm:text-base font-mono font-medium">{data.groupCode}</p>
         </div>
-
-        <div class="space-y-2">
-          <Label for="name" class="text-sm sm:text-base">Group Name *</Label>
-          <Input
-            id="name"
-            type="text"
-            bind:value={$form.name}
-            placeholder="Portland Bike Club"
-            class={`text-base ${$errors.name ? "border-destructive" : ""}`}
-          />
-          {#if $errors.name}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.name}</p>
+        <div>
+          <p class="text-xs sm:text-sm text-muted-foreground mb-1">Group Name</p>
+          {#if isEditingName}
+            <Input
+              type="text"
+              bind:value={$form.name}
+              class="text-sm sm:text-base"
+            />
+          {:else}
+            <p class="text-sm sm:text-base font-medium">{$form.name}</p>
+            <button
+              type="button"
+              onclick={() => (isEditingName = true)}
+              class="text-xs text-primary hover:underline mt-1"
+            >
+              Edit name
+            </button>
           {/if}
         </div>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </Card.Content>
+  </Card.Root>
+
+  <form method="POST" use:enhance class="space-y-6">
 
     <!-- Description & Details -->
     <Card.Root>
