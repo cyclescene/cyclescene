@@ -1,18 +1,33 @@
 package group
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
+	"fmt"
+	"log/slog"
 	"strings"
+
+	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
 )
 
 type Service struct {
-	repo *Repository
+	repo            *Repository
+	magicLinkSvc    *magiclink.Service
+	editLinkBaseURL string
 }
 
 func NewService(repo *Repository) *Service {
 	return &Service{repo: repo}
+}
+
+func NewServiceWithMagicLink(repo *Repository, magicLinkSvc *magiclink.Service, editLinkBaseURL string) *Service {
+	return &Service{
+		repo:            repo,
+		magicLinkSvc:    magicLinkSvc,
+		editLinkBaseURL: editLinkBaseURL,
+	}
 }
 
 func (s *Service) ValidateGroupCode(code string) (*ValidationResponse, error) {
@@ -83,6 +98,20 @@ func (s *Service) RegisterGroup(reg *Registration) (*Response, error) {
 	// Create group
 	if err := s.repo.CreateGroup(reg, editToken); err != nil {
 		return nil, err
+	}
+
+	// Send magic link email if service is configured and organizer email exists
+	if s.magicLinkSvc != nil && reg.Email != "" {
+		// Build the full redirect URL with the edit token
+		redirectURL := fmt.Sprintf("%s?token=%s", s.editLinkBaseURL, editToken)
+		_, err := s.magicLinkSvc.SendMagicLink(context.Background(), magiclink.SendMagicLinkRequest{
+			Email:       reg.Email,
+			RedirectURL: redirectURL,
+		})
+		if err != nil {
+			// Log but don't fail - group was created successfully
+			slog.Error("Failed to send magic link email for group", "error", err, "email", reg.Email, "code", reg.Code)
+		}
 	}
 
 	return &Response{

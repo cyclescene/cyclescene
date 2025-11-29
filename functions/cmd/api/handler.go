@@ -113,7 +113,18 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	rideHandler := ride.NewHandler(rideService, authService, eventarcClient)
 
 	groupRepo := group.NewRepository(db)
-	groupService := group.NewService(groupRepo)
+	// Configure group service with magic link support if available
+	var groupService *group.Service
+	if magicLinkService != nil {
+		// Get the group edit link base URL from environment or use default
+		groupEditLinkBaseURL := os.Getenv("GROUP_EDIT_LINK_BASE_URL")
+		if groupEditLinkBaseURL == "" {
+			groupEditLinkBaseURL = "https://form.cyclescene.cc/group/edit" // Default for production
+		}
+		groupService = group.NewServiceWithMagicLink(groupRepo, magicLinkService, groupEditLinkBaseURL)
+	} else {
+		groupService = group.NewService(groupRepo)
+	}
 	groupHandler := group.NewHandler(groupService, eventarcClient)
 
 	// Storage handler for signed URLs (image uploads)

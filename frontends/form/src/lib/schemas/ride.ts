@@ -68,6 +68,7 @@ export const groupRegistrationSchema = z.object({
   name: z.string().min(3, 'Group name must be at least 3 characters').max(100),
   description: z.string().max(500).optional(),
   city: z.string().min(2, 'City is required'),
+  email: z.string().email('Must be a valid email address'),
   image_uuid: z.string().optional(),
   web_url: z.union([z.httpUrl(), z.literal('')]).optional()
 });

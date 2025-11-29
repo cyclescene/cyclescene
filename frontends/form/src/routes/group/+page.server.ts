@@ -48,6 +48,7 @@ export const load: PageServerLoad = async ({ url, request }) => {
       code: '',
       name: '',
       description: '',
+      email: '',
       web_url: ''
     }
   });

@@ -254,6 +254,37 @@
       </Card.Content>
     </Card.Root>
 
+    <!-- Contact Information -->
+    <Card.Root>
+      <Card.Header>
+        <Card.Title class="text-lg sm:text-xl">Contact Information</Card.Title>
+        <Card.Description class="text-sm">
+          We'll use this to send you a magic link to edit your group
+        </Card.Description>
+      </Card.Header>
+      <Card.Content class="space-y-4">
+        <div class="space-y-2">
+          <Label for="email" class="text-sm sm:text-base">
+            Contact Email *
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            bind:value={$form.email}
+            placeholder="organizer@portlandbikeclub.com"
+            class={`text-base ${$errors.email ? "border-destructive" : ""}`}
+          />
+          {#if $errors.email}
+            <p class="text-xs sm:text-sm text-destructive">{$errors.email}</p>
+          {/if}
+          <p class="text-xs text-muted-foreground">
+            You'll receive a magic link via this email to edit your group
+            information anytime
+          </p>
+        </div>
+      </Card.Content>
+    </Card.Root>
+
     <!-- Group Marker -->
     <Card.Root>
       <Card.Header>
