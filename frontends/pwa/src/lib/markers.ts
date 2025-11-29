@@ -45,6 +45,12 @@ export async function loadSpritesheet(cityCode: string): Promise<{
     }
     const metadata = (await metadataResponse.json()) as SpritesheetMetadata
     console.log(`[Markers] ✓ Metadata loaded successfully`)
+    console.log(`[Markers] Metadata structure:`, metadata)
+    if (metadata.markers) {
+      for (const [key, markerInfo] of Object.entries(metadata.markers)) {
+        console.log(`[Markers] Marker "${key}":`, markerInfo)
+      }
+    }
 
     // Load spritesheet image
     console.log(`[Markers] Loading spritesheet image...`)
