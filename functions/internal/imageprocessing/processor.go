@@ -343,12 +343,18 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 	resizedMarker := resizeImage(markerImg, markerSize)
 	slog.Info("resized marker to 64x64", "imageUUID", imageUUID)
 
-	// Step 3: Add to spritesheet
+	// Step 3: Add to spritesheet (which regenerates metadata)
 	markerKey := slugify(groupCode)
 	slog.Info("regenerating spritesheet", "cityCode", cityCode, "markerKey", markerKey)
 
 	if err := p.RegenerateSpritesheet(ctx, cityCode, markerKey, resizedMarker); err != nil {
 		return "", fmt.Errorf("failed to regenerate spritesheet: %v", err)
+	}
+
+	// Clean up staging file
+	slog.Info("deleting staging file", "bucket", p.stagingBucket, "object", stagingObjectName)
+	if err := p.deleteFromGCS(ctx, p.stagingBucket, stagingObjectName); err != nil {
+		slog.Warn("failed to delete staging file, continuing anyway", "error", err)
 	}
 
 	spritesheetPath := fmt.Sprintf("https://storage.googleapis.com/%s/sprites/%s/markers.png", p.optimizedBucket, cityCode)
