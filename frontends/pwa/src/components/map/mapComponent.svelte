@@ -10,7 +10,6 @@
   } from "$lib/stores";
   import { mode } from "mode-watcher";
   import RideLayers from "./rideLayers.svelte";
-  import GroupMarkerLayers from "./groupMarkerLayers.svelte";
   import ParkLayer from "./parkLayer.svelte";
   import SpecialEventLayers from "./specialEventLayers.svelte";
   import RecenterButton from "./recenterButton.svelte";
@@ -83,11 +82,13 @@
           const markers = await loadAllMarkersForCity(CITY_CODE);
           groupMarkers = markers;
 
-          // Add each marker image to the map
+          // Add each marker image to the map with the group-marker- prefix
           for (const [markerKey, markerDataUrl] of Object.entries(markers)) {
             try {
               const response = await mapInstance!.loadImage(markerDataUrl);
-              mapInstance!.addImage(`group-marker-${markerKey}`, response.data);
+              const imageName = `group-marker-${markerKey}`;
+              mapInstance!.addImage(imageName, response.data);
+              console.log(`Loaded group marker: ${imageName}`);
             } catch (error) {
               console.error(`Failed to load group marker image for ${markerKey}:`, error);
             }
@@ -116,16 +117,10 @@
     attributionControl={false}
   >
     {#if $rideGeoJSON}
-      {#if iconLoaded}
+      {#if iconLoaded && groupMarkersLoaded}
         <RideLayers
           sourceId={SOURCE_ID}
-          iconName={ICON_NAME}
-          onRideClick={handleRideClick}
-        />
-      {/if}
-      {#if groupMarkersLoaded}
-        <GroupMarkerLayers
-          sourceId={SOURCE_ID}
+          defaultIconName={ICON_NAME}
           onRideClick={handleRideClick}
         />
       {/if}
