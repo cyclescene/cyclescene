@@ -233,6 +233,46 @@
         canvasHeight: canvasRef.height,
       });
 
+      // Verify canvas content before saving
+      const ctx = canvasRef.getContext("2d");
+      if (ctx) {
+        const imageData = ctx.getImageData(0, 0, canvasRef.width, canvasRef.height);
+        const data = imageData.data;
+
+        // Check if canvas has any non-transparent pixels
+        let hasContent = false;
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] > 0) { // Check alpha channel
+            hasContent = true;
+            break;
+          }
+        }
+
+        console.log("CustomMarkerBuilder: Canvas content validation", {
+          hasContent,
+          pixelDataLength: data.length,
+          markerColor,
+          imagePreviewExists: !!imagePreview,
+        });
+
+        if (!hasContent) {
+          throw new Error("Canvas appears to be empty. Please ensure your image and marker color are set correctly.");
+        }
+
+        // Verify marker color is applied (check for pixels with that color)
+        const markerColorInt = parseInt(markerColor.slice(1), 16);
+        const expectedR = (markerColorInt >> 16) & 255;
+        const expectedG = (markerColorInt >> 8) & 255;
+        const expectedB = markerColorInt & 255;
+
+        console.log("CustomMarkerBuilder: Expected marker color", {
+          hex: markerColor,
+          r: expectedR,
+          g: expectedG,
+          b: expectedB,
+        });
+      }
+
       // Convert canvas to blob
       const blob = await new Promise<Blob | null>((resolve) =>
         canvasRef!.toBlob(resolve, "image/png"),
@@ -244,6 +284,14 @@
         size: blob.size,
         type: blob.type,
       });
+
+      // Verify blob is not too small (indicates empty image)
+      if (blob.size < 500) {
+        console.warn("CustomMarkerBuilder: Blob size is suspiciously small", {
+          size: blob.size,
+        });
+        throw new Error("Generated image appears to be empty or too small. Please check your marker settings.");
+      }
 
       const file = new File([blob], "custom-marker.png", {
         type: "image/png",
