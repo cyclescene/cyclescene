@@ -6,6 +6,8 @@
 
   const DEFAULT_SIZE = 0.4;
   const SELECTED_SIZE = 0.6;
+  const CUSTOM_MARKER_SIZE = 0.6;
+  const CUSTOM_MARKER_SELECTED_SIZE = 0.8;
 
   const {
     sourceId,
@@ -42,11 +44,24 @@
       defaultIconName
     ],
     "icon-size": [
-      "match",
-      ["to-string", ["get", "id"]],
-      selectedId,
-      SELECTED_SIZE,
-      DEFAULT_SIZE,
+      "case",
+      // If it's a custom marker (group_marker_icon is not empty)
+      ["!=", ["get", "group_marker_icon"], ""],
+      [
+        "match",
+        ["to-string", ["get", "id"]],
+        selectedId,
+        CUSTOM_MARKER_SELECTED_SIZE, // 0.8 when selected
+        CUSTOM_MARKER_SIZE,           // 0.6 normally
+      ],
+      // Otherwise it's a default marker
+      [
+        "match",
+        ["to-string", ["get", "id"]],
+        selectedId,
+        SELECTED_SIZE,  // 0.6 when selected
+        DEFAULT_SIZE,   // 0.4 normally
+      ],
     ],
     "icon-allow-overlap": true,
   }}
