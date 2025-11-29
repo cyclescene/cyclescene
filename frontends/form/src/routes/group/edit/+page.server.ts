@@ -32,7 +32,9 @@ export const load: PageServerLoad = async ({ url }) => {
       form,
       token,
       city: groupData.city,
-      groupCode: groupData.code
+      groupCode: groupData.code,
+      groupName: groupData.name || '',
+      groupEmail: groupData.email || ''
     };
   } catch (err) {
     console.error('Failed to fetch group:', err);

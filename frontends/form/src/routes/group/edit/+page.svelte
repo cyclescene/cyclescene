@@ -18,6 +18,8 @@
       token: string;
       city: string;
       groupCode: string;
+      groupName: string;
+      groupEmail: string;
     };
   }
 
@@ -68,7 +70,7 @@
       <Card.Title class="text-lg sm:text-xl">Group Summary</Card.Title>
     </Card.Header>
     <Card.Content class="space-y-4">
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-4 sm:grid-cols-3">
         <div>
           <p class="text-xs sm:text-sm text-muted-foreground mb-1">Group Code</p>
           <p class="text-sm sm:text-base font-mono font-medium">{data.groupCode}</p>
@@ -80,9 +82,10 @@
               type="text"
               bind:value={$form.name}
               class="text-sm sm:text-base"
+              autofocus
             />
           {:else}
-            <p class="text-sm sm:text-base font-medium">{$form.name}</p>
+            <p class="text-sm sm:text-base font-medium">{data.groupName}</p>
             <button
               type="button"
               onclick={() => (isEditingName = true)}
@@ -91,6 +94,10 @@
               Edit name
             </button>
           {/if}
+        </div>
+        <div>
+          <p class="text-xs sm:text-sm text-muted-foreground mb-1">Email</p>
+          <p class="text-sm sm:text-base break-all">{data.groupEmail}</p>
         </div>
       </div>
     </Card.Content>
