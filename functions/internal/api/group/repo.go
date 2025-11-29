@@ -62,10 +62,16 @@ func (r *Repository) CreateGroup(reg *Registration, editToken string) error {
 	// Generate marker from group code (slugified lowercase)
 	marker := slugify(strings.ToUpper(reg.Code))
 
+	// Use provided marker color or default to blue
+	markerColor := reg.MarkerColor
+	if markerColor == "" {
+		markerColor = "#3B82F6" // Default blue
+	}
+
 	_, err := r.db.Exec(`
-		INSERT INTO ride_groups (id, code, name, description, city, web_url, edit_token, public_id, marker, is_active, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-	`, groupID, strings.ToUpper(reg.Code), reg.Name, reg.Description, reg.City, reg.WebURL, editToken, publicID, marker)
+		INSERT INTO ride_groups (id, code, name, description, city, web_url, edit_token, public_id, marker, marker_color, is_active, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+	`, groupID, strings.ToUpper(reg.Code), reg.Name, reg.Description, reg.City, reg.WebURL, editToken, publicID, marker, markerColor)
 
 	return err
 }

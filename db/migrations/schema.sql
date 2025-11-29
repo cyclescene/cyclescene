@@ -20,7 +20,7 @@ CREATE TABLE admin_api_keys (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT 
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE INDEX idx_admin_api_keys_api_key ON admin_api_keys (api_key);
 CREATE INDEX idx_admin_api_keys_revoked ON admin_api_keys (revoked_at);
-CREATE TABLE "ride_groups" (id TEXT PRIMARY KEY, code TEXT UNIQUE NOT NULL, name TEXT NOT NULL, description TEXT, city TEXT, icon_url TEXT, is_active INTEGER NOT NULL DEFAULT 1, web_url TEXT, edit_token TEXT UNIQUE, created_at TEXT NOT NULL, public_id TEXT UNIQUE, marker TEXT);
+CREATE TABLE "ride_groups" (id TEXT PRIMARY KEY, code TEXT UNIQUE NOT NULL, name TEXT NOT NULL, description TEXT, city TEXT, icon_url TEXT, is_active INTEGER NOT NULL DEFAULT 1, web_url TEXT, edit_token TEXT UNIQUE, created_at TEXT NOT NULL, public_id TEXT UNIQUE, marker TEXT, marker_color TEXT DEFAULT '#3B82F6');
 CREATE INDEX idx_groups_code ON ride_groups (code);
 CREATE INDEX idx_groups_edit_token ON ride_groups (edit_token);
 CREATE INDEX idx_groups_public_id ON ride_groups (public_id);
@@ -28,3 +28,4 @@ CREATE TABLE "events" (id INTEGER PRIMARY KEY, title TEXT NOT NULL, tinytitle TE
 CREATE INDEX idx_published ON events (is_published);
 CREATE INDEX idx_group_code ON events (group_code);
 CREATE INDEX idx_group_id ON events (group_id);
+CREATE INDEX idx_groups_marker_color ON ride_groups (marker_color);
