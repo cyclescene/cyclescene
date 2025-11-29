@@ -275,6 +275,37 @@
     error = null;
   }
 
+  async function downloadMarkerForDebug() {
+    if (!canvasRef) return;
+
+    try {
+      // Convert canvas to blob
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvasRef!.toBlob(resolve, "image/png"),
+      );
+
+      if (!blob) throw new Error("Failed to generate image");
+
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `marker-debug-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      console.log("Marker downloaded for debugging", {
+        blobSize: blob.size,
+        blobType: blob.type,
+      });
+    } catch (err) {
+      console.error("Download failed:", err);
+      error = err instanceof Error ? err.message : "Download failed";
+    }
+  }
+
   // Export method to auto-generate and upload marker with default settings
   export async function autoGenerateAndUploadMarker(): Promise<string | null> {
     // Create a default marker with default image (placeholder blue teardrop)
@@ -464,6 +495,14 @@
           <div class="flex gap-2 pt-2">
             <Button variant="outline" class="flex-1" onclick={reset}>
               Change Image
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onclick={downloadMarkerForDebug}
+              title="Download canvas as PNG to inspect what will be uploaded"
+            >
+              Download
             </Button>
             <Button
               class="flex-1"
