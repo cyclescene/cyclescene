@@ -59,8 +59,8 @@ func hexToRGBA(hexColor string) (color.Color, error) {
 	return color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}, nil
 }
 
-// createTeardropMarker creates a teardrop-shaped marker with user image inside
-// The teardrop is colored with the provided markerColor, and the user's image is scaled and centered
+// createTeardropMarker creates a teardrop-shaped marker with circular user image inside
+// The teardrop is colored with the provided markerColor, with padding that forms the teardrop point
 func createTeardropMarker(userImg image.Image, size int, markerColor string) image.Image {
 	// Parse marker color
 	bgColor, err := hexToRGBA(markerColor)
@@ -81,10 +81,10 @@ func createTeardropMarker(userImg image.Image, size int, markerColor string) ima
 
 	// Draw teardrop shape with marker color
 	centerX := float64(size) / 2.0
-	centerY := float64(size) * 0.45 // Slightly up to make room for point
+	centerY := float64(size) * 0.38 // Position circle in upper part for teardrop effect
 
 	// Draw teardrop body (circle in upper part)
-	radius := float64(size) * 0.35
+	circleRadius := float64(size) * 0.32
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
 			dx := float64(x) - centerX
@@ -92,15 +92,15 @@ func createTeardropMarker(userImg image.Image, size int, markerColor string) ima
 			dist := math.Sqrt(dx*dx + dy*dy)
 
 			// Teardrop body - circle part
-			if dist <= radius && float64(y) <= centerY+radius {
+			if dist <= circleRadius {
 				teardrop.SetColor(x, y, bgColor)
 			}
 
-			// Teardrop point - triangle part
-			if float64(y) > centerY+radius && float64(y) < centerY+radius*1.8 {
+			// Teardrop point - triangle part (bottom padding)
+			if float64(y) > centerY+circleRadius && float64(y) < centerY+circleRadius*1.95 {
 				pointX := float64(size) / 2.0
-				pointY := centerY + radius*1.8
-				widthAtY := radius * (pointY - float64(y)) / (pointY - (centerY + radius))
+				pointY := centerY + circleRadius*1.95
+				widthAtY := circleRadius * (pointY - float64(y)) / (pointY - (centerY + circleRadius))
 				if math.Abs(dx) <= widthAtY {
 					teardrop.SetColor(x, y, bgColor)
 				}
@@ -108,14 +108,46 @@ func createTeardropMarker(userImg image.Image, size int, markerColor string) ima
 		}
 	}
 
-	// Scale and center user image inside teardrop body
-	userImgResized := resizeImage(userImg, int(radius*1.5))
-	startX := int(centerX - float64(userImgResized.Bounds().Dx())/2)
-	startY := int(centerY - float64(userImgResized.Bounds().Dy())/2)
+	// Create circular user image with proper sizing
+	imageSize := int(circleRadius * 1.9)
+	circularUserImg := makeCircularImage(userImg, imageSize)
 
-	draw.Draw(teardrop, userImgResized.Bounds().Add(image.Pt(startX, startY)), userImgResized, image.Pt(0, 0), draw.Over)
+	// Position circular image in center of teardrop circle
+	startX := int(centerX) - imageSize/2
+	startY := int(centerY) - imageSize/2
+
+	draw.Draw(teardrop, circularUserImg.Bounds().Add(image.Pt(startX, startY)), circularUserImg, image.Pt(0, 0), draw.Over)
 
 	return teardrop
+}
+
+// makeCircularImage creates a circular version of an image with alpha transparency
+func makeCircularImage(img image.Image, size int) image.Image {
+	// Resize image to desired size
+	resized := resizeImage(img, size)
+
+	// Create circular mask
+	circular := image.NewRGBA(image.Rect(0, 0, size, size))
+	radius := float64(size) / 2.0
+	centerX := radius
+	centerY := radius
+
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			dx := float64(x) - centerX
+			dy := float64(y) - centerY
+			dist := math.Sqrt(dx*dx + dy*dy)
+
+			// If within circle radius, copy pixel from resized image
+			if dist <= radius {
+				r, g, b, a := resized.At(x, y).RGBA()
+				circular.SetRGBA(x, y, color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(b >> 8), A: uint8(a >> 8)})
+			}
+			// Otherwise keep transparent
+		}
+	}
+
+	return circular
 }
 
 // slugify converts a string to a URL-safe slug
