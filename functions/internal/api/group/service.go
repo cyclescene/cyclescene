@@ -102,8 +102,8 @@ func (s *Service) RegisterGroup(reg *Registration) (*Response, error) {
 
 	// Send magic link email if service is configured and organizer email exists
 	if s.magicLinkSvc != nil && reg.Email != "" {
-		// Build the full redirect URL with the edit token
-		redirectURL := fmt.Sprintf("%s?token=%s", s.editLinkBaseURL, editToken)
+		// Build the full redirect URL with the edit token and city
+		redirectURL := fmt.Sprintf("%s?token=%s&city=%s", s.editLinkBaseURL, editToken, strings.ToLower(reg.City))
 		_, err := s.magicLinkSvc.SendMagicLink(context.Background(), magiclink.SendMagicLinkRequest{
 			Email:       reg.Email,
 			RedirectURL: redirectURL,
