@@ -11,8 +11,8 @@
 interface MarkerInfo {
   x: number
   y: number
-  width: number
-  height: number
+  width?: number
+  height?: number
 }
 
 interface SpritesheetMetadata {
@@ -83,9 +83,13 @@ export function extractMarkerFromSpritesheet(
   spritesheetImage: HTMLImageElement,
   markerInfo: MarkerInfo
 ): string {
+  // Default to 64x64 if width/height not provided (for backwards compatibility with old metadata)
+  const width = markerInfo.width || 64
+  const height = markerInfo.height || 64
+
   const canvas = document.createElement("canvas")
-  canvas.width = markerInfo.width
-  canvas.height = markerInfo.height
+  canvas.width = width
+  canvas.height = height
 
   const ctx = canvas.getContext("2d")
   if (!ctx) {
@@ -97,16 +101,16 @@ export function extractMarkerFromSpritesheet(
     spritesheetImage,
     markerInfo.x,
     markerInfo.y,
-    markerInfo.width,
-    markerInfo.height,
+    width,
+    height,
     0,
     0,
-    markerInfo.width,
-    markerInfo.height
+    width,
+    height
   )
 
   const dataUrl = canvas.toDataURL("image/png")
-  console.log(`[Markers] Extracted marker from spritesheet at (${markerInfo.x}, ${markerInfo.y}), size: ${markerInfo.width}x${markerInfo.height}`)
+  console.log(`[Markers] Extracted marker from spritesheet at (${markerInfo.x}, ${markerInfo.y}), size: ${width}x${height}`)
   console.log(`[Markers] DataURL length: ${dataUrl.length}, first 100 chars: ${dataUrl.substring(0, 100)}`)
   return dataUrl
 }
