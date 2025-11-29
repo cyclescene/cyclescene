@@ -30,6 +30,8 @@
   let imageScale = $state(1.0);
   let maskScale = $state(0.8);
   let markerColor = $state(DEFAULT_MARKER_COLOR);
+  let pendingMarkerColor = $state(DEFAULT_MARKER_COLOR);
+  let colorChangeTimeout: ReturnType<typeof setTimeout> | null = null;
   let isUploading = $state(false);
   let error = $state<string | null>(null);
   let canvasRef = $state<HTMLCanvasElement>();
@@ -42,14 +44,14 @@
   const SVG_PATH =
     "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z";
 
-  // Derived state for canvas updates
+  // Re-render when image preview loads or sliders change
+  // Color changes are handled efficiently within renderCanvas
   $effect(() => {
     if (imagePreview && canvasRef) {
       renderCanvas();
     }
   });
 
-  // Re-render when sliders change
   $effect(() => {
     // Dependency on scales to trigger re-render
     if (imageScale || maskScale) {
@@ -58,6 +60,27 @@
       }
     }
   });
+
+  $effect(() => {
+    // Re-render when color changes (already optimized in renderCanvas)
+    if (markerColor && imagePreview && canvasRef) {
+      renderCanvas();
+    }
+  });
+
+  function handleColorChange(color: string) {
+    pendingMarkerColor = color;
+
+    // Clear existing timeout
+    if (colorChangeTimeout) {
+      clearTimeout(colorChangeTimeout);
+    }
+
+    // Debounce color updates by 150ms to avoid excessive re-renders
+    colorChangeTimeout = setTimeout(() => {
+      markerColor = color;
+    }, 150);
+  }
 
   function handleFileSelect(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -469,12 +492,14 @@
                 <input
                   id="markerColor"
                   type="color"
-                  bind:value={markerColor}
+                  value={pendingMarkerColor}
+                  onchange={(e) => handleColorChange((e.target as HTMLInputElement).value)}
+                  oninput={(e) => pendingMarkerColor = (e.target as HTMLInputElement).value}
                   class="h-12 cursor-pointer w-full rounded border border-input"
                 />
               </div>
               <div class="text-xs text-muted-foreground font-mono">
-                {markerColor.toUpperCase()}
+                {pendingMarkerColor.toUpperCase()}
               </div>
             </div>
           </div>
