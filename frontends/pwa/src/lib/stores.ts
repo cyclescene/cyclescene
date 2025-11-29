@@ -605,25 +605,19 @@ export const validRides = derived([ridesWithLocations], ([$rides]) => {
     id: ride.id,
     name: ride.title,
     lat: ride.lat as number,
-    lng: ride.lng as number
+    lng: ride.lng as number,
+    marker_key: ride.group_marker
   }))
 })
 
 export const rideGeoJSON = derived(
-  [validRides, ridesWithLocations], ($validRides, $allRides) => {
+  validRides, ($rides) => {
 
     const seenCoords: Record<string, number> = {}
-    const features = new Array($validRides.length)
+    const features = new Array($rides.length)
 
-    console.log(`[RideGeoJSON] Creating GeoJSON with ${$validRides.length} valid rides`);
-    console.log(`[RideGeoJSON] Total rides with locations: ${$allRides.length}`);
-
-    for (let i = 0; i < $validRides.length; i++) {
-      const ride = $validRides[i]
-      // Find the original ride to get group_marker info
-      const originalRide = $allRides.find(r => r.id === ride.id);
-      const groupMarker = originalRide?.group_marker ? `group-marker-${originalRide.group_marker}` : "";
-
+    for (let i = 0; i < $rides.length; i++) {
+      const ride = $rides[i]
       let lng = ride.lng
       let lat = ride.lat
 
@@ -639,24 +633,23 @@ export const rideGeoJSON = derived(
 
       seenCoords[key] = dupCount + 1
 
+      const groupMarkerIcon = ride.marker_key ? `group-marker-${ride.marker_key}` : "";
+
       features[i] = {
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
-        properties: { id: ride.id, name: ride.name, group_marker_icon: groupMarker }
-      }
-
-      if (i === 0) {
-        console.log(`[RideGeoJSON] First feature:`, features[i]);
+        properties: {
+          id: ride.id,
+          name: ride.name,
+          group_marker_icon: groupMarkerIcon
+        }
       }
     }
 
-    const geoJSON = {
+    return {
       type: "FeatureCollection",
       features
     } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
-
-    console.log(`[RideGeoJSON] Final GeoJSON:`, geoJSON);
-    return geoJSON;
   }
 )
 

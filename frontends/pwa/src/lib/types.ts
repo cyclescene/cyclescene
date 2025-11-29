@@ -35,4 +35,5 @@ export interface ValidatedRide {
   name: string;
   lat: number;
   lng: number;
+  marker_key?: string;
 }
