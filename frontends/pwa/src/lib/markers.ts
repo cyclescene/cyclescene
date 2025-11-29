@@ -28,24 +28,32 @@ export async function loadSpritesheet(cityCode: string): Promise<{
   image: HTMLImageElement
   metadata: SpritesheetMetadata
 }> {
-  const baseUrl = `https://storage.googleapis.com/cyclescene-479119-optimized-images`
+  const baseUrl = `https://storage.googleapis.com/cyclescene-479119-user-media-optimized`
   const pngUrl = `${baseUrl}/sprites/${cityCode}/markers.png`
   const jsonUrl = `${baseUrl}/sprites/${cityCode}/markers.json`
 
+  console.log(`[Markers] Loading spritesheet for city: ${cityCode}`)
+  console.log(`[Markers] Metadata URL: ${jsonUrl}`)
+  console.log(`[Markers] PNG URL: ${pngUrl}`)
+
   try {
     // Fetch metadata JSON
+    console.log(`[Markers] Fetching metadata JSON...`)
     const metadataResponse = await fetch(jsonUrl)
     if (!metadataResponse.ok) {
       throw new Error(`Failed to fetch spritesheet metadata: ${metadataResponse.status}`)
     }
     const metadata = (await metadataResponse.json()) as SpritesheetMetadata
+    console.log(`[Markers] ✓ Metadata loaded successfully`)
 
     // Load spritesheet image
+    console.log(`[Markers] Loading spritesheet image...`)
     const image = new Image()
     image.crossOrigin = "anonymous"
 
     return new Promise((resolve, reject) => {
       image.onload = () => {
+        console.log(`[Markers] ✓ Spritesheet image loaded successfully`)
         resolve({ image, metadata })
       }
       image.onerror = () => {
@@ -54,7 +62,7 @@ export async function loadSpritesheet(cityCode: string): Promise<{
       image.src = pngUrl
     })
   } catch (error) {
-    console.error(`Error loading spritesheet for city ${cityCode}:`, error)
+    console.error(`[Markers] ✗ Error loading spritesheet for city ${cityCode}:`, error)
     throw error
   }
 }
