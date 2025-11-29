@@ -4,7 +4,10 @@
   import type { MapLayerMouseEvent } from "maplibre-gl";
   import { selectedRideId } from "$lib/stores";
 
-  const ICON_SIZE = 0.8;
+  const DEFAULT_SIZE = 0.4;
+  const SELECTED_SIZE = 0.6;
+  const CUSTOM_MARKER_SIZE = 0.8;
+  const CUSTOM_MARKER_SELECTED_SIZE = 1.0;
 
   const {
     sourceId,
@@ -40,7 +43,26 @@
       ["get", "group_marker_icon"],
       defaultIconName
     ],
-    "icon-size": ICON_SIZE,
+    "icon-size": [
+      "case",
+      // If it's a custom marker (group_marker_icon is not empty)
+      ["!=", ["get", "group_marker_icon"], ""],
+      [
+        "match",
+        ["to-string", ["get", "id"]],
+        selectedId,
+        CUSTOM_MARKER_SELECTED_SIZE, // 1.0 when selected
+        CUSTOM_MARKER_SIZE,           // 0.8 normally
+      ],
+      // Otherwise it's a default marker
+      [
+        "match",
+        ["to-string", ["get", "id"]],
+        selectedId,
+        SELECTED_SIZE,  // 0.6 when selected
+        DEFAULT_SIZE,   // 0.4 normally
+      ],
+    ],
     "icon-allow-overlap": true,
   }}
   paint={{
