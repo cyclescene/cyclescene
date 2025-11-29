@@ -210,6 +210,7 @@
         drawHeight,
       );
 
+      console.log("CustomMarkerBuilder: Image drawn to canvas successfully");
       ctx.restore();
     } catch (err) {
       console.error("CustomMarkerBuilder: Error rendering canvas", err);
@@ -223,12 +224,26 @@
     try {
       isUploading = true;
 
+      // Ensure final render is complete before converting to blob
+      // Add a small delay to ensure canvas is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      console.log("CustomMarkerBuilder: Converting canvas to blob...", {
+        canvasWidth: canvasRef.width,
+        canvasHeight: canvasRef.height,
+      });
+
       // Convert canvas to blob
       const blob = await new Promise<Blob | null>((resolve) =>
         canvasRef!.toBlob(resolve, "image/png"),
       );
 
       if (!blob) throw new Error("Failed to generate image");
+
+      console.log("CustomMarkerBuilder: Blob generated", {
+        size: blob.size,
+        type: blob.type,
+      });
 
       const file = new File([blob], "custom-marker.png", {
         type: "image/png",
