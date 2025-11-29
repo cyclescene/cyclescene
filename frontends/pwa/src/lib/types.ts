@@ -25,6 +25,8 @@ export interface RideData {
   timedetails: string
   weburl: string
   webname: string
+  group_code?: string
+  group_marker?: string
 }
 
 
@@ -33,4 +35,5 @@ export interface ValidatedRide {
   name: string;
   lat: number;
   lng: number;
+  marker_key?: string;
 }

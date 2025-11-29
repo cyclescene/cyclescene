@@ -3,6 +3,7 @@ package group
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -14,6 +15,18 @@ type Repository struct {
 
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
+}
+
+// slugify converts a string to a URL-safe slug
+func slugify(s string) string {
+	// Convert to lowercase and trim
+	slug := strings.ToLower(strings.TrimSpace(s))
+	// Replace spaces and special characters with hyphens
+	re := regexp.MustCompile(`[^a-z0-9]+`)
+	slug = re.ReplaceAllString(slug, "-")
+	// Remove leading/trailing hyphens
+	slug = strings.Trim(slug, "-")
+	return slug
 }
 
 func (r *Repository) ValidateGroupCode(code string) (string, error) {
@@ -43,10 +56,16 @@ func (r *Repository) CheckCodeAvailability(code string) (bool, error) {
 func (r *Repository) CreateGroup(reg *Registration, editToken string) error {
 	groupID := uuid.New().String()
 
+	// Generate public_id from group name
+	publicID := slugify(reg.Name)
+
+	// Generate marker from group code (slugified lowercase)
+	marker := slugify(strings.ToUpper(reg.Code))
+
 	_, err := r.db.Exec(`
-		INSERT INTO ride_groups (id, code, name, description, city, web_url, edit_token, is_active, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-	`, groupID, strings.ToUpper(reg.Code), reg.Name, reg.Description, reg.City, reg.WebURL, editToken)
+		INSERT INTO ride_groups (id, code, name, description, city, web_url, edit_token, public_id, marker, is_active, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+	`, groupID, strings.ToUpper(reg.Code), reg.Name, reg.Description, reg.City, reg.WebURL, editToken, publicID, marker)
 
 	return err
 }

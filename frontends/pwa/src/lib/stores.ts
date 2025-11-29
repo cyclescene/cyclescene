@@ -605,7 +605,8 @@ export const validRides = derived([ridesWithLocations], ([$rides]) => {
     id: ride.id,
     name: ride.title,
     lat: ride.lat as number,
-    lng: ride.lng as number
+    lng: ride.lng as number,
+    marker_key: ride.group_marker
   }))
 })
 
@@ -632,10 +633,16 @@ export const rideGeoJSON = derived(
 
       seenCoords[key] = dupCount + 1
 
+      const groupMarkerIcon = ride.marker_key ? `group-marker-${ride.marker_key}` : "";
+
       features[i] = {
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
-        properties: { id: ride.id, name: ride.name }
+        properties: {
+          id: ride.id,
+          name: ride.name,
+          group_marker_icon: groupMarkerIcon
+        }
       }
     }
 
@@ -754,12 +761,14 @@ export const singleRideGeoJSON = derived(
       } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
     }
 
+    const groupMarker = $currentRide.group_marker ? `group-marker-${$currentRide.group_marker}` : "";
+
     return {
       type: "FeatureCollection",
       features: [{
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
-        properties: { id: $currentRide.id, name: $currentRide.title }
+        properties: { id: $currentRide.id, name: $currentRide.title, group_marker_icon: groupMarker }
       }]
     } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
   }

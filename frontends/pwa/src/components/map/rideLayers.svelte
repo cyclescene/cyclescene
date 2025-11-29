@@ -9,11 +9,11 @@
 
   const {
     sourceId,
-    iconName,
+    defaultIconName,
     onRideClick,
   }: {
     sourceId: string;
-    iconName: string;
+    defaultIconName: string;
     onRideClick?: (e: MapLayerMouseEvent) => void;
   } = $props();
 
@@ -24,13 +24,23 @@
   $effect(() => {
     selectedId = $selectedRideId;
   });
+
+  $effect(() => {
+    console.log(`[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`);
+  });
 </script>
 
+<!-- Unified marker layer: shows group marker if available, otherwise default icon -->
 <SymbolLayer
   id="ride-icons"
   source={sourceId}
   layout={{
-    "icon-image": iconName,
+    "icon-image": [
+      "case",
+      ["!=", ["get", "group_marker_icon"], ""],
+      ["get", "group_marker_icon"],
+      defaultIconName
+    ],
     "icon-size": [
       "match",
       ["to-string", ["get", "id"]],
