@@ -29,6 +29,13 @@
   let groupMarkers: Record<string, string> = $state({});
   let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
 
+  // Debug logging
+  $effect(() => {
+    console.log(
+      `[MapComponent] Render conditions: rideGeoJSON=${!!$rideGeoJSON}, iconLoaded=${iconLoaded}, groupMarkersLoaded=${groupMarkersLoaded}`,
+    );
+  });
+
   function handleRideClick(e: MapLayerMouseEvent) {
     if (e.features && e.features.length > 0) {
       const feature = e.features[0];
@@ -72,6 +79,7 @@
           iconLoaded = true;
         } catch (error) {
           console.error("failed to load custom icon: ", error);
+          iconLoaded = true; // Set to true anyway so layers render
         }
       }
 
