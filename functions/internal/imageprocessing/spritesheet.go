@@ -19,12 +19,11 @@ const (
 	padding    = 2
 )
 
-// MarkerInfo represents a marker's position in the spritesheet
+// MarkerInfo represents a marker's metadata
 type MarkerInfo struct {
-	X      int `json:"x"`
-	Y      int `json:"y"`
-	Width  int `json:"width"`
-	Height int `json:"height"`
+	X    int    `json:"x"`
+	Y    int    `json:"y"`
+	Path string `json:"path"` // Path to individual marker image in GCS
 }
 
 // SpritesheetMetadata represents the complete spritesheet metadata
@@ -34,51 +33,56 @@ type SpritesheetMetadata struct {
 
 // RegenerateSpritesheet regenerates the spritesheet for a city after a new marker is added
 // Steps:
-// 1. Download existing spritesheet + metadata (if exists)
-// 2. Extract all existing markers from spritesheet using metadata bounds
-// 3. Add the new marker to the collection
-// 4. Regenerate spritesheet with all markers
-// 5. Upload new spritesheet PNG and metadata JSON
+// 1. Download existing metadata (if exists)
+// 2. Download individual marker images from GCS
+// 3. Save the new marker image individually
+// 4. Regenerate spritesheet by compositing all individual markers
+// 5. Upload new spritesheet PNG and updated metadata JSON
 func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode string, newMarkerID string, newMarkerImg image.Image) error {
 	slog.Info("regenerating spritesheet", "city", cityCode, "newMarkerID", newMarkerID)
 
 	// Collection of all markers: ID -> image
 	markers := make(map[string]image.Image)
 
-	// Try to download existing spritesheet and metadata
+	// Try to download existing metadata
 	existingMetadata, err := p.downloadExistingMetadata(ctx, cityCode)
 	if err != nil {
-		slog.Warn("no existing spritesheet found, starting fresh", "city", cityCode, "error", err)
+		slog.Warn("no existing metadata found, starting fresh", "city", cityCode, "error", err)
 		existingMetadata = &SpritesheetMetadata{Markers: make(map[string]MarkerInfo)}
 	}
 
-	// Extract existing markers from spritesheet using metadata bounds
+	// Download individual marker images from the paths in metadata
 	if len(existingMetadata.Markers) > 0 {
-		existingSpritesheetData, err := p.downloadFromGCS(ctx, p.optimizedBucket, fmt.Sprintf("sprites/%s/markers.png", cityCode))
-		if err != nil {
-			slog.Warn("failed to download existing spritesheet, will use only new marker", "city", cityCode, "error", err)
-		} else {
-			existingSpritesheet, _, err := image.Decode(bytes.NewReader(existingSpritesheetData))
-			if err != nil {
-				slog.Warn("failed to decode existing spritesheet", "city", cityCode, "error", err)
-			} else {
-				// Extract each marker from the spritesheet using metadata bounds
-				for markerID, info := range existingMetadata.Markers {
-					// Use SubImage to extract the rectangular region
-					rect := image.Rect(info.X, info.Y, info.X+info.Width, info.Y+info.Height)
-					extractedMarker := existingSpritesheet.(interface {
-						SubImage(r image.Rectangle) image.Image
-					}).SubImage(rect)
-					markers[markerID] = extractedMarker
-					slog.Debug("extracted existing marker", "markerID", markerID, "bounds", rect.String())
-				}
+		for markerID, info := range existingMetadata.Markers {
+			if info.Path == "" {
+				slog.Warn("marker has no path in metadata, skipping", "markerID", markerID)
+				continue
 			}
+
+			markerData, err := p.downloadFromGCS(ctx, p.optimizedBucket, info.Path)
+			if err != nil {
+				slog.Warn("failed to download individual marker image", "markerID", markerID, "path", info.Path, "error", err)
+				continue
+			}
+
+			markerImg, _, err := image.Decode(bytes.NewReader(markerData))
+			if err != nil {
+				slog.Warn("failed to decode marker image", "markerID", markerID, "error", err)
+				continue
+			}
+
+			markers[markerID] = markerImg
+			slog.Debug("loaded existing marker", "markerID", markerID, "path", info.Path)
 		}
 	}
 
-	// Add the new marker to the collection
+	// Save and add the new marker to the collection
+	newMarkerPath := fmt.Sprintf("sprites/%s/markers/%s.png", cityCode, newMarkerID)
+	if err := p.saveMarkerImage(ctx, newMarkerPath, newMarkerImg); err != nil {
+		return fmt.Errorf("failed to save new marker image: %v", err)
+	}
 	markers[newMarkerID] = newMarkerImg
-	slog.Info("added new marker to collection", "markerID", newMarkerID, "totalMarkers", len(markers))
+	slog.Info("added new marker to collection", "markerID", newMarkerID, "path", newMarkerPath, "totalMarkers", len(markers))
 
 	// Sort marker IDs for consistent spritesheet layout
 	markerIDs := make([]string, 0, len(markers))
@@ -112,19 +116,26 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		y := row * (markerSize + padding)
 
 		// Draw marker onto spritesheet
-		// Use a normalized destination rect to handle both fresh images and extracted subimages
 		dstRect := image.Rect(x, y, x+markerSize, y+markerSize)
 		draw.Draw(spritesheet, dstRect, markerImg, image.Pt(0, 0), draw.Over)
 
-		// Store metadata
-		newMetadata.Markers[markerID] = MarkerInfo{
-			X:      x,
-			Y:      y,
-			Width:  markerSize,
-			Height: markerSize,
+		// Get path from existing metadata or use new marker path
+		markerPath := ""
+		if info, exists := existingMetadata.Markers[markerID]; exists {
+			markerPath = info.Path
+		} else {
+			// This is the new marker
+			markerPath = fmt.Sprintf("sprites/%s/markers/%s.png", cityCode, markerID)
 		}
 
-		slog.Debug("composited marker", "markerID", markerID, "position", fmt.Sprintf("(%d,%d)", x, y))
+		// Store metadata with path reference
+		newMetadata.Markers[markerID] = MarkerInfo{
+			X:    x,
+			Y:    y,
+			Path: markerPath,
+		}
+
+		slog.Debug("composited marker", "markerID", markerID, "position", fmt.Sprintf("(%d,%d)", x, y), "path", markerPath)
 	}
 
 	// Encode spritesheet to PNG
@@ -176,6 +187,18 @@ func (p *ImageProcessor) downloadExistingMetadata(ctx context.Context, cityCode 
 
 	slog.Info("loaded existing metadata", "markerCount", len(metadata.Markers))
 	return &metadata, nil
+}
+
+// saveMarkerImage encodes and uploads an individual marker image to GCS
+func (p *ImageProcessor) saveMarkerImage(ctx context.Context, path string, img image.Image) error {
+	// Encode image to PNG
+	buf := new(bytes.Buffer)
+	if err := png.Encode(buf, img); err != nil {
+		return fmt.Errorf("failed to encode marker image: %v", err)
+	}
+
+	slog.Info("uploading individual marker image", "bucket", p.optimizedBucket, "path", path, "size", len(buf.Bytes()))
+	return p.uploadToGCSWithContentType(ctx, p.optimizedBucket, path, buf.Bytes(), "image/png")
 }
 
 // uploadToGCSWithContentType uploads data to GCS with a specified content type
