@@ -294,18 +294,13 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 
 // ProcessMarker handles marker image processing for group spritesheets
 // Steps:
-// 1. Download marker from staging bucket
-// 2. Decode and validate image
-// 3. Resize to 64x64 PNG
-// 4. Regenerate spritesheet for the city (extracts old markers + adds new)
-// 5. Query group by code and slugify name to create public_id
-// 6. Set public_id and marker in database after spritesheet is ready
-// 7. Delete staging file
-// 8. Return path to spritesheet PNG
+// 1. Download marker image from staging bucket
+// 2. Decode and resize to 64x64
+// 3. Add to spritesheet for the city
 func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupCode string) (string, error) {
 	slog.Info("processing marker", "imageUUID", imageUUID, "cityCode", cityCode, "groupCode", groupCode)
 
-	// Try to find the image file with common extensions
+	// Step 1: Download marker from staging bucket
 	extensions := []string{".png", ".jpg", ".jpeg", ".gif", ".webp"}
 	var imageData []byte
 	var stagingObjectName string
@@ -315,7 +310,6 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 		stagingObjectName = fmt.Sprintf("%s%s", imageUUID, ext)
 		slog.Info("attempting to download marker from staging", "bucket", p.stagingBucket, "object", stagingObjectName)
 
-		// Check if object exists first
 		exists, err := p.objectExists(ctx, p.stagingBucket, stagingObjectName)
 		if err != nil {
 			slog.Warn("failed to check if object exists", "extension", ext, "error", err)
@@ -323,76 +317,40 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 		}
 
 		if !exists {
-			slog.Info("object does not exist in staging bucket", "extension", ext, "object", stagingObjectName)
+			slog.Info("object does not exist in staging bucket", "extension", ext)
 			continue
 		}
 
 		imageData, err = p.downloadFromGCS(ctx, p.stagingBucket, stagingObjectName)
 		if err == nil {
-			slog.Info("found marker with extension", "extension", ext)
+			slog.Info("downloaded marker from staging", "extension", ext, "fileSize", len(imageData))
 			break
 		}
 		slog.Warn("failed to download marker with this extension", "extension", ext, "error", err)
 	}
 
 	if imageData == nil {
-		return "", fmt.Errorf("failed to download marker from staging bucket with any common extension")
+		return "", fmt.Errorf("failed to download marker from staging bucket")
 	}
 
-	slog.Info("downloaded marker file", "imageUUID", imageUUID, "stagingObjectName", stagingObjectName, "fileSize", len(imageData))
-
-	// Decode the marker image
+	// Step 2: Decode and resize to 64x64
 	markerImg, _, err := image.Decode(bytes.NewReader(imageData))
 	if err != nil {
 		return "", fmt.Errorf("failed to decode marker image: %v", err)
 	}
 
-	// Resize marker to 64x64 directly (skipping teardrop generation)
 	const markerSize = 64
 	resizedMarker := resizeImage(markerImg, markerSize)
+	slog.Info("resized marker to 64x64", "imageUUID", imageUUID)
 
-	// Use the slugified group code as the marker key in the spritesheet
+	// Step 3: Add to spritesheet
 	markerKey := slugify(groupCode)
-	slog.Info("marker key", "markerKey", markerKey)
+	slog.Info("regenerating spritesheet", "cityCode", cityCode, "markerKey", markerKey)
 
-	// Regenerate spritesheet with new marker
 	if err := p.RegenerateSpritesheet(ctx, cityCode, markerKey, resizedMarker); err != nil {
 		return "", fmt.Errorf("failed to regenerate spritesheet: %v", err)
 	}
 
-	// If database is available, get group details and set public_id and marker
-	if p.db != nil {
-		dbConnector := &DBConnector{db: p.db}
-
-		// Get group by code to retrieve name for public_id generation
-		groupID, groupName, err := dbConnector.GetGroupByCode(groupCode)
-		if err != nil {
-			slog.Warn("failed to get group by code, marker will not be persisted in database", "groupCode", groupCode, "error", err)
-		} else {
-			// Generate public_id by slugifying the group name
-			publicID := slugify(groupName)
-			slog.Info("setting marker for group", "groupCode", groupCode, "publicID", publicID, "markerKey", markerKey, "groupID", groupID)
-
-			// Update group with public_id and marker
-			if err := dbConnector.SetGroupMarkerAndPublicID(groupCode, publicID, markerKey); err != nil {
-				slog.Warn("failed to set group marker and public_id", "groupCode", groupCode, "error", err)
-				// Don't fail the marker processing if DB update fails - spritesheet is already ready
-			} else {
-				slog.Info("successfully set marker for group", "groupCode", groupCode, "publicID", publicID)
-			}
-		}
-	} else {
-		slog.Warn("database connection not available, skipping marker persistence")
-	}
-
-	// Delete staging file - TEMPORARILY DISABLED FOR DEBUGGING
-	// Keep staging file to inspect what was actually uploaded
-	// slog.Info("deleting staging file", "bucket", p.stagingBucket, "object", stagingObjectName)
-	// if err := p.deleteFromGCS(ctx, p.stagingBucket, stagingObjectName); err != nil {
-	// 	slog.Warn("failed to delete staging file, continuing anyway", "error", err)
-	// }
-
-	// Return the spritesheet PNG path
 	spritesheetPath := fmt.Sprintf("https://storage.googleapis.com/%s/sprites/%s/markers.png", p.optimizedBucket, cityCode)
 	slog.Info("marker processing complete", "spritesheetPath", spritesheetPath)
 	return spritesheetPath, nil
