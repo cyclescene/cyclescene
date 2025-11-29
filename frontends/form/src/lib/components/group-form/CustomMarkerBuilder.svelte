@@ -44,27 +44,21 @@
   const SVG_PATH =
     "M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z";
 
-  // Re-render when image preview loads or sliders change
-  // Color changes are handled efficiently within renderCanvas
+  // Re-render when image preview loads
   $effect(() => {
     if (imagePreview && canvasRef) {
       renderCanvas();
     }
   });
 
+  // Re-render only when sliders change, NOT on color changes
+  // Color is baked into the preview but doesn't require full re-render
   $effect(() => {
     // Dependency on scales to trigger re-render
     if (imageScale || maskScale) {
       if (imagePreview && canvasRef) {
         renderCanvas();
       }
-    }
-  });
-
-  $effect(() => {
-    // Re-render when color changes (already optimized in renderCanvas)
-    if (markerColor && imagePreview && canvasRef) {
-      renderCanvas();
     }
   });
 
@@ -129,35 +123,9 @@
     ctx.restore();
 
     // 2. Draw White Circle Background
-    // The circle in the SVG is cx="12" cy="9" r="2.5"
-    // We want to allow this "window" to be larger based on maskScale
-    // Default r=2.5 is quite small for an image, let's say base is slightly larger for visibility
-    // But we must respect the user's request: "size of the circle mask to change fo a increased mark marker border size"
-    // Wait, if the mask size changes, does the white circle size change?
-    // The user said: "size of the image to change and the size of the circle mask to change fo a increased mark marker border size"
-    // This implies the white circle is the "border" around the image.
-    // So we draw a white circle, and then draw the image masked by a slightly smaller circle?
-    // Or just draw the image masked by a circle.
-    // Let's interpret:
-    // - The "hole" in the marker is at 12, 9.
-    // - We draw a white circle at 12, 9.
-    // - We draw the image on top, masked by a circle at 12, 9.
-
     const centerX = 12 * scale;
     const centerY = 9 * scale;
-    // Base radius from SVG is 2.5. Let's make the "window" adjustable.
-    // Actually, the SVG path has a hole or is it solid? The path provided is solid with a hole cut out?
-    // "M12 2... ...z" - it's a single path.
-    // The SVG provided in prompt has a separate <circle> element:
-    // <circle cx="12" cy="9" r="2.5" fill="white" fillOpacity="0.9" />
-    // So we should draw this white circle.
-
     const baseRadius = 2.5 * scale;
-    // We'll use maskScale to adjust the size of this white circle area (and thus the image area)
-    // If maskScale is large, the white circle is large.
-    // But the marker body is fixed. If we make it too big it will overlap the marker borders.
-    // Let's allow maskScale to go from 0.5 to 1.5 roughly.
-
     const currentRadius = baseRadius * maskScale;
 
     ctx.beginPath();
@@ -166,98 +134,87 @@
     ctx.fill();
     ctx.closePath();
 
-    // 3. Draw Image
-    // We want to mask the image to be inside the circle.
-    // But wait, if we want a "border", the image should be slightly smaller than the white circle?
-    // The prompt says: "size of the circle mask to change fo a increased mark marker border size"
-    // This implies the white circle is the background, and the image is on top.
-    // If the image is smaller than the white circle, we see a white border.
-    // So we need TWO sizes? Or just one mask size and one image size?
-    // "one that will allow foir the size of the image to change and the size of the circle mask to change"
-    // Okay.
-    // Circle Mask Size -> controls the clipping area of the image? Or the white background?
-    // Let's assume:
-    // - White Circle is drawn at `currentRadius`.
-    // - Image is drawn masked by `currentRadius`.
-    // - `imageScale` controls the zoom level of the image INSIDE that mask.
+    // 3. Draw Image (with proper async handling)
+    // Load image first, then draw it clipped to the circle
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.src = imagePreview;
 
-    // Let's try this:
-    // Clip to the circle
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, currentRadius, 0, Math.PI * 2);
-    ctx.clip();
+        console.log("CustomMarkerBuilder: Loading image...", {
+          srcLength: imagePreview.length,
+        });
 
-    // Draw image centered at centerX, centerY
-    const img = new Image();
-    img.src = imagePreview;
+        if (image.complete) {
+          console.log("CustomMarkerBuilder: Image already complete");
+          resolve(image);
+        } else {
+          image.onload = () => {
+            console.log("CustomMarkerBuilder: Image loaded", {
+              width: image.width,
+              height: image.height,
+            });
+            resolve(image);
+          };
+          image.onerror = (e) => {
+            console.error("CustomMarkerBuilder: Image load error", e);
+            reject(new Error("Failed to load image"));
+          };
+        }
+      });
 
-    console.log("CustomMarkerBuilder: Loading image...", {
-      srcLength: imagePreview.length,
-    });
-
-    await new Promise((resolve) => {
-      if (img.complete) {
-        console.log("CustomMarkerBuilder: Image already complete");
-        resolve(null);
-      } else {
-        img.onload = () => {
-          console.log("CustomMarkerBuilder: Image loaded", {
-            width: img.width,
-            height: img.height,
-          });
-          resolve(null);
-        };
-        img.onerror = (e) => {
-          console.error("CustomMarkerBuilder: Image load error", e);
-          resolve(null); // Resolve anyway to avoid hanging
-        };
+      if (img.width === 0 || img.height === 0) {
+        console.error("CustomMarkerBuilder: Image has 0 dimensions");
+        return;
       }
-    });
 
-    if (img.width === 0 || img.height === 0) {
-      console.error("CustomMarkerBuilder: Image has 0 dimensions");
+      // Now that image is loaded, clip and draw it
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, currentRadius, 0, Math.PI * 2);
+      ctx.clip();
+
+      // Calculate aspect ratio to fit
+      const aspect = img.width / img.height;
+      let drawWidth, drawHeight;
+
+      // Base size: cover the circle diameter
+      const diameter = currentRadius * 2;
+
+      if (aspect > 1) {
+        drawHeight = diameter;
+        drawWidth = diameter * aspect;
+      } else {
+        drawWidth = diameter;
+        drawHeight = diameter / aspect;
+      }
+
+      // Apply image scale (zoom)
+      drawWidth *= imageScale;
+      drawHeight *= imageScale;
+
+      console.log("CustomMarkerBuilder: Drawing image", {
+        centerX,
+        centerY,
+        drawWidth,
+        drawHeight,
+        destX: centerX - drawWidth / 2,
+        destY: centerY - drawHeight / 2,
+      });
+
+      ctx.drawImage(
+        img,
+        centerX - drawWidth / 2,
+        centerY - drawHeight / 2,
+        drawWidth,
+        drawHeight,
+      );
+
       ctx.restore();
-      return;
+    } catch (err) {
+      console.error("CustomMarkerBuilder: Error rendering canvas", err);
+      // Canvas still shows the marker teardrop and white circle even if image fails
     }
-
-    // Calculate aspect ratio to fit
-    const aspect = img.width / img.height;
-    let drawWidth, drawHeight;
-
-    // Base size: cover the circle diameter
-    const diameter = currentRadius * 2;
-
-    if (aspect > 1) {
-      drawHeight = diameter;
-      drawWidth = diameter * aspect;
-    } else {
-      drawWidth = diameter;
-      drawHeight = diameter / aspect;
-    }
-
-    // Apply image scale (zoom)
-    drawWidth *= imageScale;
-    drawHeight *= imageScale;
-
-    console.log("CustomMarkerBuilder: Drawing image", {
-      centerX,
-      centerY,
-      drawWidth,
-      drawHeight,
-      destX: centerX - drawWidth / 2,
-      destY: centerY - drawHeight / 2,
-    });
-
-    ctx.drawImage(
-      img,
-      centerX - drawWidth / 2,
-      centerY - drawHeight / 2,
-      drawWidth,
-      drawHeight,
-    );
-
-    ctx.restore();
   }
 
   async function handleUpload() {
