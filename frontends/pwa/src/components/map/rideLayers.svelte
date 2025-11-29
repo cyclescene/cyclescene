@@ -28,7 +28,9 @@
   });
 
   $effect(() => {
-    console.log(`[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`);
+    console.log(
+      `[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`,
+    );
   });
 </script>
 
@@ -39,28 +41,37 @@
   layout={{
     "icon-image": [
       "case",
-      ["!=", ["get", "group_marker_icon"], ""],
-      ["get", "group_marker_icon"],
-      defaultIconName
+      ["has", "group_marker_icon"],
+      [
+        "case",
+        ["!=", ["get", "group_marker_icon"], ""],
+        ["get", "group_marker_icon"],
+        defaultIconName,
+      ],
+      defaultIconName,
     ],
     "icon-size": [
       "case",
-      // If it's a custom marker (group_marker_icon is not empty)
-      ["!=", ["get", "group_marker_icon"], ""],
+      // If it's a custom marker (has group_marker_icon and it's not empty)
+      [
+        "all",
+        ["has", "group_marker_icon"],
+        ["!=", ["get", "group_marker_icon"], ""],
+      ],
       [
         "match",
         ["to-string", ["get", "id"]],
         selectedId,
         CUSTOM_MARKER_SELECTED_SIZE, // 1.0 when selected
-        CUSTOM_MARKER_SIZE,           // 0.8 normally
+        CUSTOM_MARKER_SIZE, // 0.8 normally
       ],
       // Otherwise it's a default marker
       [
         "match",
         ["to-string", ["get", "id"]],
         selectedId,
-        SELECTED_SIZE,  // 0.6 when selected
-        DEFAULT_SIZE,   // 0.4 normally
+        SELECTED_SIZE, // 0.6 when selected
+        DEFAULT_SIZE, // 0.4 normally
       ],
     ],
     "icon-allow-overlap": true,
@@ -68,10 +79,15 @@
   paint={{
     "icon-color": [
       "case",
-      ["!=", ["get", "group_marker_icon"], ""],
+      // If it's a custom marker (has group_marker_icon and it's not empty)
+      [
+        "all",
+        ["has", "group_marker_icon"],
+        ["!=", ["get", "group_marker_icon"], ""],
+      ],
       "rgba(0, 0, 0, 0)", // No color tint for custom markers (transparent)
-      "#0000ff" // Blue tint for default icons
-    ]
+      "#0000ff", // Blue tint for default icons
+    ],
   }}
   onclick={onRideClick}
 />

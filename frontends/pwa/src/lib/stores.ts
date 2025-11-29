@@ -641,7 +641,7 @@ export const rideGeoJSON = derived(
         properties: {
           id: ride.id,
           name: ride.name,
-          group_marker_icon: groupMarkerIcon
+          // group_marker_icon: groupMarkerIcon
         }
       }
     }
