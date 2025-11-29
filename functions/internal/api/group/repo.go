@@ -72,12 +72,21 @@ func (r *Repository) CreateGroup(reg *Registration, editToken string) error {
 
 func (r *Repository) GetGroupByEditToken(token string) (*Registration, error) {
 	var reg Registration
+	var email sql.NullString
 	err := r.db.QueryRow(`
 		SELECT code, name, description, city, web_url, email
 		FROM ride_groups WHERE edit_token = ?
-	`, token).Scan(&reg.Code, &reg.Name, &reg.Description, &reg.City, &reg.WebURL, &reg.Email)
+	`, token).Scan(&reg.Code, &reg.Name, &reg.Description, &reg.City, &reg.WebURL, &email)
 
-	return &reg, err
+	if err != nil {
+		return nil, err
+	}
+
+	if email.Valid {
+		reg.Email = email.String
+	}
+
+	return &reg, nil
 }
 
 func (r *Repository) UpdateGroup(token string, reg *Registration) error {
