@@ -34,6 +34,12 @@
     console.log(
       `[MapComponent] Render conditions: rideGeoJSON=${!!$rideGeoJSON}, iconLoaded=${iconLoaded}, groupMarkersLoaded=${groupMarkersLoaded}`,
     );
+    if ($rideGeoJSON && $rideGeoJSON.features) {
+      console.log(`[MapComponent] GeoJSON has ${$rideGeoJSON.features.length} features`);
+      if ($rideGeoJSON.features.length > 0) {
+        console.log(`[MapComponent] First feature:`, $rideGeoJSON.features[0]);
+      }
+    }
   });
 
   function handleRideClick(e: MapLayerMouseEvent) {

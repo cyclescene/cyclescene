@@ -28,7 +28,6 @@
   function openDatePicker() {
     if ($activeView != VIEW_DATE_PICKER) {
       navigateTo(VIEW_DATE_PICKER);
-      console.log($activeView);
     } else {
       goBackInHistory();
     }

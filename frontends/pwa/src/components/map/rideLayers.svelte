@@ -31,6 +31,13 @@
     console.log(
       `[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`,
     );
+    console.log(`[RideLayers] selectedId: ${selectedId}`);
+    console.log(`[RideLayers] Icon configuration:`, {
+      DEFAULT_SIZE,
+      SELECTED_SIZE,
+      CUSTOM_MARKER_SIZE,
+      CUSTOM_MARKER_SELECTED_SIZE,
+    });
   });
 </script>
 
