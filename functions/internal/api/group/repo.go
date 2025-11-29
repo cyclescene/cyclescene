@@ -40,8 +40,8 @@ func (r *Repository) CheckCodeAvailability(code string) (bool, error) {
 
 func (r *Repository) CreateGroup(reg *Registration, editToken string) error {
 	_, err := r.db.Exec(`
-		INSERT INTO ride_groups (code, name, description, city, web_url, edit_token, is_active)
-		VALUES (?, ?, ?, ?, ?, ?, 1)
+		INSERT INTO ride_groups (code, name, description, city, web_url, edit_token, is_active, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
 	`, strings.ToUpper(reg.Code), reg.Name, reg.Description, reg.City, reg.WebURL, editToken)
 
 	return err
