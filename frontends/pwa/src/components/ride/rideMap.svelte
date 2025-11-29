@@ -27,24 +27,33 @@
     if (map && !iconLoaded) {
       async function loadIcons() {
         try {
+          console.log(`[RideMap] Loading icons for ride: ${ride?.title}`);
+
           // Load default bike pin icon
+          console.log(`[RideMap] Loading default icon: ${ICON_NAME}`);
           const response = await map!.loadImage(GEOAPIFY_API_URL);
           map!.addImage(ICON_NAME, response.data);
+          console.log(`[RideMap] ✓ Successfully added default icon to map: ${ICON_NAME}`);
 
           // Load group marker if ride has one
           if (ride?.group_marker) {
             try {
+              console.log(`[RideMap] Loading group marker: ${ride.group_marker}`);
               const markerDataUrl = await loadMarkerByKey(CITY_CODE, ride.group_marker);
               const markerResponse = await map!.loadImage(markerDataUrl);
-              map!.addImage(`group-marker-${ride.group_marker}`, markerResponse.data);
+              const imageName = `group-marker-${ride.group_marker}`;
+              map!.addImage(imageName, markerResponse.data);
+              console.log(`[RideMap] ✓ Successfully added group marker to map: ${imageName}`);
             } catch (error) {
-              console.error(`failed to load group marker: ${error}`);
+              console.error(`[RideMap] ✗ Failed to load group marker: ${error}`);
             }
+          } else {
+            console.log(`[RideMap] No group marker for this ride, using default icon only`);
           }
 
           iconLoaded = true;
         } catch (error) {
-          console.error("failed to load icons: ", error);
+          console.error("[RideMap] Failed to load icons: ", error);
         }
       }
 
