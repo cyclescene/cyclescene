@@ -46,17 +46,7 @@
   id="ride-icons"
   source={sourceId}
   layout={{
-    "icon-image": [
-      "case",
-      ["has", "group_marker_icon"],
-      [
-        "case",
-        ["!=", ["get", "group_marker_icon"], ""],
-        ["get", "group_marker_icon"],
-        defaultIconName,
-      ],
-      defaultIconName,
-    ],
+    "icon-image": defaultIconName,
     "icon-size": [
       "case",
       // If it's a custom marker (has group_marker_icon and it's not empty)
