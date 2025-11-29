@@ -610,15 +610,16 @@ export const validRides = derived([ridesWithLocations], ([$rides]) => {
 })
 
 export const rideGeoJSON = derived(
-  [validRides, ridesWithLocations], ($validRides, $allRides) => {
+  [validRides, rides], ($validRides, $ridesStore) => {
 
     const seenCoords: Record<string, number> = {}
     const features = new Array($validRides.length)
+    const allRideData = $ridesStore.rideData || []
 
     for (let i = 0; i < $validRides.length; i++) {
       const ride = $validRides[i]
       // Find the original ride to get group_marker info
-      const originalRide = $allRides.find(r => r.id === ride.id);
+      const originalRide = allRideData.find(r => r.id === ride.id);
       const groupMarker = originalRide?.group_marker ? `group-marker-${originalRide.group_marker}` : "";
 
       let lng = ride.lng
