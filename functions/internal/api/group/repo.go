@@ -63,9 +63,9 @@ func (r *Repository) CreateGroup(reg *Registration, editToken string) error {
 	marker := slugify(strings.ToUpper(reg.Code))
 
 	_, err := r.db.Exec(`
-		INSERT INTO ride_groups (id, code, name, description, city, web_url, edit_token, public_id, marker, is_active, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
-	`, groupID, strings.ToUpper(reg.Code), reg.Name, reg.Description, reg.City, reg.WebURL, editToken, publicID, marker)
+		INSERT INTO ride_groups (id, code, name, description, city, web_url, email, edit_token, public_id, marker, is_active, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, CURRENT_TIMESTAMP)
+	`, groupID, strings.ToUpper(reg.Code), reg.Name, reg.Description, reg.City, reg.WebURL, reg.Email, editToken, publicID, marker)
 
 	return err
 }
