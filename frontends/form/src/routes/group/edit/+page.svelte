@@ -69,48 +69,53 @@
     <Card.Header>
       <Card.Title class="text-lg sm:text-xl">Group Summary</Card.Title>
     </Card.Header>
-    <Card.Content class="space-y-4">
-      <div class="grid gap-4 sm:grid-cols-3">
+    <Card.Content class="space-y-6">
+      <!-- Row 1: Code and Email (read-only) -->
+      <div class="grid gap-4 sm:grid-cols-2">
         <div>
-          <p class="text-xs sm:text-sm text-muted-foreground mb-1">Group Code</p>
-          <p class="text-sm sm:text-base font-mono font-medium">{data.groupCode}</p>
+          <p class="text-xs sm:text-sm text-muted-foreground mb-2">Group Code</p>
+          <code class="block text-2xl font-bold tracking-wider bg-background px-4 py-3 rounded border text-center">
+            {data.groupCode}
+          </code>
         </div>
         <div>
-          <p class="text-xs sm:text-sm text-muted-foreground mb-1">Group Name</p>
-          {#if isEditingName}
-            <Input
-              type="text"
-              bind:value={$form.name}
-              class="text-sm sm:text-base"
-              autofocus
-            />
-            <div class="flex gap-2 mt-2">
-              <button
-                type="button"
-                onclick={() => {
-                  isEditingName = false;
-                  $form.name = data.groupName;
-                }}
-                class="text-xs text-muted-foreground hover:underline"
-              >
-                Cancel
-              </button>
-            </div>
-          {:else}
-            <p class="text-sm sm:text-base font-medium">{data.groupName}</p>
-            <button
-              type="button"
-              onclick={() => (isEditingName = true)}
-              class="text-xs text-primary hover:underline mt-1"
-            >
-              Edit name
-            </button>
-          {/if}
-        </div>
-        <div>
-          <p class="text-xs sm:text-sm text-muted-foreground mb-1">Email</p>
+          <p class="text-xs sm:text-sm text-muted-foreground mb-2">Contact Email</p>
           <p class="text-sm sm:text-base break-all">{data.groupEmail}</p>
         </div>
+      </div>
+
+      <!-- Row 2: Group Name (editable) -->
+      <div>
+        <p class="text-xs sm:text-sm text-muted-foreground mb-2">Group Name</p>
+        {#if isEditingName}
+          <Input
+            type="text"
+            bind:value={$form.name}
+            class="text-sm sm:text-base"
+            autofocus
+          />
+          <div class="flex gap-2 mt-2">
+            <button
+              type="button"
+              onclick={() => {
+                isEditingName = false;
+                $form.name = data.groupName;
+              }}
+              class="text-xs text-muted-foreground hover:underline"
+            >
+              Cancel
+            </button>
+          </div>
+        {:else}
+          <p class="text-sm sm:text-base font-medium">{data.groupName}</p>
+          <button
+            type="button"
+            onclick={() => (isEditingName = true)}
+            class="text-xs text-primary hover:underline mt-1"
+          >
+            Edit name
+          </button>
+        {/if}
       </div>
     </Card.Content>
   </Card.Root>
