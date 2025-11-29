@@ -239,6 +239,29 @@
         </Card.Description>
       </Card.Header>
       <Card.Content class="space-y-4">
+        <div class="space-y-2">
+          <Label for="marker_color" class="text-sm sm:text-base">Marker Color</Label>
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <Input
+                id="marker_color"
+                type="color"
+                bind:value={$form.marker_color}
+                class="h-12 cursor-pointer text-base"
+              />
+            </div>
+            <div class="text-xs sm:text-sm text-muted-foreground font-mono">
+              {$form.marker_color}
+            </div>
+          </div>
+          <p class="text-xs sm:text-sm text-muted-foreground">
+            Choose a color for your group's marker teardrop on the map
+          </p>
+          {#if $errors.marker_color}
+            <p class="text-xs sm:text-sm text-destructive">{$errors.marker_color}</p>
+          {/if}
+        </div>
+
         <ImageUploader
           cityCode={data.city}
           entityType="group"

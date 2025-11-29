@@ -1,12 +1,13 @@
 package group
 
 type Registration struct {
-	Code      string `json:"code"`
-	Name      string `json:"name"`
+	Code        string `json:"code"`
+	Name        string `json:"name"`
 	Description string `json:"description"`
-	City      string `json:"city"`
-	WebURL    string `json:"web_url"`
-	ImageUUID string `json:"image_uuid"`
+	City        string `json:"city"`
+	WebURL      string `json:"web_url"`
+	MarkerColor string `json:"marker_color"`
+	ImageUUID   string `json:"image_uuid"`
 }
 
 type Response struct {

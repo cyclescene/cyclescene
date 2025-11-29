@@ -6,13 +6,16 @@ import (
 	"database/sql"
 	"fmt"
 	"image"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"log/slog"
+	"math"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,6 +34,88 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// hexToRGBA converts a hex color string (#RRGGBB) to RGBA color
+func hexToRGBA(hexColor string) (color.Color, error) {
+	hex := strings.TrimPrefix(hexColor, "#")
+	if len(hex) != 6 {
+		return nil, fmt.Errorf("invalid hex color: %s", hexColor)
+	}
+
+	r, err := strconv.ParseUint(hex[0:2], 16, 8)
+	if err != nil {
+		return nil, fmt.Errorf("invalid hex color: %s", hexColor)
+	}
+	g, err := strconv.ParseUint(hex[2:4], 16, 8)
+	if err != nil {
+		return nil, fmt.Errorf("invalid hex color: %s", hexColor)
+	}
+	b, err := strconv.ParseUint(hex[4:6], 16, 8)
+	if err != nil {
+		return nil, fmt.Errorf("invalid hex color: %s", hexColor)
+	}
+
+	return color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}, nil
+}
+
+// createTeardropMarker creates a teardrop-shaped marker with user image inside
+// The teardrop is colored with the provided markerColor, and the user's image is scaled and centered
+func createTeardropMarker(userImg image.Image, size int, markerColor string) image.Image {
+	// Parse marker color
+	bgColor, err := hexToRGBA(markerColor)
+	if err != nil {
+		slog.Warn("failed to parse marker color, using default blue", "error", err)
+		bgColor = color.RGBA{R: 59, G: 130, B: 246, A: 255} // Default blue (#3B82F6)
+	}
+
+	// Create new image for teardrop
+	teardrop := image.NewRGBA(image.Rect(0, 0, size, size))
+
+	// Fill with transparent background
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			teardrop.SetRGBA(x, y, color.RGBA{0, 0, 0, 0})
+		}
+	}
+
+	// Draw teardrop shape with marker color
+	centerX := float64(size) / 2.0
+	centerY := float64(size) * 0.45 // Slightly up to make room for point
+
+	// Draw teardrop body (circle in upper part)
+	radius := float64(size) * 0.35
+	for y := 0; y < size; y++ {
+		for x := 0; x < size; x++ {
+			dx := float64(x) - centerX
+			dy := float64(y) - centerY
+			dist := math.Sqrt(dx*dx + dy*dy)
+
+			// Teardrop body - circle part
+			if dist <= radius && float64(y) <= centerY+radius {
+				teardrop.SetColor(x, y, bgColor)
+			}
+
+			// Teardrop point - triangle part
+			if float64(y) > centerY+radius && float64(y) < centerY+radius*1.8 {
+				pointX := float64(size) / 2.0
+				pointY := centerY + radius*1.8
+				widthAtY := radius * (pointY - float64(y)) / (pointY - (centerY + radius))
+				if math.Abs(dx) <= widthAtY {
+					teardrop.SetColor(x, y, bgColor)
+				}
+			}
+		}
+	}
+
+	// Scale and center user image inside teardrop body
+	userImgResized := resizeImage(userImg, int(radius*1.5))
+	startX := int(centerX - float64(userImgResized.Bounds().Dx())/2)
+	startY := int(centerY - float64(userImgResized.Bounds().Dy())/2)
+
+	draw.Draw(teardrop, userImgResized.Bounds().Add(image.Pt(startX, startY)), userImgResized, image.Pt(0, 0), draw.Over)
+
+	return teardrop
 }
 
 // slugify converts a string to a URL-safe slug
@@ -71,7 +156,7 @@ func (p *ImageProcessor) SetDB(db *sql.DB) {
 }
 
 // ProcessImage handles the complete image optimization workflow
-func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, entityID, entityType string) (string, error) {
+func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, entityID, entityType, markerColor string) (string, error) {
 	// Check context deadline
 	if deadline, ok := ctx.Deadline(); ok {
 		slog.Info("context deadline set", "deadline", deadline, "timeUntilDeadline", time.Until(deadline))
@@ -81,7 +166,7 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 
 	// Route to appropriate handler based on entity type
 	if entityType == "group" {
-		return p.ProcessMarker(ctx, imageUUID, cityCode, entityID)
+		return p.ProcessMarker(ctx, imageUUID, cityCode, entityID, markerColor)
 	}
 
 	// Try to find the image file with common extensions since we don't know the exact format
@@ -176,13 +261,15 @@ func (p *ImageProcessor) ProcessImage(ctx context.Context, imageUUID, cityCode, 
 // Steps:
 // 1. Download marker from staging bucket
 // 2. Decode and validate image
-// 3. Resize to 40x40 PNG
-// 4. Regenerate spritesheet for the city (extracts old markers + adds new)
-// 5. Query group by code and slugify name to create public_id
-// 6. Set public_id and marker in database after spritesheet is ready
-// 7. Delete staging file
-// 8. Return path to spritesheet PNG
-func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupCode string) (string, error) {
+// 3. Create teardrop shape container with marker color
+// 4. Draw user's image on teardrop shape
+// 5. Resize to 64x64 PNG
+// 6. Regenerate spritesheet for the city (extracts old markers + adds new)
+// 7. Query group by code and slugify name to create public_id
+// 8. Set public_id and marker in database after spritesheet is ready
+// 9. Delete staging file
+// 10. Return path to spritesheet PNG
+func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode, groupCode, markerColor string) (string, error) {
 	slog.Info("processing marker", "imageUUID", imageUUID, "cityCode", cityCode, "groupCode", groupCode)
 
 	// Try to find the image file with common extensions
@@ -227,9 +314,9 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 		return "", fmt.Errorf("failed to decode marker image: %v", err)
 	}
 
-	// Resize to 64x64 (marker size)
+	// Create teardrop marker with color (64x64)
 	const markerSize = 64
-	resizedMarker := resizeImage(markerImg, markerSize)
+	resizedMarker := createTeardropMarker(markerImg, markerSize, markerColor)
 
 	// Use the slugified group code as the marker key in the spritesheet
 	markerKey := slugify(groupCode)

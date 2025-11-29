@@ -107,10 +107,11 @@ func (h *Handler) RegisterGroup(w http.ResponseWriter, r *http.Request) {
 	// Trigger marker image optimization if image_uuid is provided
 	if registration.ImageUUID != "" && h.eventarcClient != nil {
 		event := &events.ImageOptimizationEvent{
-			ImageUUID:  registration.ImageUUID,
-			CityCode:   registration.City,
-			EntityID:   registration.Code,
-			EntityType: "group",
+			ImageUUID:   registration.ImageUUID,
+			CityCode:    registration.City,
+			EntityID:    registration.Code,
+			EntityType:  "group",
+			MarkerColor: registration.MarkerColor,
 		}
 		if err := h.eventarcClient.TriggerOptimization(r.Context(), event); err != nil {
 			slog.Warn("failed to trigger marker optimization", "error", err, "code", response.Code)
