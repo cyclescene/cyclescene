@@ -6,6 +6,27 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.2.0",
+      date: "November 29, 2025",
+      changes: {
+        Added: [
+          "Custom group markers for organized community rides with distinct colors and visual identity.",
+          "Route processing backend infrastructure for tracking ride routes from external sources.",
+          "Support for RideWithGPS and Strava route imports with automatic URL parsing.",
+          "Route caching system to avoid reprocessing duplicate routes across the database.",
+          "Distance calculations for routes (kilometers and miles) using Haversine formula.",
+          "Route data propagation to frontend with route_id references in ride API responses.",
+          "Elevation profile data extraction from GPX route files.",
+        ],
+        Changed: [
+          "Database schema extended with routes table and route_id foreign keys.",
+          "Ride submission handler now processes and links routes to user-submitted events.",
+          "Shift2Bikes scraper enhanced with route extraction and processing capabilities.",
+          "Ride API responses now include route_id field for frontend route visualization.",
+        ],
+      },
+    },
+    {
       version: "1.1.0",
       date: "November 25, 2025",
       changes: {
