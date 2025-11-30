@@ -290,8 +290,10 @@ func (p *ImageProcessor) saveMarkerImage(ctx context.Context, path string, img i
 func (p *ImageProcessor) uploadToGCSWithContentType(ctx context.Context, bucket, object string, data []byte, contentType string) error {
 	writer := p.storageClient.Bucket(bucket).Object(object).NewWriter(ctx)
 	writer.ContentType = contentType
-	// Set cache-control to no-cache for spritesheet files to prevent stale cache issues
-	writer.CacheControl = "no-cache, max-age=0"
+	// Set cache-control with shorter expiration to ensure updates propagate quickly
+	// public: allow caching by browsers and CDNs
+	// max-age=300: cache for 5 minutes before checking for updates
+	writer.CacheControl = "public, max-age=300"
 
 	if _, err := io.Copy(writer, bytes.NewReader(data)); err != nil {
 		return err
