@@ -15,6 +15,7 @@ export interface RideData {
   loopride: number
   shareable: string
   ridesource: string
+  route_id?: string | null
   endtime: string
   email: string
   eventduration: number
