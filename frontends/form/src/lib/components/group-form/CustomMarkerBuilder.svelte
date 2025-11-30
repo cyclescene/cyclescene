@@ -330,7 +330,20 @@
       }
 
       // Upload to GCS
+      console.log("CustomMarkerBuilder: Uploading to GCS", {
+        imageUUID: signedURLResponse.image_uuid,
+        objectName: signedURLResponse.object_name,
+        bucketName: signedURLResponse.bucket_name,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
       await uploadImageToGCS(signedURLResponse.signed_url, file);
+
+      console.log("CustomMarkerBuilder: Upload successful", {
+        imageUUID: signedURLResponse.image_uuid
+      });
 
       imageUUID = signedURLResponse.image_uuid;
       generatedPreviewURL = URL.createObjectURL(blob);
@@ -460,7 +473,20 @@
       }
 
       // Upload to GCS
+      console.log("AutoGenerateMarker: Uploading to GCS", {
+        imageUUID: signedURLResponse.image_uuid,
+        objectName: signedURLResponse.object_name,
+        bucketName: signedURLResponse.bucket_name,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
       await uploadImageToGCS(signedURLResponse.signed_url, file);
+
+      console.log("AutoGenerateMarker: Upload successful", {
+        imageUUID: signedURLResponse.image_uuid
+      });
 
       imageUUID = signedURLResponse.image_uuid;
       generatedPreviewURL = URL.createObjectURL(blob);

@@ -73,6 +73,13 @@ export async function uploadImageToGCS(
   signedUrl: string,
   file: File
 ): Promise<void> {
+  console.log('uploadImageToGCS: Starting upload', {
+    signedUrl: signedUrl.substring(0, 100) + '...',
+    fileName: file.name,
+    fileSize: file.size,
+    fileType: file.type
+  });
+
   const response = await fetch(signedUrl, {
     method: 'PUT',
     body: file,
@@ -81,9 +88,23 @@ export async function uploadImageToGCS(
     }
   });
 
+  console.log('uploadImageToGCS: Response received', {
+    status: response.status,
+    statusText: response.statusText,
+    contentLength: response.headers.get('content-length')
+  });
+
   if (!response.ok) {
-    throw new Error(`Failed to upload image: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('uploadImageToGCS: Upload failed', {
+      status: response.status,
+      statusText: response.statusText,
+      errorText: errorText.substring(0, 200)
+    });
+    throw new Error(`Failed to upload image: ${response.status} ${response.statusText}`);
   }
+
+  console.log('uploadImageToGCS: Upload completed successfully');
 }
 
 // ============================================================================
