@@ -19,6 +19,7 @@
   import * as Select from "$lib/components/ui/select";
   import * as Card from "$lib/components/ui/card";
   import { Separator } from "$lib/components/ui/separator";
+  import { CircleX } from "@lucide/svelte";
 
   interface Props {
     data: {
@@ -56,6 +57,25 @@
     </div>
   {/if}
 
+  {#if Object.keys($errors).length > 0}
+    <div
+      class="mb-4 sm:mb-6 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg"
+    >
+      <p class="text-xs sm:text-sm font-semibold text-destructive mb-2">
+        Please fix the following errors:
+      </p>
+      <ul class="list-disc list-inside space-y-1">
+        {#each Object.entries($errors) as [field, message]}
+          {#if message}
+            <li class="text-xs sm:text-sm text-destructive">
+              {typeof message === 'string' ? message : message[0]}
+            </li>
+          {/if}
+        {/each}
+      </ul>
+    </div>
+  {/if}
+
   <form method="POST" use:enhance class="space-y-6 sm:space-y-8">
     <!-- Hidden input to include image_uuid in form submission -->
     <input type="hidden" name="image_uuid" bind:value={$form.image_uuid} />
@@ -77,10 +97,11 @@
             type="text"
             bind:value={$form.title}
             placeholder="Sunday Morning Coffee Cruise"
-            class={`text-base ${$errors.title ? "border-destructive" : ""}`}
+            aria-invalid={!!$errors.title}
+            class={`text-base transition-colors ${$errors.title ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
           />
           {#if $errors.title}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.title}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.title}</p>
           {/if}
         </div>
 
@@ -112,12 +133,11 @@
             bind:value={$form.description}
             placeholder="Join us for a casual morning ride through the city. We'll stop at local coffee shops along the way..."
             rows={5}
-            class={`text-base ${$errors.description ? "border-destructive" : ""}`}
+            aria-invalid={!!$errors.description}
+            class={`text-base transition-colors ${$errors.description ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
           />
           {#if $errors.description}
-            <p class="text-xs sm:text-sm text-destructive">
-              {$errors.description}
-            </p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.description}</p>
           {/if}
         </div>
 
@@ -204,10 +224,11 @@
             type="text"
             bind:value={$form.venue_name}
             placeholder="Pioneer Courthouse Square"
-            class={$errors.venue_name ? "border-destructive" : ""}
+            aria-invalid={!!$errors.venue_name}
+            class={`text-base transition-colors ${$errors.venue_name ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
           />
           {#if $errors.venue_name}
-            <p class="text-sm text-destructive">{$errors.venue_name}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.venue_name}</p>
           {/if}
         </div>
 
@@ -218,10 +239,11 @@
             type="text"
             bind:value={$form.address}
             placeholder="701 SW 6th Ave, Portland, OR 97204"
-            class={$errors.address ? "border-destructive" : ""}
+            aria-invalid={!!$errors.address}
+            class={`text-base transition-colors ${$errors.address ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
           />
           {#if $errors.address}
-            <p class="text-sm text-destructive">{$errors.address}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.address}</p>
           {/if}
         </div>
 
@@ -327,10 +349,11 @@
             type="text"
             bind:value={$form.organizer_name}
             placeholder="Jane Doe"
-            class={$errors.organizer_name ? "border-destructive" : ""}
+            aria-invalid={!!$errors.organizer_name}
+            class={`text-base transition-colors ${$errors.organizer_name ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
           />
           {#if $errors.organizer_name}
-            <p class="text-sm text-destructive">{$errors.organizer_name}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.organizer_name}</p>
           {/if}
 
           <div class="flex items-center space-x-2 mt-2">
@@ -357,10 +380,11 @@
             type="email"
             bind:value={$form.organizer_email}
             placeholder="jane@example.com"
-            class={$errors.organizer_email ? "border-destructive" : ""}
+            aria-invalid={!!$errors.organizer_email}
+            class={`text-base transition-colors ${$errors.organizer_email ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
           />
           {#if $errors.organizer_email}
-            <p class="text-sm text-destructive">{$errors.organizer_email}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.organizer_email}</p>
           {/if}
 
           <div class="flex items-center space-x-2 mt-2">
@@ -415,9 +439,11 @@
               type="url"
               bind:value={$form.web_url}
               placeholder="https://example.com"
+              aria-invalid={!!$errors.web_url}
+              class={`text-base transition-colors ${$errors.web_url ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
             />
             {#if $errors.web_url}
-              <p class="text-sm text-destructive">{$errors.web_url}</p>
+              <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.web_url}</p>
             {/if}
           </div>
 

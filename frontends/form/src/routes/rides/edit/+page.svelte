@@ -4,6 +4,7 @@
   import { Input } from "$lib/components/ui/input";
   import { Checkbox } from "$lib/components/ui/checkbox";
   import * as Card from "$lib/components/ui/card";
+  import { CircleX } from "@lucide/svelte";
 
   interface RideData {
     event: {
@@ -158,16 +159,17 @@
 
   <!-- Messages -->
   {#if successMessage}
-    <div class="mb-4 p-3 border border-green-200 bg-green-50 rounded-lg">
-      <p class="text-sm text-green-700">✓ {successMessage}</p>
+    <div class="mb-4 p-3 sm:p-4 border border-green-200 bg-green-50 rounded-lg">
+      <p class="text-xs sm:text-sm text-green-700">✓ {successMessage}</p>
     </div>
   {/if}
 
   {#if errorMessage}
-    <div
-      class="mb-4 p-3 border border-destructive bg-destructive/10 rounded-lg"
-    >
-      <p class="text-sm text-destructive">{errorMessage}</p>
+    <div class="mb-4 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg">
+      <p class="text-xs sm:text-sm text-destructive flex items-center gap-2">
+        <CircleX class="h-4 w-4 flex-shrink-0" />
+        {errorMessage}
+      </p>
     </div>
   {/if}
 
