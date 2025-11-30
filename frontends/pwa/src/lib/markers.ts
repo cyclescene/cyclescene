@@ -29,8 +29,11 @@ export async function loadSpritesheet(cityCode: string): Promise<{
   metadata: SpritesheetMetadata
 }> {
   const baseUrl = `https://storage.googleapis.com/cyclescene-479119-user-media-optimized`
-  const pngUrl = `${baseUrl}/sprites/${cityCode}/markers.png`
-  const jsonUrl = `${baseUrl}/sprites/${cityCode}/markers.json`
+  // Add cache-busting query parameter to force fresh fetch while respecting cache-control headers
+  // The parameter changes every 5 minutes to match the cache-control max-age=300
+  const cacheBuster = Math.floor(Date.now() / (5 * 60 * 1000))
+  const pngUrl = `${baseUrl}/sprites/${cityCode}/markers.png?v=${cacheBuster}`
+  const jsonUrl = `${baseUrl}/sprites/${cityCode}/markers.json?v=${cacheBuster}`
 
   console.log(`[Markers] Loading spritesheet for city: ${cityCode}`)
   console.log(`[Markers] Metadata URL: ${jsonUrl}`)
