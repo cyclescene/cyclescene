@@ -90,6 +90,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 
 		// Try to check if file exists at standard path
 		standardPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
+		slog.Info("checking if marker file exists", "markerID", markerID, "path", standardPath, "bucket", p.optimizedBucket)
 		exists, err := p.objectExists(ctx, p.optimizedBucket, standardPath)
 		if err != nil {
 			slog.Warn("failed to check if marker exists", "markerID", markerID, "path", standardPath, "error", err)
