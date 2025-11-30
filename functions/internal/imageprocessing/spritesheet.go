@@ -78,7 +78,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	}
 
 	// Then check markers from database by trying to load them from standard path
-	for markerID, markerPath := range dbGroups {
+	for markerID := range dbGroups {
 		if _, alreadyHave := validMarkerIDs[markerID]; alreadyHave {
 			continue // Already have this from metadata
 		}
@@ -134,7 +134,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	}
 	sort.Strings(markerIDs)
 
-	slog.Info("markers to composite", "city", cityCode, "count", len(markerIDs), "from", len(allMarkerIDs), "total")
+	slog.Info("markers to composite", "city", cityCode, "count", len(markerIDs), "validated", len(validMarkerIDs))
 
 	// Calculate grid dimensions
 	cols := int(math.Ceil(math.Sqrt(float64(len(markers)))))
