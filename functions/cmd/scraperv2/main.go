@@ -96,10 +96,12 @@ func main() {
 		// Extract and process route if present in event details
 		routeURL := routes.ExtractRouteURLFromDescription(event.Details)
 		if routeURL != "" {
+			slog.Info("route URL found in event description", "routeURL", routeURL, "event", event.Title)
 			source, sourceID, err := routes.ParseRouteURL(routeURL)
 			if err != nil {
 				slog.Warn("failed to parse route URL", "error", err, "routeURL", routeURL, "event", event.Title)
 			} else {
+				slog.Info("parsed route URL", "source", source, "sourceID", sourceID, "routeURL", routeURL, "event", event.Title)
 				// Check if route is already in cache
 				cacheKey := fmt.Sprintf("%s:%s", source, sourceID)
 				if routeID, found := routeCache[cacheKey]; found {
@@ -107,9 +109,10 @@ func main() {
 					// TODO: Link route to shift2bikes event when upserted
 				} else {
 					// Fetch and process new route
+					slog.Info("processing new route", "source", source, "sourceID", sourceID, "routeURL", routeURL, "event", event.Title)
 					feature, err := routeFetcher.FetchAndConvert(routeURL)
 					if err != nil {
-						slog.Warn("failed to fetch route", "error", err, "routeURL", routeURL, "event", event.Title)
+						slog.Warn("failed to fetch route", "error", err, "routeURL", routeURL, "source", source, "sourceID", sourceID, "event", event.Title)
 					} else {
 						// Extract distance from properties
 						var distanceKm, distanceMi float64

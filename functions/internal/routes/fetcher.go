@@ -3,6 +3,7 @@ package routes
 import (
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"time"
@@ -60,6 +61,8 @@ func (f *RouteFetcher) fetchRideWithGPSRoute(routeURL string) (GeoJSONFeature, e
 		gpxURL = fmt.Sprintf("%s?sub_format=track", routeURL)
 	}
 
+	slog.Info("fetching RideWithGPS route", "url", gpxURL)
+
 	req, err := http.NewRequest("GET", gpxURL, nil)
 	if err != nil {
 		return GeoJSONFeature{}, fmt.Errorf("failed to create request: %w", err)
@@ -107,6 +110,8 @@ func (f *RouteFetcher) fetchStravaRoute(routeURL string) (GeoJSONFeature, error)
 	if !contains(gpxURL, "/export_gpx") {
 		gpxURL = fmt.Sprintf("%s/export_gpx", routeURL)
 	}
+
+	slog.Info("fetching Strava route", "url", gpxURL)
 
 	req, err := http.NewRequest("GET", gpxURL, nil)
 	if err != nil {
