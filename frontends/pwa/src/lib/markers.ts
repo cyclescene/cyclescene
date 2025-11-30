@@ -48,18 +48,12 @@ export async function loadSpritesheet(cityCode: string): Promise<{
   const pngUrl = `${baseUrl}/sprites/${cityCode}/markers.png?v=${cacheBuster}`
   const jsonUrl = `${baseUrl}/sprites/${cityCode}/markers.json?v=${cacheBuster}`
 
-  console.log(`[Markers] Loading spritesheet for city: ${cityCode}`)
-  console.log(`[Markers] Metadata URL: ${jsonUrl}`)
-  console.log(`[Markers] PNG URL: ${pngUrl}`)
-
   try {
     // Fetch metadata JSON
-    console.log(`[Markers] Fetching metadata JSON...`)
     const metadataResponse = await fetch(jsonUrl)
 
     // Handle 404 - no markers exist yet (no groups registered)
     if (metadataResponse.status === 404) {
-      console.log(`[Markers] No spritesheet found for city ${cityCode} (404) - no groups registered yet`)
       return {
         image: createEmptyImage(),
         metadata: { markers: {} }
@@ -70,31 +64,26 @@ export async function loadSpritesheet(cityCode: string): Promise<{
       throw new Error(`Failed to fetch spritesheet metadata: ${metadataResponse.status}`)
     }
     const metadata = (await metadataResponse.json()) as SpritesheetMetadata
-    console.log(`[Markers] ✓ Metadata loaded successfully`)
-    console.log(`[Markers] Metadata structure:`, metadata)
-    if (metadata.markers) {
-      for (const [key, markerInfo] of Object.entries(metadata.markers)) {
-        console.log(`[Markers] Marker "${key}":`, markerInfo)
-      }
-    }
 
     // Load spritesheet image
-    console.log(`[Markers] Loading spritesheet image...`)
     const image = new Image()
     image.crossOrigin = "anonymous"
 
     return new Promise((resolve, reject) => {
       image.onload = () => {
-        console.log(`[Markers] ✓ Spritesheet image loaded successfully`)
         resolve({ image, metadata })
       }
       image.onerror = () => {
-        reject(new Error(`Failed to load spritesheet image from ${pngUrl}`))
+        // Handle 404 on PNG - return empty if no image exists
+        if (pngUrl.includes(cityCode)) {
+          resolve({ image: createEmptyImage(), metadata })
+        } else {
+          reject(new Error(`Failed to load spritesheet image from ${pngUrl}`))
+        }
       }
       image.src = pngUrl
     })
   } catch (error) {
-    console.error(`[Markers] ✗ Error loading spritesheet for city ${cityCode}:`, error)
     throw error
   }
 }
@@ -136,8 +125,6 @@ export function extractMarkerFromSpritesheet(
   )
 
   const dataUrl = canvas.toDataURL("image/png")
-  console.log(`[Markers] Extracted marker from spritesheet at (${markerInfo.x}, ${markerInfo.y}), size: ${width}x${height}`)
-  console.log(`[Markers] DataURL length: ${dataUrl.length}, first 100 chars: ${dataUrl.substring(0, 100)}`)
   return dataUrl
 }
 
@@ -159,17 +146,12 @@ export async function loadAllMarkersForCity(
         const markerDataUrl = extractMarkerFromSpritesheet(image, markerInfo)
         markers[markerKey] = markerDataUrl
       } catch (error) {
-        console.error(`Failed to extract marker ${markerKey}:`, error)
+        // Silently skip markers that fail to extract
       }
-    }
-
-    if (Object.keys(markers).length === 0) {
-      console.log(`[Markers] No group markers found for city ${cityCode}`)
     }
 
     return markers
   } catch (error) {
-    console.error(`Error loading markers for city ${cityCode}:`, error)
     throw error
   }
 }
@@ -194,7 +176,6 @@ export async function loadMarkerByKey(
 
     return extractMarkerFromSpritesheet(image, markerInfo)
   } catch (error) {
-    console.error(`Error loading marker ${markerKey} for city ${cityCode}:`, error)
     throw error
   }
 }
