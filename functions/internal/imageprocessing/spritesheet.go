@@ -71,15 +71,19 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	validMarkerIDs := make(map[string]string) // markerID -> markerPath
 
 	// First check markers from existing metadata
+	slog.Info("checking markers from metadata", "city", cityCode, "metadataMarkerCount", len(existingMetadata.Markers))
 	for markerID, info := range existingMetadata.Markers {
 		if info.Path != "" {
 			validMarkerIDs[markerID] = info.Path
+			slog.Info("added marker from metadata", "markerID", markerID, "path", info.Path)
 		}
 	}
 
 	// Then check markers from database by trying to load them from standard path
+	slog.Info("checking markers from database", "city", cityCode, "dbMarkerCount", len(dbGroups))
 	for markerID := range dbGroups {
 		if _, alreadyHave := validMarkerIDs[markerID]; alreadyHave {
+			slog.Debug("marker already in collection from metadata", "markerID", markerID)
 			continue // Already have this from metadata
 		}
 
@@ -93,6 +97,9 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 
 		if exists {
 			validMarkerIDs[markerID] = standardPath
+			slog.Info("added marker from database (file exists)", "markerID", markerID, "path", standardPath)
+		} else {
+			slog.Warn("marker in database but file not found", "markerID", markerID, "path", standardPath)
 		}
 	}
 
