@@ -104,8 +104,10 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	}
 
 	// For markers in the database but not in metadata, try to load from standard path
+	slog.Info("attempting to load markers from standard paths", "totalToCheck", len(allMarkerIDs), "alreadyLoaded", len(markers))
 	for markerID := range allMarkerIDs {
 		if _, alreadyLoaded := markers[markerID]; alreadyLoaded {
+			slog.Debug("marker already loaded from metadata", "markerID", markerID)
 			continue // Already loaded from metadata
 		}
 
@@ -113,7 +115,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		standardPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
 		markerData, err := p.downloadFromGCS(ctx, p.optimizedBucket, standardPath)
 		if err != nil {
-			slog.Debug("marker image not found at standard path", "markerID", markerID, "path", standardPath, "error", err)
+			slog.Warn("marker image not found at standard path", "markerID", markerID, "path", standardPath, "error", err)
 			continue
 		}
 
@@ -126,6 +128,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		markers[markerID] = markerImg
 		slog.Info("loaded marker from standard path", "markerID", markerID, "path", standardPath)
 	}
+	slog.Info("finished loading markers from standard paths", "totalLoaded", len(markers))
 
 	// Save and add the new marker to the collection
 	newMarkerPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, newMarkerID)
@@ -298,9 +301,12 @@ func (p *ImageProcessor) getGroupMarkersFromDB(ctx context.Context, cityCode str
 
 	markers := make(map[string]bool)
 
+	// Query all active groups in the city
+	// If marker field is set, use it; otherwise use slugified code as fallback
 	query := `
-		SELECT marker FROM ride_groups
-		WHERE city = ? AND is_active = 1 AND marker IS NOT NULL AND marker != ''
+		SELECT COALESCE(NULLIF(marker, ''), LOWER(code)) as marker_id
+		FROM ride_groups
+		WHERE city = ? AND is_active = 1
 	`
 
 	rows, err := p.db.QueryContext(ctx, query, strings.ToLower(cityCode))
