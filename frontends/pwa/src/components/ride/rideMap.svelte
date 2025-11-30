@@ -6,6 +6,7 @@
   import { Map } from "maplibre-gl";
   import { loadMarkerByKey } from "$lib/markers";
   import { CITY_CODE } from "$lib/config";
+  import ParkLayer from "../map/parkLayer.svelte";
 
   const { ride } = $props();
 
@@ -33,22 +34,35 @@
           console.log(`[RideMap] Loading default icon: ${ICON_NAME}`);
           const response = await map!.loadImage(GEOAPIFY_API_URL);
           map!.addImage(ICON_NAME, response.data);
-          console.log(`[RideMap] ✓ Successfully added default icon to map: ${ICON_NAME}`);
+          console.log(
+            `[RideMap] ✓ Successfully added default icon to map: ${ICON_NAME}`,
+          );
 
           // Load group marker if ride has one
           if (ride?.group_marker) {
             try {
-              console.log(`[RideMap] Loading group marker: ${ride.group_marker}`);
-              const markerDataUrl = await loadMarkerByKey(CITY_CODE, ride.group_marker);
+              console.log(
+                `[RideMap] Loading group marker: ${ride.group_marker}`,
+              );
+              const markerDataUrl = await loadMarkerByKey(
+                CITY_CODE,
+                ride.group_marker,
+              );
               const markerResponse = await map!.loadImage(markerDataUrl);
               const imageName = `group-marker-${ride.group_marker}`;
               map!.addImage(imageName, markerResponse.data);
-              console.log(`[RideMap] ✓ Successfully added group marker to map: ${imageName}`);
+              console.log(
+                `[RideMap] ✓ Successfully added group marker to map: ${imageName}`,
+              );
             } catch (error) {
-              console.error(`[RideMap] ✗ Failed to load group marker: ${error}`);
+              console.error(
+                `[RideMap] ✗ Failed to load group marker: ${error}`,
+              );
             }
           } else {
-            console.log(`[RideMap] No group marker for this ride, using default icon only`);
+            console.log(
+              `[RideMap] No group marker for this ride, using default icon only`,
+            );
           }
 
           iconLoaded = true;
@@ -81,4 +95,5 @@
     {/if}
     <GeoJSONSource data={$singleRideGeoJSON} id={SOURCE_ID} />
   {/if}
+  <ParkLayer isDarkMode={mode.current === "dark"} />
 </MapLibre>

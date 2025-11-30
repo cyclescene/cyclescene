@@ -242,7 +242,8 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 	if city == "pdx" {
 		query = `
 			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
-			       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime,
+			       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
+			       NULL as route_id, endtime,
 			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
 			       NULL as group_marker
 			FROM shift2bikes_events
@@ -265,6 +266,7 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 				e.is_loop_ride as loopride,
 				'' as shareable,
 				'user-submitted' as ridesource,
+				e.route_id,
 				'' as endtime,
 				e.organizer_email as email,
 				eo.event_duration_minutes as eventduration,
@@ -303,6 +305,7 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 				e.is_loop_ride as loopride,
 				'' as shareable,
 				'user-submitted' as ridesource,
+				e.route_id,
 				'' as endtime,
 				e.organizer_email as email,
 				eo.event_duration_minutes as eventduration,
@@ -346,7 +349,8 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 	if city == "pdx" {
 		query = `
 			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
-			       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime,
+			       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
+			       NULL as route_id, endtime,
 			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
 			       NULL as group_marker
 			FROM shift2bikes_events
@@ -369,6 +373,7 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 				e.is_loop_ride as loopride,
 				'' as shareable,
 				'user-submitted' as ridesource,
+				e.route_id,
 				'' as endtime,
 				e.organizer_email as email,
 				eo.event_duration_minutes as eventduration,
@@ -407,6 +412,7 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 				e.is_loop_ride as loopride,
 				'' as shareable,
 				'user-submitted' as ridesource,
+				e.route_id,
 				'' as endtime,
 				e.organizer_email as email,
 				eo.event_duration_minutes as eventduration,
@@ -432,9 +438,11 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 
 func (r *Repository) GetRide(city, rideID string) ([]ScrapedRideFromDB, error) {
 	query := `
-		SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime, 
-		       safetyplan, details, venue, organizer, loopride, shareable, ridesource, endtime, 
-		       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl
+		SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
+		       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
+		       NULL as route_id, endtime,
+		       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
+		       NULL as group_marker
 		FROM shift2bikes_events
 		WHERE composite_event_id = ? AND citycode = ?
 	`
@@ -455,7 +463,7 @@ func (r *Repository) scanScrapedRides(query string, args ...any) ([]ScrapedRideF
 			&ride.ID, &ride.Title, &ride.Lat, &ride.Lng, &ride.Address,
 			&ride.Audience, &ride.Cancelled, &ride.Date, &ride.StartTime,
 			&ride.SafetyPlan, &ride.Details, &ride.Venue, &ride.Organizer,
-			&ride.LoopRide, &ride.Shareable, &ride.RideSource, &ride.EndTime,
+			&ride.LoopRide, &ride.Shareable, &ride.RideSource, &ride.RouteID, &ride.EndTime,
 			&ride.Email, &ride.EventDuration, &ride.Image, &ride.LocDetails,
 			&ride.LocEnd, &ride.NewsFlash, &ride.TimeDetails, &ride.WebName, &ride.WebURL,
 			&ride.GroupMarker,

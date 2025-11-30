@@ -1,7 +1,7 @@
 import { CalendarDate, parseDate } from "@internationalized/date";
 import { LngLatBounds, type LngLatLike, type Map } from "maplibre-gl"
-import { getPastRides, getUpcomingRides } from "./api";
-import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB, clearAllRides, clearSavedRides } from "./db";
+import { getPastRides, getUpcomingRides, getAllRoutes, type RouteGeoJSON } from "./api";
+import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB, clearAllRides, clearSavedRides, saveRoutesToDB, getRoutesFromDB, getRouteFromDB, clearAllRoutes } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
@@ -235,6 +235,70 @@ function createSavedRideStore() {
 }
 
 export const savedRidesStore = createSavedRideStore()
+
+interface RoutesStore {
+  loading: boolean;
+  routes: Map<string, RouteGeoJSON>;
+  error: string | null;
+}
+
+function createRoutesStore() {
+  const { subscribe, set, update } = writable<RoutesStore>({
+    loading: true,
+    routes: new Map(),
+    error: null
+  })
+
+  return {
+    subscribe,
+    init: async () => {
+      try {
+        let cachedRoutes = await getRoutesFromDB()
+
+        // If no cached routes, fetch from API
+        if (cachedRoutes.length === 0) {
+          console.log('[RoutesStore] No cached routes, fetching from API')
+          const freshRoutes = await getAllRoutes()
+          await saveRoutesToDB(freshRoutes)
+          cachedRoutes = freshRoutes
+        } else {
+          console.log(`[RoutesStore] Loaded ${cachedRoutes.length} routes from cache`)
+        }
+
+        // Convert to Map for quick lookup by ID
+        const routesMap = new Map(cachedRoutes.map(route => [route.id, route]))
+        set({ loading: false, routes: routesMap, error: null })
+      } catch (err) {
+        console.error('[RoutesStore] Failed to initialize routes:', err)
+        update(store => ({ ...store, loading: false, error: `${err}` }))
+      }
+    },
+    refetch: async () => {
+      try {
+        update(store => ({ ...store, loading: true }))
+        const freshRoutes = await getAllRoutes()
+        await saveRoutesToDB(freshRoutes)
+        const routesMap = new Map(freshRoutes.map(route => [route.id, route]))
+        set({ loading: false, routes: routesMap, error: null })
+      } catch (err) {
+        console.error('[RoutesStore] Failed to refetch routes:', err)
+        update(() => ({ loading: false, routes: new Map(), error: `${err}` }))
+      }
+    }
+  }
+}
+
+const routesStoreInternal = createRoutesStore()
+export const routesStore = routesStoreInternal
+
+// Helper function to get a route by ID from the store
+export const getRouteById = (routeId: string): RouteGeoJSON | undefined => {
+  let result: RouteGeoJSON | undefined
+  routesStoreInternal.subscribe(store => {
+    result = store.routes.get(routeId)
+  })()
+  return result
+}
 
 export const allSavedRides = derived(
   savedRidesStore,

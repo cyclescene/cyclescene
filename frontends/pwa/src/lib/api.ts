@@ -29,3 +29,32 @@ export async function getPastRides(): Promise<RideData[]> {
   return apiFetch('/past')
 }
 
+export interface RouteGeoJSON {
+  id: string;
+  type: 'Feature';
+  geometry: {
+    type: 'LineString';
+    coordinates: [number, number, number][]; // [lon, lat, elevation]
+  };
+  properties: {
+    distance_km: number;
+    distance_mi: number;
+  };
+}
+
+export async function getAllRoutes(): Promise<RouteGeoJSON[]> {
+  const url = `${API_BASE_URL}/v1/routes`
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch routes with status ${response.status}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error fetching routes:', error)
+    throw error
+  }
+}
+

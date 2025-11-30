@@ -1,11 +1,13 @@
 import { openDB } from "idb"
 import type { RideData } from "./types"
+import type { RouteGeoJSON } from "./api"
 
 const DB_NAME = 'cycle-scene-pdx'
 const ALLRIDES_STORE_NAME = 'rides'
 const SAVED_RIDES_STORE_NAME = "saved"
 const SAVED_RIDES_STORE_DATE_INDEX = "dateIndex"
-const DB_VERSION = 2
+const ROUTES_STORE_NAME = "routes"
+const DB_VERSION = 3
 
 // Initialize the database and create the object store if it doesn't exist
 // LOGIC FOR ALL RIDES ////////////////////
@@ -18,6 +20,9 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
       const savedRidesStore = db.createObjectStore(SAVED_RIDES_STORE_NAME, { keyPath: 'id' })
       // dateIndex needed to be able to sort by the ride date
       savedRidesStore.createIndex(SAVED_RIDES_STORE_DATE_INDEX, "date", { unique: false })
+    }
+    if (!db.objectStoreNames.contains(ROUTES_STORE_NAME)) {
+      db.createObjectStore(ROUTES_STORE_NAME, { keyPath: 'id' })
     }
   }
 })
@@ -91,4 +96,28 @@ export async function savedRideExists(rideId: string) {
 export async function clearAllRides() {
   const db = await dbPromise
   return await db.clear(ALLRIDES_STORE_NAME)
+}
+
+// LOGIC FOR ROUTES ////////////////////////////////
+
+export async function saveRoutesToDB(routes: RouteGeoJSON[]) {
+  const db = await dbPromise
+  const tx = db.transaction(ROUTES_STORE_NAME, "readwrite")
+  await Promise.all(routes.map(route => tx.store.put(route))).catch(e => console.error(e))
+  await tx.done
+}
+
+export async function getRoutesFromDB(): Promise<RouteGeoJSON[]> {
+  const db = await dbPromise
+  return await db.getAll(ROUTES_STORE_NAME)
+}
+
+export async function getRouteFromDB(routeId: string): Promise<RouteGeoJSON | undefined> {
+  const db = await dbPromise
+  return await db.get(ROUTES_STORE_NAME, routeId)
+}
+
+export async function clearAllRoutes() {
+  const db = await dbPromise
+  return await db.clear(ROUTES_STORE_NAME)
 }

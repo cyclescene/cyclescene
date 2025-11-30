@@ -108,6 +108,7 @@ type ScrapedRideFromDB struct {
 	LoopRide      int            `json:"loopride"`
 	Shareable     string         `json:"shareable"`
 	RideSource    string         `json:"ridesource"`
+	RouteID       sql.NullString `json:"route_id"`
 	EndTime       sql.NullString `json:"endtime"`
 	Email         sql.NullString `json:"email"`
 	EventDuration sql.NullInt32  `json:"eventduration"`
@@ -138,6 +139,7 @@ type ScrapedRide struct {
 	LoopRide      int     `json:"loopride"`
 	Shareable     string  `json:"shareable"`
 	RideSource    string  `json:"ridesource"`
+	RouteID       string  `json:"route_id"`
 	EndTime       string  `json:"endtime"`
 	Email         string  `json:"email"`
 	EventDuration int32   `json:"eventduration"`
@@ -191,6 +193,7 @@ func (rdb *ScrapedRideFromDB) ToScrapedRide() ScrapedRide {
 	r.WebURL = rdb.WebURL.String
 	r.WebName = rdb.WebName.String
 	r.GroupMarker = rdb.GroupMarker.String
+	r.RouteID = rdb.RouteID.String
 	return r
 }
 
