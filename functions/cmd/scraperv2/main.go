@@ -60,6 +60,24 @@ func main() {
 	stravaToken := os.Getenv("STRAVA_ACCESS_TOKEN")
 	rwgpsAuthToken := os.Getenv("RWGPS_AUTH_TOKEN")
 	rwgpsAPIKey := os.Getenv("RWGPS_API_KEY")
+
+	// Log environment variable status
+	slog.Info("Route service environment variables",
+		"hasStravaToken", stravaToken != "",
+		"hasRwgpsAuthToken", rwgpsAuthToken != "",
+		"hasRwgpsAPIKey", rwgpsAPIKey != "",
+	)
+
+	if rwgpsAPIKey == "" {
+		slog.Warn("RWGPS_API_KEY not set - RideWithGPS route fetching may fail without proper authentication")
+	}
+	if rwgpsAuthToken == "" {
+		slog.Warn("RWGPS_AUTH_TOKEN not set - RideWithGPS route fetching may fail without proper authentication")
+	}
+	if stravaToken == "" {
+		slog.Warn("STRAVA_ACCESS_TOKEN not set - Strava route fetching will not work")
+	}
+
 	routeFetcher := routes.NewRouteFetcher(httpClient, stravaToken, rwgpsAuthToken, rwgpsAPIKey)
 	routeRepo := routes.NewRepository(db)
 
