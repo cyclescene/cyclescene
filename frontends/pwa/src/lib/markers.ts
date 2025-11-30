@@ -20,6 +20,19 @@ interface SpritesheetMetadata {
 }
 
 /**
+ * Creates an empty placeholder image for when no markers exist yet
+ * This allows the app to work gracefully when no groups are registered
+ * @returns An HTMLImageElement with a 1x1 transparent pixel
+ */
+function createEmptyImage(): HTMLImageElement {
+  const image = new Image()
+  image.crossOrigin = "anonymous"
+  // 1x1 transparent PNG
+  image.src = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+  return image
+}
+
+/**
  * Fetches the spritesheet PNG and metadata JSON for a city
  * @param cityCode - The city code (e.g., "pdx", "sea")
  * @returns An object with the spritesheet image and metadata
@@ -43,6 +56,16 @@ export async function loadSpritesheet(cityCode: string): Promise<{
     // Fetch metadata JSON
     console.log(`[Markers] Fetching metadata JSON...`)
     const metadataResponse = await fetch(jsonUrl)
+
+    // Handle 404 - no markers exist yet (no groups registered)
+    if (metadataResponse.status === 404) {
+      console.log(`[Markers] No spritesheet found for city ${cityCode} (404) - no groups registered yet`)
+      return {
+        image: createEmptyImage(),
+        metadata: { markers: {} }
+      }
+    }
+
     if (!metadataResponse.ok) {
       throw new Error(`Failed to fetch spritesheet metadata: ${metadataResponse.status}`)
     }
@@ -138,6 +161,10 @@ export async function loadAllMarkersForCity(
       } catch (error) {
         console.error(`Failed to extract marker ${markerKey}:`, error)
       }
+    }
+
+    if (Object.keys(markers).length === 0) {
+      console.log(`[Markers] No group markers found for city ${cityCode}`)
     }
 
     return markers
