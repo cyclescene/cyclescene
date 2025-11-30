@@ -304,16 +304,14 @@ func (p *ImageProcessor) getGroupMarkersPathsFromDB(ctx context.Context, cityCod
 
 	markers := make(map[string]string)
 
-	// Query all active groups in the city
-	// Use the marker field (or fallback to code) as the marker ID
-	// This ID is used to construct the expected path: {cityCode}/groups/{markerID}/marker.png
+	// Query all active groups in the city that have markers set
+	// The marker field contains the marker ID used to construct the path: {cityCode}/groups/{markerID}/marker.png
 	query := `
-		SELECT COALESCE(NULLIF(marker, ''), LOWER(code)) as marker_id
-		FROM ride_groups
-		WHERE city = ? AND is_active = 1
+		SELECT marker FROM ride_groups
+		WHERE city = ? AND is_active = 1 AND marker IS NOT NULL AND marker != ''
 	`
 
-	rows, err := p.db.QueryContext(ctx, query, strings.ToLower(cityCode))
+	rows, err := p.db.QueryContext(ctx, query, cityCode)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query group markers: %v", err)
 	}
@@ -329,6 +327,7 @@ func (p *ImageProcessor) getGroupMarkersPathsFromDB(ctx context.Context, cityCod
 			// Store the expected path for this marker
 			expectedPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
 			markers[markerID] = expectedPath
+			slog.Debug("found marker in database", "markerID", markerID, "path", expectedPath)
 		}
 	}
 
@@ -336,6 +335,6 @@ func (p *ImageProcessor) getGroupMarkersPathsFromDB(ctx context.Context, cityCod
 		return nil, fmt.Errorf("error iterating marker rows: %v", err)
 	}
 
-	slog.Info("fetched group markers from database", "city", cityCode, "groupCount", len(markers))
+	slog.Info("fetched group markers from database", "city", cityCode, "markerCount", len(markers))
 	return markers, nil
 }
