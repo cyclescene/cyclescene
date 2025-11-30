@@ -129,3 +129,8 @@ func (d *DBConnector) Close() error {
 func (d *DBConnector) Ping() error {
 	return d.db.Ping()
 }
+
+// GetDB returns the underlying *sql.DB connection
+func (d *DBConnector) GetDB() *sql.DB {
+	return d.db
+}

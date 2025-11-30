@@ -130,5 +130,8 @@ func processImageOptimization(ctx context.Context, req OptimizeRequest) (string,
 	}
 	defer processor.Close()
 
+	// Set database connection for spritesheet generation
+	processor.SetDB(dbConnector.GetDB())
+
 	return processor.ProcessImage(ctx, req.ImageUUID, req.CityCode, req.EntityID, req.EntityType)
 }
