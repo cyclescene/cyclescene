@@ -139,15 +139,24 @@
     try {
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image();
+        image.crossOrigin = "anonymous";
         image.src = imagePreview;
 
         console.log("CustomMarkerBuilder: Loading image...", {
           srcLength: imagePreview.length,
+          srcStart: imagePreview.substring(0, 50),
         });
 
         if (image.complete) {
-          console.log("CustomMarkerBuilder: Image already complete");
-          resolve(image);
+          console.log("CustomMarkerBuilder: Image already complete", {
+            width: image.width,
+            height: image.height,
+          });
+          if (image.width > 0 && image.height > 0) {
+            resolve(image);
+          } else {
+            reject(new Error("Image has invalid dimensions"));
+          }
         } else {
           image.onload = () => {
             console.log("CustomMarkerBuilder: Image loaded", {
@@ -214,6 +223,11 @@
       ctx.restore();
     } catch (err) {
       console.error("CustomMarkerBuilder: Error rendering canvas", err);
+      console.error("CustomMarkerBuilder: Error details", {
+        errorMessage: err instanceof Error ? err.message : String(err),
+        errorType: err instanceof Error ? err.name : typeof err,
+        stack: err instanceof Error ? err.stack : undefined,
+      });
       // Canvas still shows the marker teardrop and white circle even if image fails
     }
   }
