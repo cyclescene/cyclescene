@@ -54,81 +54,69 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		existingMetadata = &SpritesheetMetadata{Markers: make(map[string]MarkerInfo)}
 	}
 
-	// If database is available, query for all active groups in this city to ensure we have all markers
-	var dbGroupMarkers map[string]bool
+	// If database is available, query for all active groups in this city
+	var dbGroups map[string]string // markerID -> markerPath
 	if p.db != nil {
-		dbGroupMarkers, err = p.getGroupMarkersFromDB(ctx, cityCode)
+		dbGroups, err = p.getGroupMarkersPathsFromDB(ctx, cityCode)
 		if err != nil {
 			slog.Warn("failed to query groups from database, will use metadata only", "city", cityCode, "error", err)
-			dbGroupMarkers = make(map[string]bool)
+			dbGroups = make(map[string]string)
 		} else {
-			slog.Info("queried database for group markers", "city", cityCode, "groupCount", len(dbGroupMarkers))
+			slog.Info("queried database for group markers", "city", cityCode, "groupCount", len(dbGroups))
 		}
 	}
 
-	// Merge markers from both metadata and database
-	// This ensures we include all groups even if metadata was incomplete
-	allMarkerIDs := make(map[string]bool)
-	for markerID := range existingMetadata.Markers {
-		allMarkerIDs[markerID] = true
-	}
-	for markerID := range dbGroupMarkers {
-		allMarkerIDs[markerID] = true
-	}
+	// Check which markers actually have image files in GCS
+	// This is the source of truth - if the image file exists, include it
+	validMarkerIDs := make(map[string]string) // markerID -> markerPath
 
-	slog.Info("total markers to include", "city", cityCode, "count", len(allMarkerIDs), "fromMetadata", len(existingMetadata.Markers), "fromDB", len(dbGroupMarkers))
-
-	// Download individual marker images from the paths in metadata
-	if len(existingMetadata.Markers) > 0 {
-		for markerID, info := range existingMetadata.Markers {
-			if info.Path == "" {
-				slog.Warn("marker has no path in metadata, skipping", "markerID", markerID)
-				continue
-			}
-
-			markerData, err := p.downloadFromGCS(ctx, p.optimizedBucket, info.Path)
-			if err != nil {
-				slog.Warn("failed to download individual marker image", "markerID", markerID, "path", info.Path, "error", err)
-				continue
-			}
-
-			markerImg, _, err := image.Decode(bytes.NewReader(markerData))
-			if err != nil {
-				slog.Warn("failed to decode marker image", "markerID", markerID, "error", err)
-				continue
-			}
-
-			markers[markerID] = markerImg
-			slog.Debug("loaded existing marker", "markerID", markerID, "path", info.Path)
+	// First check markers from existing metadata
+	for markerID, info := range existingMetadata.Markers {
+		if info.Path != "" {
+			validMarkerIDs[markerID] = info.Path
 		}
 	}
 
-	// For markers in the database but not in metadata, try to load from standard path
-	slog.Info("attempting to load markers from standard paths", "totalToCheck", len(allMarkerIDs), "alreadyLoaded", len(markers))
-	for markerID := range allMarkerIDs {
-		if _, alreadyLoaded := markers[markerID]; alreadyLoaded {
-			slog.Debug("marker already loaded from metadata", "markerID", markerID)
-			continue // Already loaded from metadata
+	// Then check markers from database by trying to load them from standard path
+	for markerID, markerPath := range dbGroups {
+		if _, alreadyHave := validMarkerIDs[markerID]; alreadyHave {
+			continue // Already have this from metadata
 		}
 
-		// Try to load from standard path: {cityCode}/groups/{markerID}/marker.png
+		// Try to check if file exists at standard path
 		standardPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
-		markerData, err := p.downloadFromGCS(ctx, p.optimizedBucket, standardPath)
+		exists, err := p.objectExists(ctx, p.optimizedBucket, standardPath)
 		if err != nil {
-			slog.Warn("marker image not found at standard path", "markerID", markerID, "path", standardPath, "error", err)
+			slog.Warn("failed to check if marker exists", "markerID", markerID, "path", standardPath, "error", err)
+			continue
+		}
+
+		if exists {
+			validMarkerIDs[markerID] = standardPath
+		}
+	}
+
+	slog.Info("markers found with actual image files", "city", cityCode, "count", len(validMarkerIDs), "fromMetadata", len(existingMetadata.Markers), "fromDB", len(dbGroups))
+
+	// Download marker images from validated paths
+	slog.Info("loading marker images from GCS", "totalMarkers", len(validMarkerIDs))
+	for markerID, markerPath := range validMarkerIDs {
+		markerData, err := p.downloadFromGCS(ctx, p.optimizedBucket, markerPath)
+		if err != nil {
+			slog.Warn("failed to download marker image", "markerID", markerID, "path", markerPath, "error", err)
 			continue
 		}
 
 		markerImg, _, err := image.Decode(bytes.NewReader(markerData))
 		if err != nil {
-			slog.Warn("failed to decode marker image from standard path", "markerID", markerID, "path", standardPath, "error", err)
+			slog.Warn("failed to decode marker image", "markerID", markerID, "path", markerPath, "error", err)
 			continue
 		}
 
 		markers[markerID] = markerImg
-		slog.Info("loaded marker from standard path", "markerID", markerID, "path", standardPath)
+		slog.Info("loaded marker image", "markerID", markerID, "path", markerPath)
 	}
-	slog.Info("finished loading markers from standard paths", "totalLoaded", len(markers))
+	slog.Info("finished loading markers", "loaded", len(markers), "total", len(validMarkerIDs))
 
 	// Save and add the new marker to the collection
 	newMarkerPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, newMarkerID)
@@ -292,17 +280,18 @@ func (p *ImageProcessor) uploadToGCSWithContentType(ctx context.Context, bucket,
 	return writer.Close()
 }
 
-// getGroupMarkersFromDB queries the database for all active group markers in a city
-// Returns a map of marker IDs (slugified group codes) for groups in the specified city
-func (p *ImageProcessor) getGroupMarkersFromDB(ctx context.Context, cityCode string) (map[string]bool, error) {
+// getGroupMarkersPathsFromDB queries the database for all active groups in a city
+// Returns a map of marker IDs to their expected storage paths
+func (p *ImageProcessor) getGroupMarkersPathsFromDB(ctx context.Context, cityCode string) (map[string]string, error) {
 	if p.db == nil {
 		return nil, fmt.Errorf("database not initialized")
 	}
 
-	markers := make(map[string]bool)
+	markers := make(map[string]string)
 
 	// Query all active groups in the city
-	// If marker field is set, use it; otherwise use slugified code as fallback
+	// Use the marker field (or fallback to code) as the marker ID
+	// This ID is used to construct the expected path: {cityCode}/groups/{markerID}/marker.png
 	query := `
 		SELECT COALESCE(NULLIF(marker, ''), LOWER(code)) as marker_id
 		FROM ride_groups
@@ -316,13 +305,15 @@ func (p *ImageProcessor) getGroupMarkersFromDB(ctx context.Context, cityCode str
 	defer rows.Close()
 
 	for rows.Next() {
-		var marker string
-		if err := rows.Scan(&marker); err != nil {
-			slog.Warn("failed to scan marker from database", "error", err)
+		var markerID string
+		if err := rows.Scan(&markerID); err != nil {
+			slog.Warn("failed to scan marker ID from database", "error", err)
 			continue
 		}
-		if marker != "" {
-			markers[marker] = true
+		if markerID != "" {
+			// Store the expected path for this marker
+			expectedPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
+			markers[markerID] = expectedPath
 		}
 	}
 
@@ -330,6 +321,6 @@ func (p *ImageProcessor) getGroupMarkersFromDB(ctx context.Context, cityCode str
 		return nil, fmt.Errorf("error iterating marker rows: %v", err)
 	}
 
-	slog.Info("fetched group markers from database", "city", cityCode, "markerCount", len(markers))
+	slog.Info("fetched group markers from database", "city", cityCode, "groupCount", len(markers))
 	return markers, nil
 }
