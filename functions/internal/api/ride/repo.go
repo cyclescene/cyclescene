@@ -581,3 +581,39 @@ func (r *Repository) ValidateAdminKey(apiKey string) (bool, error) {
 
 	return false, rows.Err()
 }
+
+// LinkRouteToRide links a route to a ride
+func (r *Repository) LinkRouteToRide(eventID int64, routeID string) error {
+	query := `UPDATE events SET route_id = ? WHERE id = ?`
+	result, err := r.db.Exec(query, routeID, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to link route to ride: %w", err)
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rows == 0 {
+		return fmt.Errorf("ride not found with id %d", eventID)
+	}
+
+	slog.Info("route linked to ride", "eventID", eventID, "routeID", routeID)
+	return nil
+}
+
+// GetEventIDByEditToken retrieves the event ID for a ride by its edit token
+func (r *Repository) GetEventIDByEditToken(token string) (int64, error) {
+	var eventID int64
+	query := `SELECT id FROM events WHERE edit_token = ?`
+	err := r.db.QueryRow(query, token).Scan(&eventID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, fmt.Errorf("ride not found")
+		}
+		return 0, fmt.Errorf("failed to get event ID: %w", err)
+	}
+
+	return eventID, nil
+}

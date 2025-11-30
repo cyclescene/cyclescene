@@ -11,13 +11,16 @@ import (
 	"time"
 
 	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
+	"github.com/spacesedan/cyclescene/functions/internal/routes"
 	"github.com/spacesedan/cyclescene/functions/internal/scraper"
 )
 
 type Service struct {
-	repo            *Repository
-	magicLinkSvc    *magiclink.Service
-	editLinkBaseURL string
+	repo              *Repository
+	magicLinkSvc      *magiclink.Service
+	editLinkBaseURL   string
+	routeFetcher      *routes.RouteFetcher
+	routeRepository   *routes.Repository
 }
 
 func NewService(repo *Repository) *Service {
@@ -30,6 +33,11 @@ func NewServiceWithMagicLink(repo *Repository, magicLinkSvc *magiclink.Service, 
 		magicLinkSvc:    magicLinkSvc,
 		editLinkBaseURL: editLinkBaseURL,
 	}
+}
+
+func (s *Service) SetRouteServices(fetcher *routes.RouteFetcher, routeRepo *routes.Repository) {
+	s.routeFetcher = fetcher
+	s.routeRepository = routeRepo
 }
 
 // User-submitted rides
@@ -54,9 +62,28 @@ func (s *Service) SubmitRide(submission *Submission) (*SubmissionResponse, error
 		}
 	}
 
+	// Process route if provided
+	var routeID *string
+	if submission.RouteURL != "" && s.routeFetcher != nil && s.routeRepository != nil {
+		routeID, err = s.processRoute(context.Background(), submission.RouteURL)
+		if err != nil {
+			slog.Warn("Failed to process route", "error", err, "routeURL", submission.RouteURL)
+			// Continue without route if processing fails
+		} else if routeID != nil {
+			slog.Info("Route processed successfully", "routeID", *routeID, "routeURL", submission.RouteURL)
+		}
+	}
+
 	eventID, err := s.repo.CreateRide(submission, editToken, lat, lng)
 	if err != nil {
 		return nil, err
+	}
+
+	// Link route to ride if route was processed
+	if routeID != nil {
+		if err := s.repo.LinkRouteToRide(eventID, *routeID); err != nil {
+			slog.Warn("Failed to link route to ride", "error", err, "eventID", eventID, "routeID", *routeID)
+		}
 	}
 
 	// Send magic link email if service is configured and organizer email exists
@@ -113,14 +140,69 @@ func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionR
 		}
 	}
 
+	// Process route if provided
+	var routeID *string
+	if submission.RouteURL != "" && s.routeFetcher != nil && s.routeRepository != nil {
+		routeID, err := s.processRoute(context.Background(), submission.RouteURL)
+		if err != nil {
+			slog.Warn("Failed to process route", "error", err, "routeURL", submission.RouteURL)
+			// Continue without route if processing fails
+		} else if routeID != nil {
+			slog.Info("Route processed successfully", "routeID", *routeID, "routeURL", submission.RouteURL)
+		}
+	}
+
 	if err := s.repo.UpdateRide(token, submission, lat, lng); err != nil {
 		return nil, err
+	}
+
+	// Link route to ride if route was processed
+	if routeID != nil {
+		// Get event ID from token
+		eventID, err := s.repo.GetEventIDByEditToken(token)
+		if err == nil {
+			if err := s.repo.LinkRouteToRide(eventID, *routeID); err != nil {
+				slog.Warn("Failed to link route to ride", "error", err, "eventID", eventID, "routeID", *routeID)
+			}
+		}
 	}
 
 	return &SubmissionResponse{
 		Success: true,
 		Message: "Ride updated successfully",
 	}, nil
+}
+
+// processRoute fetches, converts, and deduplicates a route
+func (s *Service) processRoute(ctx context.Context, routeURL string) (*string, error) {
+	// Fetch and convert route
+	feature, err := s.routeFetcher.FetchAndConvert(routeURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch route: %w", err)
+	}
+
+	// Extract distance from properties
+	var distanceKm, distanceMi float64
+	if km, ok := feature.Properties["distance_km"].(float64); ok {
+		distanceKm = km
+	}
+	if mi, ok := feature.Properties["distance_mi"].(float64); ok {
+		distanceMi = mi
+	}
+
+	// Parse source and source ID from URL
+	source, sourceID, err := routes.ParseRouteURL(routeURL)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create or get existing route (handles deduplication)
+	routeID, err := s.routeRepository.CreateRoute(ctx, source, sourceID, routeURL, feature, distanceKm, distanceMi)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create route: %w", err)
+	}
+
+	return &routeID, nil
 }
 
 // Scraped rides from Shift2Bikes

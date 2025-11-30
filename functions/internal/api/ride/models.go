@@ -41,6 +41,9 @@ type Submission struct {
 	// Group
 	GroupCode string `json:"group_code"`
 
+	// Route
+	RouteURL string `json:"route_url"`
+
 	// City
 	City string `json:"city"`
 

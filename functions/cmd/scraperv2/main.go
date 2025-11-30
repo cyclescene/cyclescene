@@ -1,14 +1,18 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/spacesedan/cyclescene/functions/internal/routes"
 	"github.com/spacesedan/cyclescene/functions/internal/scraper"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -51,6 +55,25 @@ func main() {
 
 	////// READY TO START (v1.1.0) /////////////////////////
 
+	// Initialize route services
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	stravaToken := os.Getenv("STRAVA_ACCESS_TOKEN")
+	rwgpsToken := os.Getenv("RWGPS_AUTH_TOKEN")
+	routeFetcher := routes.NewRouteFetcher(httpClient, stravaToken, rwgpsToken)
+	routeRepo := routes.NewRepository(db)
+
+	// Load existing routes into cache to avoid reprocessing
+	existingRoutes, err := routeRepo.GetAllRoutes(context.Background())
+	if err != nil {
+		slog.Error("failed to load existing routes", "error", err)
+	}
+	routeCache := make(map[string]string) // "source:sourceID" -> routeID
+	for _, route := range existingRoutes {
+		cacheKey := fmt.Sprintf("%s:%s", route.Source, route.SourceID)
+		routeCache[cacheKey] = route.ID
+		slog.Info("loaded route from cache", "source", route.Source, "sourceID", route.SourceID, "routeID", route.ID)
+	}
+
 	// get all previously saved locations from DB
 	geocodeCache, err := scraper.GetGeocodeCache(db)
 	if err != nil {
@@ -68,6 +91,47 @@ func main() {
 		event := &shift2BikesEvents.Events[i]
 		event.SourcedFrom = EVENT_SOURCE
 		event.CityCode = PDX_CITY_CODE
+
+		// Extract and process route if present in event details
+		routeURL := routes.ExtractRouteURLFromDescription(event.Details)
+		if routeURL != "" {
+			source, sourceID, err := routes.ParseRouteURL(routeURL)
+			if err != nil {
+				slog.Warn("failed to parse route URL", "error", err, "routeURL", routeURL, "event", event.Title)
+			} else {
+				// Check if route is already in cache
+				cacheKey := fmt.Sprintf("%s:%s", source, sourceID)
+				if routeID, found := routeCache[cacheKey]; found {
+					slog.Info("route found in cache", "source", source, "sourceID", sourceID, "routeID", routeID, "event", event.Title)
+					// TODO: Link route to shift2bikes event when upserted
+				} else {
+					// Fetch and process new route
+					feature, err := routeFetcher.FetchAndConvert(routeURL)
+					if err != nil {
+						slog.Warn("failed to fetch route", "error", err, "routeURL", routeURL, "event", event.Title)
+					} else {
+						// Extract distance from properties
+						var distanceKm, distanceMi float64
+						if km, ok := feature.Properties["distance_km"].(float64); ok {
+							distanceKm = km
+						}
+						if mi, ok := feature.Properties["distance_mi"].(float64); ok {
+							distanceMi = mi
+						}
+
+						// Create route in database
+						newRouteID, err := routeRepo.CreateRoute(context.Background(), source, sourceID, routeURL, feature, distanceKm, distanceMi)
+						if err != nil {
+							slog.Error("failed to create route", "error", err, "routeURL", routeURL, "event", event.Title)
+						} else {
+							slog.Info("route created successfully", "source", source, "sourceID", sourceID, "routeID", newRouteID, "distance_km", distanceKm, "event", event.Title)
+							routeCache[cacheKey] = newRouteID
+							// TODO: Link route to shift2bikes event when upserted
+						}
+					}
+				}
+			}
+		}
 
 		// parse Starting location
 		location := scraper.CreateLocationFromEvent(event)
