@@ -9,7 +9,7 @@
 
     const areaGenerator = area()
       .x((d: any) => $xScale(d.distance))
-      .y0($height)
+      .y0(height)
       .y1((d: any) => $yScale(d.elevation));
 
     return areaGenerator($data as any) || "";

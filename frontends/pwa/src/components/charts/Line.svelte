@@ -15,4 +15,4 @@
   });
 </script>
 
-<path d={pathData} class="stroke-primary" fill="none" stroke-width="2" />
+<path d={pathData} class="stroke-primary" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />

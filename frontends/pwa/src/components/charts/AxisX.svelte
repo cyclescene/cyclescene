@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from "svelte";
 
-  const { width, xScale, data } = getContext("LayerCake");
+  const { width, height, xScale, data } = getContext("LayerCake");
 
   const tickCount = 5;
   let ticks = $derived.by(() => {
