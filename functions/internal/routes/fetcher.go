@@ -42,7 +42,9 @@ func (f *RouteFetcher) FetchAndConvert(url string) (GeoJSONFeature, error) {
 		baseURL := fmt.Sprintf("https://ridewithgps.com/routes/%s", sourceID)
 		return f.fetchRideWithGPSRoute(baseURL)
 	case "strava":
-		return f.fetchStravaRoute(sourceID)
+		// For Strava, pass the base API URL without /export_gpx
+		baseURL := fmt.Sprintf("https://www.strava.com/api/v3/routes/%s", sourceID)
+		return f.fetchStravaRoute(baseURL)
 	default:
 		return GeoJSONFeature{}, fmt.Errorf("unsupported route source: %s", source)
 	}
@@ -99,8 +101,12 @@ func (f *RouteFetcher) fetchRideWithGPSRoute(routeURL string) (GeoJSONFeature, e
 }
 
 // fetchStravaRoute fetches and converts a Strava route
-func (f *RouteFetcher) fetchStravaRoute(routeID string) (GeoJSONFeature, error) {
-	gpxURL := fmt.Sprintf("https://www.strava.com/api/v3/routes/%s/export_gpx", routeID)
+func (f *RouteFetcher) fetchStravaRoute(routeURL string) (GeoJSONFeature, error) {
+	// Construct GPX URL - append /export_gpx if not already present
+	gpxURL := routeURL
+	if !contains(gpxURL, "/export_gpx") {
+		gpxURL = fmt.Sprintf("%s/export_gpx", routeURL)
+	}
 
 	req, err := http.NewRequest("GET", gpxURL, nil)
 	if err != nil {
