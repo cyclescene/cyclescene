@@ -99,9 +99,9 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 
 		if exists {
 			validMarkerIDs[markerID] = standardPath
-			slog.Info("added marker from database (file exists)", "markerID", markerID, "path", standardPath)
+			slog.Info("added marker from database (file exists)", "markerID", markerID, "bucket", p.optimizedBucket, "path", standardPath)
 		} else {
-			slog.Warn("marker in database but file not found", "markerID", markerID, "path", standardPath)
+			slog.Warn("marker in database but file not found", "markerID", markerID, "bucket", p.optimizedBucket, "path", standardPath)
 		}
 	}
 	slog.Info("after checking database", "city", cityCode, "validMarkerCount", len(validMarkerIDs))
@@ -330,7 +330,7 @@ func (p *ImageProcessor) getGroupMarkersPathsFromDB(ctx context.Context, cityCod
 			// Store the expected path for this marker
 			expectedPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
 			markers[markerID] = expectedPath
-			slog.Debug("found marker in database", "markerID", markerID, "path", expectedPath)
+			slog.Info("found marker in database", "markerID", markerID, "path", expectedPath, "cityCode", cityCode)
 		}
 	}
 
