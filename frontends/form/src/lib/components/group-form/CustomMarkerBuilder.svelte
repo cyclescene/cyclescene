@@ -238,7 +238,10 @@
     try {
       isUploading = true;
 
-      // Ensure final render is complete before converting to blob
+      // Ensure canvas is fully rendered before converting to blob
+      console.log("CustomMarkerBuilder: Ensuring canvas is fully rendered...");
+      await renderCanvas();
+
       // Add a small delay to ensure canvas is fully rendered
       await new Promise(resolve => setTimeout(resolve, 100));
 
