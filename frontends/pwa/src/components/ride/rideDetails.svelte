@@ -21,6 +21,8 @@
       : ride?.image,
   );
 
+  console.log($currentRoute);
+
   function handleOpenNativeMapApp() {
     if (ride) {
       const url = `https://www.google.com/maps/search/?api=1&query=${ride.lat},${ride.lng}`;
@@ -66,7 +68,9 @@
 {#if ride}
   <div class="ride-details-container">
     <ScrollArea class="scroll-wrapper">
-      <div class="flex flex-col gap-5 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
+      <div
+        class="flex flex-col gap-5 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]"
+      >
         <!-- <div -->
         <!--   class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl" -->
         <!-- > -->
@@ -117,6 +121,17 @@
           {/if}
         </Card.Root>
 
+        <!-- Route Visualization -->
+        {#if $currentRoute}
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Ride Route</h3>
+              <RideRouteMap />
+            </div>
+            <RideRouteDetails {ride} />
+          </div>
+        {/if}
+
         {#if ride.image != ""}
           <img src={imageUrl} alt={`Image for ${ride.title} bike ride`} />
         {/if}
@@ -143,7 +158,9 @@
         </Card.Root>
 
         {#if ride && ride.ridesource === "Shift2Bikes"}
-          <p class="text-sm text-gray-500 my-4">Event data provided by Shift2Bikes</p>
+          <p class="text-sm text-gray-500 my-4">
+            Event data provided by Shift2Bikes
+          </p>
           <Button
             disabled={false}
             variant="ghost"

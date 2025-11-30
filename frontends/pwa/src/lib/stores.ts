@@ -238,14 +238,14 @@ export const savedRidesStore = createSavedRideStore()
 
 interface RoutesStore {
   loading: boolean;
-  routes: Map<string, RouteGeoJSON>;
+  routes: SvelteMap<string, RouteGeoJSON>;
   error: string | null;
 }
 
 function createRoutesStore() {
   const { subscribe, set, update } = writable<RoutesStore>({
     loading: true,
-    routes: new Map(),
+    routes: new SvelteMap(),
     error: null
   })
 

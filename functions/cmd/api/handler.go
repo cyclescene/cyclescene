@@ -17,6 +17,7 @@ import (
 	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
 	apimi "github.com/spacesedan/cyclescene/functions/internal/api/middleware"
 	"github.com/spacesedan/cyclescene/functions/internal/api/ride"
+	routesapi "github.com/spacesedan/cyclescene/functions/internal/api/routes"
 	"github.com/spacesedan/cyclescene/functions/internal/api/storage"
 )
 
@@ -138,12 +139,19 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	// Rate limiter: 10 submissions per minute per IP
 	submissionRateLimiter := apimi.NewRateLimiter(10, time.Minute)
 
+	// Routes handler
+	routesRepo := routesapi.NewRepository(db)
+	routesHandler := routesapi.NewHandler(routesRepo)
+
 	r.Route("/v1", func(r chi.Router) {
 		// auth handlers -- /tokens
 		authHandler.RegisterRoutes(r)
 
 		// storage handlers -- /storage (signed URLs for uploads)
 		storageHandler.RegisterRoutes(r)
+
+		// routes handlers -- /routes
+		routesHandler.RegisterRoutes(r)
 
 		// ride handlers scraped and user submitted -- /rides
 		r.Route("/rides", func(r chi.Router) {

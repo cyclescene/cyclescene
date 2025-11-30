@@ -10,6 +10,7 @@
     activeView,
     mapStore,
     rides,
+    routesStore,
     savedRidesStore,
     SUB_VIEW_ABOUT,
     SUB_VIEW_ADULT_ONLY_RIDES,
@@ -64,6 +65,9 @@
     await rides.init();
     rides.refetch();
     savedRidesStore.init();
+
+    await routesStore.init();
+    routesStore.refetch();
 
     // Tell service worker the city code (non-blocking)
     if ("serviceWorker" in navigator) {
