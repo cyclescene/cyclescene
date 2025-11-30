@@ -58,8 +58,9 @@ func main() {
 	// Initialize route services
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	stravaToken := os.Getenv("STRAVA_ACCESS_TOKEN")
-	rwgpsToken := os.Getenv("RWGPS_AUTH_TOKEN")
-	routeFetcher := routes.NewRouteFetcher(httpClient, stravaToken, rwgpsToken)
+	rwgpsAuthToken := os.Getenv("RWGPS_AUTH_TOKEN")
+	rwgpsAPIKey := os.Getenv("RWGPS_API_KEY")
+	routeFetcher := routes.NewRouteFetcher(httpClient, stravaToken, rwgpsAuthToken, rwgpsAPIKey)
 	routeRepo := routes.NewRepository(db)
 
 	// Load existing routes into cache to avoid reprocessing

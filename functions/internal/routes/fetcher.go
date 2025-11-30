@@ -5,24 +5,27 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"time"
 )
 
 // RouteFetcher handles fetching routes from external sources
 type RouteFetcher struct {
-	httpClient *http.Client
+	httpClient        *http.Client
 	stravaAccessToken string
-	rwgpsAuthToken string
+	rwgpsAuthToken    string
+	rwgpsAPIKey       string
 }
 
 // NewRouteFetcher creates a new RouteFetcher instance
-func NewRouteFetcher(httpClient *http.Client, stravaToken, rwgpsToken string) *RouteFetcher {
+func NewRouteFetcher(httpClient *http.Client, stravaToken, rwgpsAuthToken, rwgpsAPIKey string) *RouteFetcher {
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
 	return &RouteFetcher{
-		httpClient: httpClient,
+		httpClient:        httpClient,
 		stravaAccessToken: stravaToken,
-		rwgpsAuthToken: rwgpsToken,
+		rwgpsAuthToken:    rwgpsAuthToken,
+		rwgpsAPIKey:       rwgpsAPIKey,
 	}
 }
 
@@ -35,7 +38,9 @@ func (f *RouteFetcher) FetchAndConvert(url string) (GeoJSONFeature, error) {
 
 	switch source {
 	case "ridewithgps":
-		return f.fetchRideWithGPSRoute(sourceID)
+		// For RideWithGPS, pass the base URL without the .gpx extension
+		baseURL := fmt.Sprintf("https://ridewithgps.com/routes/%s", sourceID)
+		return f.fetchRideWithGPSRoute(baseURL)
 	case "strava":
 		return f.fetchStravaRoute(sourceID)
 	default:
@@ -44,19 +49,43 @@ func (f *RouteFetcher) FetchAndConvert(url string) (GeoJSONFeature, error) {
 }
 
 // fetchRideWithGPSRoute fetches and converts a RideWithGPS route
-func (f *RouteFetcher) fetchRideWithGPSRoute(routeID string) (GeoJSONFeature, error) {
-	gpxURL := fmt.Sprintf("https://ridewithgps.com/routes/%s.gpx?sub_format=track", routeID)
+func (f *RouteFetcher) fetchRideWithGPSRoute(routeURL string) (GeoJSONFeature, error) {
+	// Construct GPX URL - append .gpx?sub_format=track if not already present
+	gpxURL := routeURL
+	if !contains(gpxURL, ".gpx") {
+		gpxURL = fmt.Sprintf("%s.gpx?sub_format=track", routeURL)
+	} else if !contains(gpxURL, "sub_format") {
+		gpxURL = fmt.Sprintf("%s?sub_format=track", routeURL)
+	}
 
 	req, err := http.NewRequest("GET", gpxURL, nil)
 	if err != nil {
 		return GeoJSONFeature{}, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	// Add User-Agent to avoid being redirected to signup
+	req.Header.Set("User-Agent", "CycleScene/1.0 (+https://cyclescene.cc)")
+
+	// Add RideWithGPS authentication headers
+	if f.rwgpsAPIKey != "" {
+		req.Header.Set("x-rwgps-api-key", f.rwgpsAPIKey)
+	}
 	if f.rwgpsAuthToken != "" {
 		req.Header.Set("x-rwgps-auth-token", f.rwgpsAuthToken)
 	}
 
-	resp, err := f.httpClient.Do(req)
+	// Create a client that doesn't follow redirects past a certain point
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 5 {
+				return fmt.Errorf("too many redirects")
+			}
+			return nil
+		},
+	}
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return GeoJSONFeature{}, fmt.Errorf("failed to fetch RideWithGPS route: %w", err)
 	}
@@ -136,4 +165,14 @@ func ExtractRouteURLFromDescription(description string) string {
 	}
 
 	return ""
+}
+
+// contains is a simple helper to check if a string contains a substring
+func contains(s, substr string) bool {
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return true
+		}
+	}
+	return false
 }
