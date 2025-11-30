@@ -123,6 +123,14 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	if err := p.saveMarkerImage(ctx, newMarkerPath, newMarkerImg); err != nil {
 		return fmt.Errorf("failed to save new marker image: %v", err)
 	}
+
+	// Verify the marker was saved successfully
+	exists, err := p.objectExists(ctx, p.optimizedBucket, newMarkerPath)
+	if err != nil || !exists {
+		return fmt.Errorf("failed to verify marker image was saved: path=%s, exists=%v, error=%v", newMarkerPath, exists, err)
+	}
+	slog.Info("verified marker image saved successfully", "markerID", newMarkerID, "path", newMarkerPath)
+
 	markers[newMarkerID] = newMarkerImg
 	slog.Info("added new marker to collection", "markerID", newMarkerID, "path", newMarkerPath, "totalMarkers", len(markers))
 
