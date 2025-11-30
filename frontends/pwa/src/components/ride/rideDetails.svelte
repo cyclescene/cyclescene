@@ -2,10 +2,12 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import * as Card from "$lib/components/ui/card/index";
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
-  import { currentRide } from "$lib/stores";
+  import { currentRide, currentRoute } from "$lib/stores";
   import { formatDate, formatTime } from "$lib/utils";
   import RideLabels from "./rideLabels.svelte";
   import RideMap from "./rideMap.svelte";
+  import RideRouteMap from "./rideRouteMap.svelte";
+  import RideRouteDetails from "./rideRouteDetails.svelte";
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
   const CITY_CODE = import.meta.env.VITE_CITY_CODE;
@@ -70,6 +72,18 @@
         <!-- > -->
         <RideMap {ride} />
         <!-- </div> -->
+
+        <!-- Route Visualization -->
+        {#if $currentRoute}
+          <div class="space-y-4">
+            <div>
+              <h3 class="text-lg font-semibold mb-2">Ride Route</h3>
+              <RideRouteMap />
+            </div>
+            <RideRouteDetails {ride} />
+          </div>
+        {/if}
+
         <h2 class="text-3xl">{ride.title}</h2>
         <p>{ride.newsflash}</p>
         <RideLabels {ride} />
