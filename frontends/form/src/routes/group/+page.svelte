@@ -127,6 +127,25 @@
     </div>
   {/if}
 
+  {#if Object.keys($errors).length > 0}
+    <div
+      class="mb-4 sm:mb-6 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg"
+    >
+      <p class="text-xs sm:text-sm font-semibold text-destructive mb-2">
+        Please fix the following errors:
+      </p>
+      <ul class="list-disc list-inside space-y-1">
+        {#each Object.entries($errors) as [field, message]}
+          {#if message}
+            <li class="text-xs sm:text-sm text-destructive">
+              {typeof message === 'string' ? message : message[0]}
+            </li>
+          {/if}
+        {/each}
+      </ul>
+    </div>
+  {/if}
+
   <form method="POST" use:enhance class="space-y-6">
     <!-- Group Code & Name -->
     <Card.Root>
@@ -154,7 +173,12 @@
               oninput={handleCodeInput}
               placeholder="BIKE"
               maxlength={4}
-              class={`uppercase pr-10 text-base ${$errors.code ? "border-destructive" : ""}`}
+              aria-invalid={!!$errors.code}
+              class={`uppercase pr-10 text-base transition-colors ${
+                $errors.code
+                  ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                  : ""
+              }`}
             />
 
             <div class="absolute right-3 top-1/2 -translate-y-1/2">
@@ -172,7 +196,7 @@
             <p
               class="text-xs sm:text-sm text-green-600 flex items-center gap-1"
             >
-              <CircleX class="h-3 w-3 flex-shrink-0" />
+              <CircleCheck class="h-3 w-3 flex-shrink-0" />
               Code is available!
             </p>
           {:else if codeCheckState === "unavailable"}
@@ -201,10 +225,18 @@
             type="text"
             bind:value={$form.name}
             placeholder="Portland Bike Club"
-            class={`text-base ${$errors.name ? "border-destructive" : ""}`}
+            aria-invalid={!!$errors.name}
+            class={`text-base transition-colors ${
+              $errors.name
+                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                : ""
+            }`}
           />
           {#if $errors.name}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.name}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1">
+              <CircleX class="h-3 w-3 flex-shrink-0" />
+              {$errors.name}
+            </p>
           {/if}
         </div>
       </Card.Content>
@@ -245,10 +277,18 @@
             type="url"
             bind:value={$form.web_url}
             placeholder="https://portlandbikeclub.com"
-            class="text-base"
+            aria-invalid={!!$errors.web_url}
+            class={`text-base transition-colors ${
+              $errors.web_url
+                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                : ""
+            }`}
           />
           {#if $errors.web_url}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.web_url}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1">
+              <CircleX class="h-3 w-3 flex-shrink-0" />
+              {$errors.web_url}
+            </p>
           {/if}
         </div>
       </Card.Content>
@@ -272,10 +312,18 @@
             type="email"
             bind:value={$form.email}
             placeholder="organizer@portlandbikeclub.com"
-            class={`text-base ${$errors.email ? "border-destructive" : ""}`}
+            aria-invalid={!!$errors.email}
+            class={`text-base transition-colors ${
+              $errors.email
+                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                : ""
+            }`}
           />
           {#if $errors.email}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.email}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1">
+              <CircleX class="h-3 w-3 flex-shrink-0" />
+              {$errors.email}
+            </p>
           {/if}
           <p class="text-xs text-muted-foreground">
             You'll receive a magic link via this email to edit your group

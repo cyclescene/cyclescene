@@ -5,8 +5,8 @@
   import { selectedRideId } from "$lib/stores";
 
   const DEFAULT_SIZE = 0.4;
-  const SELECTED_SIZE = 0.6;
-  const CUSTOM_MARKER_SIZE = 0.8;
+  const SELECTED_SIZE = 1.0;
+  const CUSTOM_MARKER_SIZE = 0.6;
   const CUSTOM_MARKER_SELECTED_SIZE = 1.0;
 
   const {
@@ -27,8 +27,6 @@
     selectedId = $selectedRideId;
   });
 
-  let mapInstance: any = $state(undefined);
-
   $effect(() => {
     console.log(
       `[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`,
@@ -48,11 +46,7 @@
   id="ride-icons"
   source={sourceId}
   layout={{
-    "icon-image": [
-      "coalesce",
-      ["get", "group_marker_icon"],
-      defaultIconName
-    ],
+    "icon-image": ["coalesce", ["get", "group_marker_icon"], defaultIconName],
     "icon-size": [
       "case",
       // If it has a group_marker_icon property (custom marker)

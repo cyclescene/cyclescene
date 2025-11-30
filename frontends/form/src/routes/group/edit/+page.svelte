@@ -10,7 +10,7 @@
   import { Label } from "$lib/components/ui/label";
   import { Textarea } from "$lib/components/ui/textarea";
   import * as Card from "$lib/components/ui/card";
-  import { Edit, Loader } from "@lucide/svelte";
+  import { Edit, Loader, CircleX } from "@lucide/svelte";
 
   interface Props {
     data: {
@@ -64,6 +64,25 @@
     </div>
   {/if}
 
+  {#if Object.keys($errors).length > 0}
+    <div
+      class="mb-4 sm:mb-6 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg"
+    >
+      <p class="text-xs sm:text-sm font-semibold text-destructive mb-2">
+        Please fix the following errors:
+      </p>
+      <ul class="list-disc list-inside space-y-1">
+        {#each Object.entries($errors) as [field, message]}
+          {#if message}
+            <li class="text-xs sm:text-sm text-destructive">
+              {typeof message === 'string' ? message : message[0]}
+            </li>
+          {/if}
+        {/each}
+      </ul>
+    </div>
+  {/if}
+
   <!-- Group Summary Card -->
   <Card.Root class="mb-6">
     <Card.Header>
@@ -91,9 +110,20 @@
           <Input
             type="text"
             bind:value={$form.name}
-            class="text-sm sm:text-base"
+            aria-invalid={!!$errors.name}
+            class={`text-sm sm:text-base transition-colors ${
+              $errors.name
+                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                : ""
+            }`}
             autofocus
           />
+          {#if $errors.name}
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1 mt-2">
+              <CircleX class="h-3 w-3 flex-shrink-0" />
+              {$errors.name}
+            </p>
+          {/if}
           <div class="flex gap-2 mt-2">
             <button
               type="button"
@@ -157,10 +187,18 @@
             type="url"
             bind:value={$form.web_url}
             placeholder="https://portlandbikeclub.com"
-            class="text-base"
+            aria-invalid={!!$errors.web_url}
+            class={`text-base transition-colors ${
+              $errors.web_url
+                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                : ""
+            }`}
           />
           {#if $errors.web_url}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.web_url}</p>
+            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1">
+              <CircleX class="h-3 w-3 flex-shrink-0" />
+              {$errors.web_url}
+            </p>
           {/if}
         </div>
       </Card.Content>
