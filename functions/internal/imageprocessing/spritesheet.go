@@ -36,8 +36,8 @@ type SpritesheetMetadata struct {
 
 // RegenerateSpritesheet regenerates the spritesheet for a city after a new marker is added
 // Steps:
-// 1. Download existing metadata (if exists)
-// 2. Download individual marker images from GCS
+// 1. Query database for all active groups in the city
+// 2. Download individual marker images from GCS using paths from metadata
 // 3. Save the new marker image individually
 // 4. Regenerate spritesheet by compositing all individual markers
 // 5. Upload new spritesheet PNG and updated metadata JSON
@@ -53,6 +53,30 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		slog.Warn("no existing metadata found, starting fresh", "city", cityCode, "error", err)
 		existingMetadata = &SpritesheetMetadata{Markers: make(map[string]MarkerInfo)}
 	}
+
+	// If database is available, query for all active groups in this city to ensure we have all markers
+	var dbGroupMarkers map[string]bool
+	if p.db != nil {
+		dbGroupMarkers, err = p.getGroupMarkersFromDB(ctx, cityCode)
+		if err != nil {
+			slog.Warn("failed to query groups from database, will use metadata only", "city", cityCode, "error", err)
+			dbGroupMarkers = make(map[string]bool)
+		} else {
+			slog.Info("queried database for group markers", "city", cityCode, "groupCount", len(dbGroupMarkers))
+		}
+	}
+
+	// Merge markers from both metadata and database
+	// This ensures we include all groups even if metadata was incomplete
+	allMarkerIDs := make(map[string]bool)
+	for markerID := range existingMetadata.Markers {
+		allMarkerIDs[markerID] = true
+	}
+	for markerID := range dbGroupMarkers {
+		allMarkerIDs[markerID] = true
+	}
+
+	slog.Info("total markers to include", "city", cityCode, "count", len(allMarkerIDs), "fromMetadata", len(existingMetadata.Markers), "fromDB", len(dbGroupMarkers))
 
 	// Download individual marker images from the paths in metadata
 	if len(existingMetadata.Markers) > 0 {
@@ -79,6 +103,30 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 		}
 	}
 
+	// For markers in the database but not in metadata, try to load from standard path
+	for markerID := range allMarkerIDs {
+		if _, alreadyLoaded := markers[markerID]; alreadyLoaded {
+			continue // Already loaded from metadata
+		}
+
+		// Try to load from standard path: {cityCode}/groups/{markerID}/marker.png
+		standardPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, markerID)
+		markerData, err := p.downloadFromGCS(ctx, p.optimizedBucket, standardPath)
+		if err != nil {
+			slog.Debug("marker image not found at standard path", "markerID", markerID, "path", standardPath, "error", err)
+			continue
+		}
+
+		markerImg, _, err := image.Decode(bytes.NewReader(markerData))
+		if err != nil {
+			slog.Warn("failed to decode marker image from standard path", "markerID", markerID, "path", standardPath, "error", err)
+			continue
+		}
+
+		markers[markerID] = markerImg
+		slog.Info("loaded marker from standard path", "markerID", markerID, "path", standardPath)
+	}
+
 	// Save and add the new marker to the collection
 	newMarkerPath := fmt.Sprintf("%s/groups/%s/marker.png", cityCode, newMarkerID)
 	if err := p.saveMarkerImage(ctx, newMarkerPath, newMarkerImg); err != nil {
@@ -88,11 +136,14 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	slog.Info("added new marker to collection", "markerID", newMarkerID, "path", newMarkerPath, "totalMarkers", len(markers))
 
 	// Sort marker IDs for consistent spritesheet layout
+	// Only include markers that we actually have images for
 	markerIDs := make([]string, 0, len(markers))
 	for id := range markers {
 		markerIDs = append(markerIDs, id)
 	}
 	sort.Strings(markerIDs)
+
+	slog.Info("markers to composite", "city", cityCode, "count", len(markerIDs), "from", len(allMarkerIDs), "total")
 
 	// Calculate grid dimensions
 	cols := int(math.Ceil(math.Sqrt(float64(len(markers)))))
@@ -236,4 +287,43 @@ func (p *ImageProcessor) uploadToGCSWithContentType(ctx context.Context, bucket,
 	}
 
 	return writer.Close()
+}
+
+// getGroupMarkersFromDB queries the database for all active group markers in a city
+// Returns a map of marker IDs (slugified group codes) for groups in the specified city
+func (p *ImageProcessor) getGroupMarkersFromDB(ctx context.Context, cityCode string) (map[string]bool, error) {
+	if p.db == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	markers := make(map[string]bool)
+
+	query := `
+		SELECT marker FROM ride_groups
+		WHERE city = ? AND is_active = 1 AND marker IS NOT NULL AND marker != ''
+	`
+
+	rows, err := p.db.QueryContext(ctx, query, strings.ToLower(cityCode))
+	if err != nil {
+		return nil, fmt.Errorf("failed to query group markers: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var marker string
+		if err := rows.Scan(&marker); err != nil {
+			slog.Warn("failed to scan marker from database", "error", err)
+			continue
+		}
+		if marker != "" {
+			markers[marker] = true
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating marker rows: %v", err)
+	}
+
+	slog.Info("fetched group markers from database", "city", cityCode, "markerCount", len(markers))
+	return markers, nil
 }
