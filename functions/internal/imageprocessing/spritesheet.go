@@ -78,6 +78,7 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 			slog.Info("added marker from metadata", "markerID", markerID, "path", info.Path)
 		}
 	}
+	slog.Info("after checking metadata", "city", cityCode, "validMarkerCount", len(validMarkerIDs))
 
 	// Then check markers from database by trying to load them from standard path
 	slog.Info("checking markers from database", "city", cityCode, "dbMarkerCount", len(dbGroups))
@@ -102,8 +103,9 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 			slog.Warn("marker in database but file not found", "markerID", markerID, "path", standardPath)
 		}
 	}
+	slog.Info("after checking database", "city", cityCode, "validMarkerCount", len(validMarkerIDs))
 
-	slog.Info("markers found with actual image files", "city", cityCode, "count", len(validMarkerIDs), "fromMetadata", len(existingMetadata.Markers), "fromDB", len(dbGroups))
+	slog.Info("markers found with actual image files", "city", cityCode, "totalValid", len(validMarkerIDs), "fromMetadata", len(existingMetadata.Markers), "fromDB", len(dbGroups))
 
 	// Download marker images from validated paths
 	slog.Info("loading marker images from GCS", "totalMarkers", len(validMarkerIDs))
