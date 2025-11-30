@@ -355,7 +355,6 @@
 
   // Export method to auto-generate and upload marker with default settings
   export async function autoGenerateAndUploadMarker(): Promise<string | null> {
-    // Create a default marker with default image (placeholder blue teardrop)
     if (!canvasRef) {
       error = "Canvas not ready";
       return null;
@@ -364,38 +363,74 @@
     try {
       isUploading = true;
 
-      // Create a simple SVG canvas with just the teardrop shape
-      const svgCanvas = document.createElement("canvas");
-      svgCanvas.width = RENDER_SIZE;
-      svgCanvas.height = RENDER_SIZE;
-      const ctx = svgCanvas.getContext("2d");
-      if (!ctx) {
-        error = "Failed to create canvas context";
-        return null;
+      // If user has uploaded an image, use the fully rendered canvas
+      if (imagePreview) {
+        console.log("AutoGenerateMarker: Using uploaded image");
+        // First ensure the canvas is fully rendered
+        await renderCanvas();
+
+        // Add a small delay to ensure canvas is fully rendered
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } else {
+        // Create a simple marker with just the teardrop shape (no uploaded image)
+        console.log("AutoGenerateMarker: Creating default marker without image");
+        const ctx = canvasRef.getContext("2d");
+        if (!ctx) {
+          error = "Failed to create canvas context";
+          return null;
+        }
+
+        // Clear canvas
+        ctx.clearRect(0, 0, RENDER_SIZE, RENDER_SIZE);
+
+        // Draw just the teardrop marker
+        ctx.save();
+        const scale = RENDER_SIZE / 24;
+        ctx.scale(scale, scale);
+        const p = new Path2D(SVG_PATH);
+        ctx.fillStyle = markerColor;
+        ctx.fill(p);
+        ctx.restore();
+
+        // Draw white circle in the center
+        const centerX = (12 * RENDER_SIZE) / 24;
+        const centerY = (9 * RENDER_SIZE) / 24;
+        const baseRadius = (2.5 * RENDER_SIZE) / 24;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
+        ctx.fillStyle = "white";
+        ctx.fill();
+        ctx.closePath();
       }
 
-      // Draw just the teardrop marker in default blue
-      ctx.save();
-      const scale = RENDER_SIZE / 24;
-      ctx.scale(scale, scale);
-      const p = new Path2D(SVG_PATH);
-      ctx.fillStyle = markerColor;
-      ctx.fill(p);
-      ctx.restore();
+      // Verify canvas content before saving
+      const ctx = canvasRef.getContext("2d");
+      if (ctx) {
+        const imageData = ctx.getImageData(0, 0, canvasRef.width, canvasRef.height);
+        const data = imageData.data;
 
-      // Draw white circle in the center
-      const centerX = (12 * RENDER_SIZE) / 24;
-      const centerY = (9 * RENDER_SIZE) / 24;
-      const baseRadius = (2.5 * RENDER_SIZE) / 24;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, baseRadius, 0, Math.PI * 2);
-      ctx.fillStyle = "white";
-      ctx.fill();
-      ctx.closePath();
+        // Check if canvas has any non-transparent pixels
+        let hasContent = false;
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i] > 0) { // Check alpha channel
+            hasContent = true;
+            break;
+          }
+        }
+
+        console.log("AutoGenerateMarker: Canvas content validation", {
+          hasContent,
+          hasImage: !!imagePreview,
+        });
+
+        if (!hasContent) {
+          throw new Error("Canvas appears to be empty. Please check your marker settings.");
+        }
+      }
 
       // Convert canvas to blob
       const blob = await new Promise<Blob | null>((resolve) =>
-        svgCanvas.toBlob(resolve, "image/png"),
+        canvasRef.toBlob(resolve, "image/png"),
       );
 
       if (!blob) {
@@ -403,7 +438,12 @@
         return null;
       }
 
-      const file = new File([blob], "default-marker.png", {
+      console.log("AutoGenerateMarker: Blob generated", {
+        size: blob.size,
+        hasImage: !!imagePreview,
+      });
+
+      const file = new File([blob], "marker.png", {
         type: "image/png",
       });
 

@@ -113,6 +113,18 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 	for i, markerID := range markerIDs {
 		markerImg := markers[markerID]
 
+		// Ensure marker is in RGBA format for proper compositing
+		var rgbaMarker *image.RGBA
+		if rgba, ok := markerImg.(*image.RGBA); ok {
+			rgbaMarker = rgba
+		} else {
+			// Convert to RGBA if needed
+			bounds := markerImg.Bounds()
+			rgbaMarker = image.NewRGBA(bounds)
+			draw.Draw(rgbaMarker, bounds, markerImg, image.Pt(0, 0), draw.Over)
+			slog.Info("converted marker image to RGBA", "markerID", markerID, "originalType", fmt.Sprintf("%T", markerImg))
+		}
+
 		col := i % cols
 		row := i / cols
 		x := col * (markerSize + padding)
@@ -120,7 +132,8 @@ func (p *ImageProcessor) RegenerateSpritesheet(ctx context.Context, cityCode str
 
 		// Draw marker onto spritesheet
 		dstRect := image.Rect(x, y, x+markerSize, y+markerSize)
-		draw.Draw(spritesheet, dstRect, markerImg, image.Pt(0, 0), draw.Over)
+		draw.Draw(spritesheet, dstRect, rgbaMarker, image.Pt(0, 0), draw.Over)
+		slog.Info("composited marker to spritesheet", "markerID", markerID, "dstRect", dstRect.String())
 
 		// Get path from existing metadata or use new marker path
 		markerPath := ""

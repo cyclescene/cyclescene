@@ -339,15 +339,29 @@ func (p *ImageProcessor) ProcessMarker(ctx context.Context, imageUUID, cityCode,
 		return "", fmt.Errorf("failed to decode marker image: %v", err)
 	}
 
+	slog.Info("decoded marker image", "imageUUID", imageUUID, "bounds", markerImg.Bounds().String(), "colorModel", fmt.Sprintf("%T", markerImg))
+
 	const markerSize = 64
 	resizedMarker := resizeImage(markerImg, markerSize)
-	slog.Info("resized marker to 64x64", "imageUUID", imageUUID)
+
+	// Ensure resized marker is RGBA
+	var rgbaMarker *image.RGBA
+	if rgba, ok := resizedMarker.(*image.RGBA); ok {
+		rgbaMarker = rgba
+	} else {
+		bounds := resizedMarker.Bounds()
+		rgbaMarker = image.NewRGBA(bounds)
+		draw.Draw(rgbaMarker, bounds, resizedMarker, image.Pt(0, 0), draw.Over)
+		slog.Info("converted resized marker to RGBA", "imageUUID", imageUUID)
+	}
+
+	slog.Info("resized marker to 64x64", "imageUUID", imageUUID, "bounds", rgbaMarker.Bounds().String())
 
 	// Step 3: Add to spritesheet (which regenerates metadata)
 	markerKey := slugify(groupCode)
 	slog.Info("regenerating spritesheet", "cityCode", cityCode, "markerKey", markerKey)
 
-	if err := p.RegenerateSpritesheet(ctx, cityCode, markerKey, resizedMarker); err != nil {
+	if err := p.RegenerateSpritesheet(ctx, cityCode, markerKey, rgbaMarker); err != nil {
 		return "", fmt.Errorf("failed to regenerate spritesheet: %v", err)
 	}
 
