@@ -528,6 +528,14 @@ export const currentRideStore = {
   }
 }
 
+export const currentRoute = derived(currentRide, ($currentRide) => {
+  if ($currentRide) {
+    return getRouteById($currentRide.route_id as string)
+  }
+  return null
+
+})
+
 // ALL RIDES STORE
 export const rides = createRidesStore()
 export const ridesWithoutLocations = derived(
