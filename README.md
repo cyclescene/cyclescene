@@ -148,10 +148,11 @@ cycle-scene/
 
 1. **Ride Discovery**: Users browse rides in PWA or Form frontend
 2. **Ride Submission**: Users submit new rides via Form frontend
-3. **Data Aggregation**: Scraper v2 fetches Shift2Bikes events on a schedule
-4. **Image Processing**: Uploaded images are optimized and cached
-5. **Analytics**: Directory app tracks usage patterns
-6. **Maintenance**: Token Cleaner and DB Backups run on schedules
+3. **Route Visualization**: Users can view route maps and elevation profiles for rides with associated routes
+4. **Data Aggregation**: Scraper v2 fetches Shift2Bikes events every 3 hours
+5. **Image Processing**: Uploaded images are optimized and cached
+6. **Analytics**: Directory app tracks usage patterns
+7. **Maintenance**: Token Cleaner and DB Backups run on schedules
 
 ## Privacy and Analytics
 

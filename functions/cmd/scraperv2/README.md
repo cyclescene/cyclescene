@@ -4,7 +4,7 @@ Automated service that scrapes bike events from Shift2Bikes and geocodes their l
 
 ## Overview
 
-Scraper v2 runs on a schedule (twice daily) to:
+Scraper v2 runs on a schedule (every 3 hours) to:
 1. Fetch upcoming events from Shift2Bikes website
 2. Parse event details (title, date, location, link)
 3. Geocode locations to get latitude/longitude
@@ -13,7 +13,7 @@ Scraper v2 runs on a schedule (twice daily) to:
 
 **Technology**: Go, HTML scraping, Google Geocoding API
 **Deployment**: Cloud Run Job (triggered by Cloud Scheduler)
-**Schedule**: 8:00 AM and 8:00 PM UTC
+**Schedule**: Every 3 hours at 00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00 UTC
 
 ## Getting Started
 
@@ -169,10 +169,10 @@ gcloud run jobs create cyclescene-scraper \
 ### Schedule with Cloud Scheduler
 ```bash
 gcloud scheduler jobs create app-engine cyclescene-scraper-schedule \
-  --schedule="0 8,20 * * *" \
+  --schedule="0 */3 * * *" \
   --http-method=POST \
-  --uri=https://region-project.run.app/scraper/trigger \
-  --oidc-service-account-email=runner@project.iam.gserviceaccount.com
+  --uri=https://region-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/{project}/jobs/pdx-scraper:run \
+  --oidc-service-account-email=scraper-scheduler@project.iam.gserviceaccount.com
 ```
 
 Or use Makefile:
