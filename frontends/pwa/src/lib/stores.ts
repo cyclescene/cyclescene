@@ -76,8 +76,8 @@ function createRidesStore() {
           }))
         })
     })
-      .catch(err => {
-        console.error("Failed to save fresh rides to IDB: ", err);
+      .catch(() => {
+        // Failed to save rides
       })
   }
 
@@ -101,24 +101,20 @@ function createRidesStore() {
         if (window.navigator.onLine === true) {
           const upcomingRides = await getUpcomingRides()
           const pastRides = await getPastRides()
-          console.log(`[RidesStore] Upcoming: ${upcomingRides.length}, Past: ${pastRides.length}`)
           const freshRides = [...upcomingRides, ...pastRides]
 
           // Deduplicate rides by ID - keep first occurrence
           const seenIds = new Set<string>()
           const dedupedRides = freshRides.filter(ride => {
             if (seenIds.has(ride.id)) {
-              console.warn(`[RidesStore] Removing duplicate ride ID: ${ride.id}`)
               return false
             }
             seenIds.add(ride.id)
             return true
           })
 
-          console.log(`[RidesStore] Total to save: ${dedupedRides.length} (removed ${freshRides.length - dedupedRides.length} duplicates)`)
           await saveRidesToDB(dedupedRides)
           cachedRides = await getRidesfromDB()
-          console.log(`[RidesStore] Actually saved in DB: ${cachedRides.length}`)
           // otherwise, load from IndexedDB
         } else {
           cachedRides = await getRidesfromDB()
@@ -161,7 +157,6 @@ function createRidesStore() {
         set({ loading: false, rideData: freshRides, error: null })
       } catch (e) {
         update(() => ({ loading: false, rideData: [], error: `Failed to refresh rides: ${e}` }))
-        console.error(e);
       }
     }
   }
@@ -172,9 +167,6 @@ export function triggerForegroundSync() {
     navigator.serviceWorker.controller.postMessage({
       type: "FORCE_FOREGROUND_SYNC"
     })
-
-    console.log("Forground sync requested by user");
-
   } else {
     alert("Cannot connect to the backgoung worker. Please check PWA installation")
   }
@@ -199,7 +191,6 @@ function createSavedRideStore() {
         const cachedRides = await getAllSavedRides()
         set({ loading: false, data: cachedRides, error: null })
       } catch (e) {
-        console.error(e);
         set({ loading: false, data: [], error: "Could not load saved rides" })
       }
     },
@@ -274,7 +265,6 @@ function createRoutesStore() {
         const routesMap = new SvelteMap(cachedRoutes.map(route => [route.id, route]))
         set({ loading: false, routes: routesMap, error: null })
       } catch (err) {
-        console.error('[RoutesStore] Failed to initialize routes:', err)
         update(store => ({ ...store, loading: false, error: `${err}` }))
       }
     }
@@ -444,8 +434,6 @@ export const dateStore = {
   addDays: (offset: number) => {
     currentDate.update((currentStoredDate) => {
       if (!currentStoredDate) {
-        console.error("dateStore.addDays: current store was undefined/null. " +
-          "initializing to today and applying offset");
         return today(getLocalTimeZone()).add({ days: offset })
       }
       return currentStoredDate.add({ days: offset })
@@ -454,8 +442,6 @@ export const dateStore = {
   subtractDays: (offset: number) => {
     currentDate.update((currentStoredDate) => {
       if (!currentStoredDate) {
-        console.error("dateStore.addDays: current store was undefined/null. " +
-          "initializing to today and applying offset");
         return today(getLocalTimeZone()).add({ days: offset })
       }
       return currentStoredDate.subtract({ days: offset })
@@ -469,7 +455,6 @@ export const dateStore = {
 
 export const formattedDate = derived([currentDate], ([$currentDate]) => {
   if (!$currentDate) {
-    console.warn("formattedDate derived store received undefined/null currentDate.");
     return "LoadingDate"
   }
 

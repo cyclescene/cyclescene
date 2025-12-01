@@ -84,7 +84,6 @@ export async function loadSpritesheet(cityCode: string): Promise<{
       image.src = pngUrl
     })
   } catch (error) {
-    console.error(`[Markers] Error loading spritesheet for ${cityCode}:`, error)
     throw error
   }
 }

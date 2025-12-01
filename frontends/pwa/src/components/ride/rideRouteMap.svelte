@@ -21,7 +21,6 @@
 
       const coordinates = route.geojson.geometry.coordinates;
       if (!coordinates || coordinates.length === 0) {
-        console.warn("[RideRouteMap] No coordinates found in route");
         return;
       }
 
@@ -29,8 +28,6 @@
       coordinates.forEach((coord: [number, number, number]) => {
         bounds.extend([coord[0], coord[1]] as [number, number]);
       });
-
-      console.log("[RideRouteMap] Fitting bounds:", bounds.toArray());
 
       // Use fitBounds with reasonable padding
       map.fitBounds(bounds, {
@@ -43,7 +40,6 @@
     // Wait for the source to be loaded on the map
     const onSourceData = (e: any) => {
       if (e.sourceId === ROUTE_SOURCE_ID && e.isSourceLoaded) {
-        console.log("[RideRouteMap] Route source loaded, fitting bounds");
         fitMapToRoute();
         map.off("sourcedata", onSourceData);
       }
@@ -69,7 +65,6 @@
 
   let routeGEOJSON = $derived.by(() => {
     if (!route || !route.geojson.geometry.coordinates) {
-      console.warn("[RideRouteMap] Invalid route or missing coordinates");
       return {
         type: "FeatureCollection" as const,
         features: [],
@@ -90,11 +85,6 @@
         properties: route.geojson.properties,
       },
     ];
-
-    console.log("[RideRouteMap] Generated GeoJSON:", {
-      type: "FeatureCollection",
-      features,
-    });
 
     return {
       type: "FeatureCollection" as const,

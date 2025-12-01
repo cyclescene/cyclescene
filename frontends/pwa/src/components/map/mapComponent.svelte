@@ -67,7 +67,6 @@
           mapInstance!.addImage(ICON_NAME, response.data);
           iconLoaded = true;
         } catch (error) {
-          console.error("failed to load custom icon: ", error);
           iconLoaded = true; // Set to true anyway so layers render
         }
       }
@@ -89,25 +88,13 @@
               const response = await mapInstance!.loadImage(markerDataUrl);
               const imageName = `group-marker-${markerKey}`;
               mapInstance!.addImage(imageName, response.data);
-
-              // Verify the image was added
-              const addedImage = mapInstance!.getImage(imageName);
-              if (!addedImage) {
-                console.warn(
-                  `[MapComponent] ⚠ Image ${imageName} not found on map after adding!`,
-                );
-              }
             } catch (error) {
-              console.error(
-                `[MapComponent] ✗ Failed to load group marker image for ${markerKey}:`,
-                error,
-              );
+              // Continue anyway
             }
           }
 
           groupMarkersLoaded = true;
         } catch (error) {
-          console.error("[MapComponent] Failed to load group markers: ", error);
           // Continue anyway - rides can still be displayed with default icon
         }
       }

@@ -39,15 +39,8 @@
         try {
           const response = await map!.loadImage(GEOAPIFY_API_URL);
           map!.addImage(ICON_NAME, response.data);
-          const addedImage = map!.getImage(ICON_NAME);
-          if (!addedImage) {
-            console.warn(
-              `[RideMap] ⚠ Default icon ${ICON_NAME} not found after adding`,
-            );
-          }
           iconLoaded = true;
         } catch (error) {
-          console.error("[RideMap] Failed to load default icon: ", error);
           iconLoaded = true; // Set to true anyway so layers render
         }
       }
@@ -73,16 +66,8 @@
           const imageName = `group-marker-${ride.group_marker}`;
           map!.addImage(imageName, markerResponse.data);
 
-          const addedImage = map!.getImage(imageName);
-          if (!addedImage) {
-            console.warn(
-              `[RideMap] ⚠ Group marker ${imageName} not found after adding`,
-            );
-          }
-
           groupMarkerLoaded = true;
         } catch (error) {
-          console.error("[RideMap] Failed to load group marker: ", error);
           groupMarkerLoaded = true; // Continue anyway
         }
       }

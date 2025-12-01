@@ -16,14 +16,6 @@
   const ride = $derived($currentRide);
   const route = $derived($currentRoute);
 
-  $effect(() => {
-    console.log(`[RideDetails] ${ride && ride.route_id}`);
-    if (ride && ride.route_id != "") {
-      console.log(`[RideDetails] Has route: ${ride && ride.route_id}`);
-    } else {
-      console.log(`[RideDetails] No route: ${ride && ride.route_id}`);
-    }
-  });
 
   const imageUrl = $derived.by(() =>
     ride && ride?.ridesource === "Shift2Bikes"
