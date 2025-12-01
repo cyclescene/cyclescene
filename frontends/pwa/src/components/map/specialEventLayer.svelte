@@ -97,4 +97,4 @@
 <div
   bind:this={canvasContainer}
   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: {opacityValue}; z-index: 1; transition: opacity 0.1s ease-in-out;"
-/>
+></div>

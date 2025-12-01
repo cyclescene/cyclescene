@@ -17,6 +17,9 @@
           "Distance calculations for routes (kilometers and miles) using Haversine formula.",
           "Route data propagation to frontend with route_id references in ride API responses.",
           "Elevation profile data extraction from GPX route files.",
+          "Interactive route map preview in ride details showing the full cycling route.",
+          "Elevation profile chart displaying elevation changes over route distance.",
+          "Route statistics including total distance in both kilometers and miles.",
         ],
         Changed: [
           "Database schema extended with routes table and route_id foreign keys.",

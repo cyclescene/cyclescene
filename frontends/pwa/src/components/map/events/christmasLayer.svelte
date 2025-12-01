@@ -10,7 +10,18 @@
   let isAnimating = $state(false);
 
   // Christmas emojis - snowflakes and cyclists
-  const christmasEmojis = ["❄️", "❄️", "❄️", "❄️", "❄️", "❄️", "❄️", "❄️", "❄️", "🚴"]; // 90% snowflakes, 10% cyclists
+  const christmasEmojis = [
+    "❄️",
+    "❄️",
+    "❄️",
+    "❄️",
+    "❄️",
+    "❄️",
+    "❄️",
+    "❄️",
+    "❄️",
+    "🚴",
+  ]; // 90% snowflakes, 10% cyclists
 
   onMount(() => {
     if (!containerDiv) return;
@@ -25,12 +36,14 @@
       // Create snowflakes and cyclists spread across entire map
       for (let i = 0; i < 250; i++) {
         const snowflake = document.createElement("div");
-        const randomEmoji = christmasEmojis[Math.floor(Math.random() * christmasEmojis.length)];
+        const randomEmoji =
+          christmasEmojis[Math.floor(Math.random() * christmasEmojis.length)];
         snowflake.textContent = randomEmoji;
         snowflake.style.position = "fixed";
         snowflake.style.left = Math.random() * window.innerWidth + "px";
-        snowflake.style.top = (Math.random() * window.innerHeight * 2 - window.innerHeight) + "px";
-        snowflake.style.fontSize = (8 + Math.random() * 12) + "px";
+        snowflake.style.top =
+          Math.random() * window.innerHeight * 2 - window.innerHeight + "px";
+        snowflake.style.fontSize = 8 + Math.random() * 12 + "px";
         const initialOpacity = 0.5 + Math.random() * 0.5;
         snowflake.style.opacity = initialOpacity.toString();
         snowflake.style.color = isDarkMode ? "#ffffff" : "#e0f2ff";
@@ -50,7 +63,9 @@
 
           if (progress < 1) {
             const y = progress * window.innerHeight;
-            const x = parseFloat(snowflake.style.left) + Math.sin(progress * Math.PI * 4) * windOffset;
+            const x =
+              parseFloat(snowflake.style.left) +
+              Math.sin(progress * Math.PI * 4) * windOffset;
 
             // Fade out as it reaches the bottom
             const opacity = initialOpacity * (1 - progress);
@@ -81,4 +96,4 @@
 <div
   bind:this={containerDiv}
   style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden;"
-/>
+></div>

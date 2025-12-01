@@ -16,16 +16,28 @@ func NewHandler(repo *Repository) *Handler {
 	}
 }
 
-// GetAllRoutes returns all routes as GeoJSON features
-// GET /v1/routes
+// GetAllRoutes returns all routes for a specific city as GeoJSON features
+// GET /v1/routes?city=pdx
 func (h *Handler) GetAllRoutes(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	slog.Info("[Routes] Fetching all routes")
+	slog.Info("[Routes] Request received", "url", r.URL.String(), "query", r.URL.RawQuery)
+	city := r.URL.Query().Get("city")
+	slog.Info("[Routes] Extracted city from query", "city", city)
 
-	routes, err := h.repo.GetAllRoutes(ctx)
+	if city == "" {
+		slog.Warn("[Routes] Missing city parameter")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "city parameter is required"})
+		return
+	}
+
+	slog.Info("[Routes] Fetching all routes", "city", city)
+
+	routes, err := h.repo.GetAllRoutes(ctx, city)
 	if err != nil {
-		slog.Error("[Routes] Failed to fetch routes", "error", err)
+		slog.Error("[Routes] Failed to fetch routes", "error", err, "city", city)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(map[string]string{"error": "Failed to fetch routes"})

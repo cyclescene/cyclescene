@@ -31,19 +31,21 @@ export async function getPastRides(): Promise<RideData[]> {
 
 export interface RouteGeoJSON {
   id: string;
-  type: 'Feature';
-  geometry: {
-    type: 'LineString';
-    coordinates: [number, number, number][]; // [lon, lat, elevation]
-  };
-  properties: {
-    distance_km: number;
-    distance_mi: number;
+  geojson: {
+    type: 'Feature';
+    geometry: {
+      type: 'LineString';
+      coordinates: [number, number, number][]; // [lon, lat, elevation]
+    };
+    properties: {
+      distance_km: number;
+      distance_mi: number;
+    };
   };
 }
 
 export async function getAllRoutes(): Promise<RouteGeoJSON[]> {
-  const url = `${API_BASE_URL}/v1/routes`
+  const url = `${API_BASE_URL}/v1/routes?city=${CITY_CODE}`
 
   try {
     const response = await fetch(url)

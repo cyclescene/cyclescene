@@ -22,7 +22,6 @@ const (
 	FALLBACK_LNG   = -122.676483
 	FALLBACK_QUERY = "fallback"
 	EVENT_SOURCE   = "Shift2Bikes"
-	PDX_CITY_CODE  = "pdx"
 )
 
 func main() {
@@ -34,12 +33,19 @@ func main() {
 	if os.Getenv("TURSO_DB_URL") == "" || os.Getenv("TURSO_DB_RW_TOKEN") == "" {
 		log.Fatal("FATAL: Turso env variable not set properly")
 	}
+
+	// Get city code from environment variable
+	cityCode := os.Getenv("CITY_CODE")
+	if cityCode == "" {
+		cityCode = "pdx" // Default to PDX if not specified
+	}
+
 	//
 	// // set up logger
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
 		AddSource: true,
 	})))
-	slog.Info("Starting PDX scraper service")
+	slog.Info("Starting scraper service", "city", cityCode)
 	//
 	// connect to DB(Turso)
 	dbURL := os.Getenv("TURSO_DB_URL")
@@ -82,9 +88,9 @@ func main() {
 	routeRepo := routes.NewRepository(db)
 
 	// Load existing routes into cache to avoid reprocessing
-	existingRoutes, err := routeRepo.GetAllRoutes(context.Background())
+	existingRoutes, err := routeRepo.GetAllRoutes(context.Background(), cityCode)
 	if err != nil {
-		slog.Error("failed to load existing routes", "error", err)
+		slog.Error("failed to load existing routes", "error", err, "city", cityCode)
 	}
 	routeCache := make(map[string]string) // "source:sourceID" -> routeID
 	for _, route := range existingRoutes {
@@ -109,7 +115,7 @@ func main() {
 	for i := range shift2BikesEvents.Events {
 		event := &shift2BikesEvents.Events[i]
 		event.SourcedFrom = EVENT_SOURCE
-		event.CityCode = PDX_CITY_CODE
+		event.CityCode = cityCode
 
 		// Extract and process route if present in event details
 		routeURL := routes.ExtractRouteURLFromDescription(event.Details)
@@ -124,7 +130,7 @@ func main() {
 				cacheKey := fmt.Sprintf("%s:%s", source, sourceID)
 				if routeID, found := routeCache[cacheKey]; found {
 					slog.Info("route found in cache", "source", source, "sourceID", sourceID, "routeID", routeID, "event", event.Title)
-					// TODO: Link route to shift2bikes event when upserted
+					event.RouteID = routeID
 				} else {
 					// Fetch and process new route
 					slog.Info("processing new route", "source", source, "sourceID", sourceID, "routeURL", routeURL, "event", event.Title)
@@ -142,13 +148,13 @@ func main() {
 						}
 
 						// Create route in database
-						newRouteID, err := routeRepo.CreateRoute(context.Background(), source, sourceID, routeURL, feature, distanceKm, distanceMi)
+						newRouteID, err := routeRepo.CreateRoute(context.Background(), source, sourceID, routeURL, cityCode, feature, distanceKm, distanceMi)
 						if err != nil {
 							slog.Error("failed to create route", "error", err, "routeURL", routeURL, "event", event.Title)
 						} else {
 							slog.Info("route created successfully", "source", source, "sourceID", sourceID, "routeID", newRouteID, "distance_km", distanceKm, "event", event.Title)
 							routeCache[cacheKey] = newRouteID
-							// TODO: Link route to shift2bikes event when upserted
+							event.RouteID = newRouteID
 						}
 					}
 				}
@@ -161,7 +167,7 @@ func main() {
 		normalizedQuery := strings.ToLower(geocodeQuery)
 
 		location.Query = geocodeQuery
-		location.City = PDX_CITY_CODE
+		location.City = cityCode
 
 		// locations where coords were avialable in the ride data
 		if !location.NeedsGeocoding {
@@ -195,7 +201,7 @@ func main() {
 		// make request to geocode API for location
 		fmt.Printf("GEOCODE: %s\n", geocodeQuery)
 
-		lat, lng, err := scraper.GeocodeQuery(geocodeQuery, PDX_CITY_CODE)
+		lat, lng, err := scraper.GeocodeQuery(geocodeQuery, cityCode)
 		if err != nil {
 			slog.Error("Unable to geocode query, using fall back coords", "error", err.Error(), "query", geocodeQuery)
 			location.Query = FALLBACK_QUERY

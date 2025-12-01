@@ -34,7 +34,7 @@ func NewRepository(db *sql.DB) *Repository {
 
 // CreateRoute stores a new route in the database
 // Returns the route ID and handles UNIQUE constraint violations by returning existing route ID
-func (r *Repository) CreateRoute(ctx context.Context, source, sourceID, sourceURL string, feature GeoJSONFeature, distanceKm, distanceMi float64) (string, error) {
+func (r *Repository) CreateRoute(ctx context.Context, source, sourceID, sourceURL, city string, feature GeoJSONFeature, distanceKm, distanceMi float64) (string, error) {
 	// Check if route already exists
 	existing, err := r.GetRouteBySourceID(ctx, source, sourceID)
 	if err == nil && existing != nil {
@@ -42,8 +42,8 @@ func (r *Repository) CreateRoute(ctx context.Context, source, sourceID, sourceUR
 		return existing.ID, nil
 	}
 
-	// Encode GeoJSON to string
-	geoJSONBytes, err := json.Marshal(feature.Geometry)
+	// Encode full GeoJSON Feature to string (including geometry and properties)
+	geoJSONBytes, err := json.Marshal(feature)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal GeoJSON: %w", err)
 	}
@@ -53,11 +53,11 @@ func (r *Repository) CreateRoute(ctx context.Context, source, sourceID, sourceUR
 	routeID := generateID()
 
 	query := `
-		INSERT INTO routes (id, source, source_id, source_url, geojson, distance_km, distance_mi)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO routes (id, source, source_id, source_url, geojson, distance_km, distance_mi, city)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
-	_, err = r.db.ExecContext(ctx, query, routeID, source, sourceID, sourceURL, geoJSONStr, distanceKm, distanceMi)
+	_, err = r.db.ExecContext(ctx, query, routeID, source, sourceID, sourceURL, geoJSONStr, distanceKm, distanceMi, city)
 	if err != nil {
 		// If unique constraint violation, fetch and return existing
 		if isUniqueConstraintError(err) {
@@ -137,21 +137,22 @@ func (r *Repository) GetRouteByID(ctx context.Context, id string) (*Route, error
 	return &route, nil
 }
 
-// GetAllRoutes returns all routes for cache initialization
-func (r *Repository) GetAllRoutes(ctx context.Context) ([]Route, error) {
+// GetAllRoutes returns all routes for a specific city for cache initialization
+func (r *Repository) GetAllRoutes(ctx context.Context, city string) ([]Route, error) {
 	query := `
 		SELECT id, source, source_id, source_url, geojson, distance_km, distance_mi, created_at
 		FROM routes
+		WHERE city = ?
 		ORDER BY created_at DESC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	rows, err := r.db.QueryContext(ctx, query, city)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query routes: %w", err)
 	}
 	defer rows.Close()
 
-	var routes []Route
+	routes := make([]Route, 0) // Initialize as empty slice instead of nil
 	for rows.Next() {
 		var route Route
 		err := rows.Scan(

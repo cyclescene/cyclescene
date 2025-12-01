@@ -23,55 +23,71 @@
   let map: Map | undefined = $state.raw();
   let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
   let iconLoaded = $state(false);
+  let groupMarkerLoaded = $state(false);
+
+  // Reset icon states when ride changes
+  $effect(() => {
+    if (!ride) {
+      iconLoaded = false;
+      groupMarkerLoaded = false;
+    }
+  });
 
   $effect(() => {
     if (map && !iconLoaded) {
-      async function loadIcons() {
+      async function loadDefaultIcon() {
         try {
-          console.log(`[RideMap] Loading icons for ride: ${ride?.title}`);
-
-          // Load default bike pin icon
-          console.log(`[RideMap] Loading default icon: ${ICON_NAME}`);
           const response = await map!.loadImage(GEOAPIFY_API_URL);
           map!.addImage(ICON_NAME, response.data);
-          console.log(
-            `[RideMap] ✓ Successfully added default icon to map: ${ICON_NAME}`,
-          );
-
-          // Load group marker if ride has one
-          if (ride?.group_marker) {
-            try {
-              console.log(
-                `[RideMap] Loading group marker: ${ride.group_marker}`,
-              );
-              const markerDataUrl = await loadMarkerByKey(
-                CITY_CODE,
-                ride.group_marker,
-              );
-              const markerResponse = await map!.loadImage(markerDataUrl);
-              const imageName = `group-marker-${ride.group_marker}`;
-              map!.addImage(imageName, markerResponse.data);
-              console.log(
-                `[RideMap] ✓ Successfully added group marker to map: ${imageName}`,
-              );
-            } catch (error) {
-              console.error(
-                `[RideMap] ✗ Failed to load group marker: ${error}`,
-              );
-            }
-          } else {
-            console.log(
-              `[RideMap] No group marker for this ride, using default icon only`,
+          const addedImage = map!.getImage(ICON_NAME);
+          if (!addedImage) {
+            console.warn(
+              `[RideMap] ⚠ Default icon ${ICON_NAME} not found after adding`,
             );
           }
-
           iconLoaded = true;
         } catch (error) {
-          console.error("[RideMap] Failed to load icons: ", error);
+          console.error("[RideMap] Failed to load default icon: ", error);
+          iconLoaded = true; // Set to true anyway so layers render
         }
       }
 
-      loadIcons();
+      loadDefaultIcon();
+    }
+  });
+
+  $effect(() => {
+    if (map && !groupMarkerLoaded) {
+      async function loadGroupMarker() {
+        try {
+          if (!ride?.group_marker) {
+            groupMarkerLoaded = true;
+            return;
+          }
+
+          const markerDataUrl = await loadMarkerByKey(
+            CITY_CODE,
+            ride.group_marker,
+          );
+          const markerResponse = await map!.loadImage(markerDataUrl);
+          const imageName = `group-marker-${ride.group_marker}`;
+          map!.addImage(imageName, markerResponse.data);
+
+          const addedImage = map!.getImage(imageName);
+          if (!addedImage) {
+            console.warn(
+              `[RideMap] ⚠ Group marker ${imageName} not found after adding`,
+            );
+          }
+
+          groupMarkerLoaded = true;
+        } catch (error) {
+          console.error("[RideMap] Failed to load group marker: ", error);
+          groupMarkerLoaded = true; // Continue anyway
+        }
+      }
+
+      loadGroupMarker();
     }
   });
 </script>
@@ -90,7 +106,7 @@
   style={source}
 >
   {#if $singleRideGeoJSON}
-    {#if iconLoaded}
+    {#if iconLoaded && groupMarkerLoaded}
       <RideLayers sourceId={SOURCE_ID} defaultIconName={ICON_NAME} />
     {/if}
     <GeoJSONSource data={$singleRideGeoJSON} id={SOURCE_ID} />

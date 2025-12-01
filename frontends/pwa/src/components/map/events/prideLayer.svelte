@@ -11,9 +11,16 @@
 
   // Pride emojis - mix of flags and cyclists
   const prideEmojis = [
-    "🏳️‍🌈", "🏳️‍🌈", "🏳️‍🌈", "🏳️‍🌈", "🏳️‍🌈", // 50% pride flags
-    "🏳️‍⚧️", "🏳️‍⚧️", "🏳️‍⚧️", // 30% trans flags
-    "🚴", "🚴" // 20% cyclists
+    "🏳️‍🌈",
+    "🏳️‍🌈",
+    "🏳️‍🌈",
+    "🏳️‍🌈",
+    "🏳️‍🌈", // 50% pride flags
+    "🏳️‍⚧️",
+    "🏳️‍⚧️",
+    "🏳️‍⚧️", // 30% trans flags
+    "🚴",
+    "🚴", // 20% cyclists
   ];
 
   onMount(() => {
@@ -29,12 +36,16 @@
       // Create flags spread across entire map
       for (let i = 0; i < 250; i++) {
         const flagDiv = document.createElement("div");
-        const randomEmoji = prideEmojis[Math.floor(Math.random() * prideEmojis.length)];
+        const randomEmoji =
+          prideEmojis[Math.floor(Math.random() * prideEmojis.length)];
         flagDiv.textContent = randomEmoji;
         flagDiv.style.position = "fixed";
         flagDiv.style.left = Math.random() * window.innerWidth + "px";
-        flagDiv.style.top = (Math.random() * window.innerHeight * 3 - window.innerHeight * 1.5) + "px";
-        flagDiv.style.fontSize = (20 + Math.random() * 20) + "px";
+        flagDiv.style.top =
+          Math.random() * window.innerHeight * 3 -
+          window.innerHeight * 1.5 +
+          "px";
+        flagDiv.style.fontSize = 20 + Math.random() * 20 + "px";
         const initialOpacity = 0.6 + Math.random() * 0.4;
         flagDiv.style.opacity = initialOpacity.toString();
         flagDiv.style.pointerEvents = "none";
@@ -53,7 +64,9 @@
 
           if (progress < 1) {
             const y = progress * window.innerHeight;
-            const x = parseFloat(flagDiv.style.left) + Math.sin(progress * Math.PI * 4) * windOffset;
+            const x =
+              parseFloat(flagDiv.style.left) +
+              Math.sin(progress * Math.PI * 4) * windOffset;
 
             // Fade out as it reaches the bottom
             const opacity = initialOpacity * (1 - progress);
@@ -84,4 +97,4 @@
 <div
   bind:this={containerDiv}
   style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden;"
-/>
+></div>

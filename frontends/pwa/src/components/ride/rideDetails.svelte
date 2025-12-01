@@ -14,14 +14,22 @@
   const SHIFT2BIKES_URL = "https://www.shift2bikes.org/";
 
   const ride = $derived($currentRide);
+  const route = $derived($currentRoute);
+
+  $effect(() => {
+    console.log(`[RideDetails] ${ride && ride.route_id}`);
+    if (ride && ride.route_id != "") {
+      console.log(`[RideDetails] Has route: ${ride && ride.route_id}`);
+    } else {
+      console.log(`[RideDetails] No route: ${ride && ride.route_id}`);
+    }
+  });
 
   const imageUrl = $derived.by(() =>
     ride && ride?.ridesource === "Shift2Bikes"
       ? SHIFT2BIKES_URL + ride?.image
       : ride?.image,
   );
-
-  console.log($currentRoute);
 
   function handleOpenNativeMapApp() {
     if (ride) {
@@ -46,7 +54,6 @@
     if (!ride) return;
 
     const url = `${API_BASE}/v1/rides/ics?id=${ride.id}&city=${CITY_CODE}`;
-    console.log(url);
 
     // 1. Check if the code is being run in a mobile PWA/browser context
     if (
@@ -76,17 +83,6 @@
         <!-- > -->
         <RideMap {ride} />
         <!-- </div> -->
-
-        <!-- Route Visualization -->
-        {#if $currentRoute}
-          <div class="space-y-4">
-            <div>
-              <h3 class="text-lg font-semibold mb-2">Ride Route</h3>
-              <RideRouteMap />
-            </div>
-            <RideRouteDetails {ride} />
-          </div>
-        {/if}
 
         <h2 class="text-3xl">{ride.title}</h2>
         <p>{ride.newsflash}</p>
@@ -123,13 +119,15 @@
 
         <!-- Route Visualization -->
         {#if $currentRoute}
-          <div class="space-y-4">
-            <div>
-              <h3 class="text-lg font-semibold mb-2">Ride Route</h3>
-              <RideRouteMap />
-            </div>
-            <RideRouteDetails {ride} />
-          </div>
+          <Card.Root>
+            <Card.Header>
+              <Card.Title>Ride Route</Card.Title>
+            </Card.Header>
+            <Card.Content class="space-y-6">
+              <RideRouteMap {route} />
+              <RideRouteDetails {ride} />
+            </Card.Content>
+          </Card.Root>
         {/if}
 
         {#if ride.image != ""}

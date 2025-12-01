@@ -30,7 +30,14 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
 export async function saveRidesToDB(rides: RideData[]) {
   const db = await dbPromise
   const tx = db.transaction(ALLRIDES_STORE_NAME, "readwrite")
-  await Promise.all(rides.map(ride => tx.store.put(ride))).catch(e => console.error(e))
+  await tx.objectStore(ALLRIDES_STORE_NAME).clear()
+  const results = await Promise.allSettled(rides.map(ride => tx.store.put(ride)))
+  const failed = results.filter(r => r.status === 'rejected')
+  if (failed.length > 0) {
+    console.error(`[SaveRidesToDB] Failed to save ${failed.length}/${rides.length} rides:`, failed)
+  } else {
+    console.log(`[SaveRidesToDB] Successfully saved ${rides.length} rides`)
+  }
   await tx.done
 }
 
@@ -103,7 +110,14 @@ export async function clearAllRides() {
 export async function saveRoutesToDB(routes: RouteGeoJSON[]) {
   const db = await dbPromise
   const tx = db.transaction(ROUTES_STORE_NAME, "readwrite")
-  await Promise.all(routes.map(route => tx.store.put(route))).catch(e => console.error(e))
+  await tx.objectStore(ROUTES_STORE_NAME).clear()
+  const results = await Promise.allSettled(routes.map(route => tx.store.put(route)))
+  const failed = results.filter(r => r.status === 'rejected')
+  if (failed.length > 0) {
+    console.error(`[SaveRoutesToDB] Failed to save ${failed.length}/${routes.length} routes:`, failed)
+  } else {
+    console.log(`[SaveRoutesToDB] Successfully saved ${routes.length} routes`)
+  }
   await tx.done
 }
 

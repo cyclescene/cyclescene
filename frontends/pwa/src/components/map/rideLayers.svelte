@@ -5,7 +5,7 @@
   import { selectedRideId } from "$lib/stores";
 
   const DEFAULT_SIZE = 0.4;
-  const SELECTED_SIZE = 1.0;
+  const SELECTED_SIZE = 0.6;
   const CUSTOM_MARKER_SIZE = 0.6;
   const CUSTOM_MARKER_SELECTED_SIZE = 1.0;
 
@@ -25,19 +25,6 @@
 
   $effect(() => {
     selectedId = $selectedRideId;
-  });
-
-  $effect(() => {
-    console.log(
-      `[RideLayers] Rendered with sourceId: ${sourceId}, defaultIconName: ${defaultIconName}`,
-    );
-    console.log(`[RideLayers] selectedId: ${selectedId}`);
-    console.log(`[RideLayers] Icon configuration:`, {
-      DEFAULT_SIZE,
-      SELECTED_SIZE,
-      CUSTOM_MARKER_SIZE,
-      CUSTOM_MARKER_SELECTED_SIZE,
-    });
   });
 </script>
 

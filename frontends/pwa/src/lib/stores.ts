@@ -96,17 +96,34 @@ function createRidesStore() {
     subscribe,
     init: async () => {
       try {
-        let cachedRides = await getRidesfromDB()
-        // only do a manual fetch if cached rides are empty
-        if (cachedRides.length === 0) {
+        let cachedRides: RideData[]
+        // on initial load, fetch from API if online
+        if (window.navigator.onLine === true) {
           const upcomingRides = await getUpcomingRides()
           const pastRides = await getPastRides()
+          console.log(`[RidesStore] Upcoming: ${upcomingRides.length}, Past: ${pastRides.length}`)
           const freshRides = [...upcomingRides, ...pastRides]
-          await saveRidesToDB(freshRides)
-          // Update store with fresh rides instead of reloading page
-          cachedRides = freshRides
-        }
 
+          // Deduplicate rides by ID - keep first occurrence
+          const seenIds = new Set<string>()
+          const dedupedRides = freshRides.filter(ride => {
+            if (seenIds.has(ride.id)) {
+              console.warn(`[RidesStore] Removing duplicate ride ID: ${ride.id}`)
+              return false
+            }
+            seenIds.add(ride.id)
+            return true
+          })
+
+          console.log(`[RidesStore] Total to save: ${dedupedRides.length} (removed ${freshRides.length - dedupedRides.length} duplicates)`)
+          await saveRidesToDB(dedupedRides)
+          cachedRides = await getRidesfromDB()
+          console.log(`[RidesStore] Actually saved in DB: ${cachedRides.length}`)
+          // otherwise, load from IndexedDB
+        } else {
+          cachedRides = await getRidesfromDB()
+        }
+        // call the API to get fresh rides and save them to IndexedDB on init
         set({ loading: false, rideData: cachedRides, error: null })
       } catch (err) {
         update(store => ({ ...store, loading: false, error: "Unable to get idb ride data" }))
@@ -127,16 +144,6 @@ function createRidesStore() {
               return registration.sync.register(RIDES_SYNC_TAG)
             }
           })
-      }
-    },
-    refetch: async () => {
-      try {
-        update(store => ({ ...store, loading: true }))
-        const cachedRides = await getRidesfromDB()
-        set({ loading: false, rideData: cachedRides, error: null })
-      } catch (e) {
-        update(() => ({ loading: false, rideData: [], error: `${e}` }))
-        console.error(e);
       }
     },
     clearAndRefreshRides: async () => {
@@ -253,36 +260,22 @@ function createRoutesStore() {
     subscribe,
     init: async () => {
       try {
-        let cachedRoutes = await getRoutesFromDB()
-
-        // If no cached routes, fetch from API
-        if (cachedRoutes.length === 0) {
-          console.log('[RoutesStore] No cached routes, fetching from API')
+        let cachedRoutes: RouteGeoJSON[] = []
+        if (window.navigator.onLine === true) {
           const freshRoutes = await getAllRoutes()
           await saveRoutesToDB(freshRoutes)
-          cachedRoutes = freshRoutes
+
+          cachedRoutes = await getRoutesFromDB()
         } else {
-          console.log(`[RoutesStore] Loaded ${cachedRoutes.length} routes from cache`)
+          cachedRoutes = await getRoutesFromDB()
         }
 
         // Convert to Map for quick lookup by ID
-        const routesMap = new Map(cachedRoutes.map(route => [route.id, route]))
+        const routesMap = new SvelteMap(cachedRoutes.map(route => [route.id, route]))
         set({ loading: false, routes: routesMap, error: null })
       } catch (err) {
         console.error('[RoutesStore] Failed to initialize routes:', err)
         update(store => ({ ...store, loading: false, error: `${err}` }))
-      }
-    },
-    refetch: async () => {
-      try {
-        update(store => ({ ...store, loading: true }))
-        const freshRoutes = await getAllRoutes()
-        await saveRoutesToDB(freshRoutes)
-        const routesMap = new Map(freshRoutes.map(route => [route.id, route]))
-        set({ loading: false, routes: routesMap, error: null })
-      } catch (err) {
-        console.error('[RoutesStore] Failed to refetch routes:', err)
-        update(() => ({ loading: false, routes: new Map(), error: `${err}` }))
       }
     }
   }
@@ -323,10 +316,8 @@ export const savedRidesSplitByPastAndUpcoming = derived(allSavedRides, ($rides) 
 
 
     if (todaysDate.compare(rideDate) <= 0) {
-      console.log("Past?");
       rides.upcoming.push(ride)
     } else {
-      console.log("UPCOMING");
       rides.past.push(ride)
     }
   }
@@ -421,8 +412,9 @@ export function jumpToView(targetViewIdentifier: string) {
   viewStack.update(stack => {
     const index = stack.lastIndexOf(targetViewIdentifier)
     if (index !== -1) {
-      return stack.slice(0, index + 1)
+      return stack.slice(0, index + 1) as string[]
     }
+    return stack
   })
 
   return [VIEW_MAP]
@@ -528,13 +520,15 @@ export const currentRideStore = {
   }
 }
 
-export const currentRoute = derived(currentRide, ($currentRide) => {
-  if ($currentRide) {
-    return getRouteById($currentRide.route_id as string)
+export const currentRoute = derived(
+  [currentRide, routesStore],
+  ([$currentRide, $routesStore]) => {
+    if ($currentRide && $currentRide.route_id) {
+      return $routesStore.routes.get($currentRide.route_id)
+    }
+    return null
   }
-  return null
-
-})
+)
 
 // ALL RIDES STORE
 export const rides = createRidesStore()
@@ -836,14 +830,21 @@ export const singleRideGeoJSON = derived(
       } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
     }
 
-    const groupMarker = $currentRide.group_marker ? `group-marker-${$currentRide.group_marker}` : "";
+    const properties: any = {
+      id: $currentRide.id,
+      name: $currentRide.title,
+    };
+
+    if ($currentRide.group_marker) {
+      properties.group_marker_icon = `group-marker-${$currentRide.group_marker}`;
+    }
 
     return {
       type: "FeatureCollection",
       features: [{
         type: "Feature",
         geometry: { type: "Point", coordinates: [lng, lat] },
-        properties: { id: $currentRide.id, name: $currentRide.title, group_marker_icon: groupMarker }
+        properties
       }]
     } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
   }

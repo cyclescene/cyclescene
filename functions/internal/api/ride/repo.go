@@ -243,7 +243,7 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 		query = `
 			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
 			       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
-			       NULL as route_id, endtime,
+			       route_id, endtime,
 			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
 			       NULL as group_marker
 			FROM shift2bikes_events
@@ -350,7 +350,7 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 		query = `
 			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
 			       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
-			       NULL as route_id, endtime,
+			       route_id, endtime,
 			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
 			       NULL as group_marker
 			FROM shift2bikes_events
@@ -440,7 +440,7 @@ func (r *Repository) GetRide(city, rideID string) ([]ScrapedRideFromDB, error) {
 	query := `
 		SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
 		       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
-		       NULL as route_id, endtime,
+		       route_id, endtime,
 		       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
 		       NULL as group_marker
 		FROM shift2bikes_events

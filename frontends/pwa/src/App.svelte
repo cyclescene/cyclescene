@@ -63,11 +63,9 @@
     document.title = `Cycle Scene - ${cityName}`;
 
     await rides.init();
-    rides.refetch();
     savedRidesStore.init();
 
     await routesStore.init();
-    routesStore.refetch();
 
     // Tell service worker the city code (non-blocking)
     if ("serviceWorker" in navigator) {

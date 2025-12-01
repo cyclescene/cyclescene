@@ -29,21 +29,6 @@
   let groupMarkers: Record<string, string> = $state({});
   let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
 
-  // Debug logging
-  $effect(() => {
-    console.log(
-      `[MapComponent] Render conditions: rideGeoJSON=${!!$rideGeoJSON}, iconLoaded=${iconLoaded}, groupMarkersLoaded=${groupMarkersLoaded}`,
-    );
-    if ($rideGeoJSON && $rideGeoJSON.features) {
-      console.log(
-        `[MapComponent] GeoJSON has ${$rideGeoJSON.features.length} features`,
-      );
-      if ($rideGeoJSON.features.length > 0) {
-        console.log(`[MapComponent] Features:`, $rideGeoJSON.features);
-      }
-    }
-  });
-
   function handleRideClick(e: MapLayerMouseEvent) {
     if (e.features && e.features.length > 0) {
       const feature = e.features[0];
@@ -78,12 +63,8 @@
     if (mapInstance && !iconLoaded) {
       async function loadCustomIcon() {
         try {
-          console.log(`[MapComponent] Loading default icon: ${ICON_NAME}`);
           const response = await mapInstance!.loadImage(GEOAPIFY_API_URL);
           mapInstance!.addImage(ICON_NAME, response.data);
-          console.log(
-            `[MapComponent] Successfully added image to map: ${ICON_NAME}`,
-          );
           iconLoaded = true;
         } catch (error) {
           console.error("failed to load custom icon: ", error);
@@ -99,38 +80,22 @@
     if (mapInstance && !groupMarkersLoaded) {
       async function loadGroupMarkers() {
         try {
-          console.log(
-            `[MapComponent] Starting to load group markers for city: ${CITY_CODE}`,
-          );
           const markers = await loadAllMarkersForCity(CITY_CODE);
           groupMarkers = markers;
-
-          console.log(
-            `[MapComponent] Loaded ${Object.keys(markers).length} group markers from spritesheet`,
-          );
-          console.log(`[MapComponent] Marker keys:`, Object.keys(markers));
 
           // Add each marker image to the map with the group-marker- prefix
           for (const [markerKey, markerDataUrl] of Object.entries(markers)) {
             try {
-              console.log(
-                `[MapComponent] Loading group marker: group-marker-${markerKey}`,
-              );
               const response = await mapInstance!.loadImage(markerDataUrl);
               const imageName = `group-marker-${markerKey}`;
               mapInstance!.addImage(imageName, response.data);
 
               // Verify the image was added
               const addedImage = mapInstance!.getImage(imageName);
-              console.log(
-                `[MapComponent] ✓ Successfully added image to map: ${imageName}`,
-              );
-              console.log(
-                `[MapComponent] Image verification - exists on map:`,
-                !!addedImage,
-              );
               if (!addedImage) {
-                console.warn(`[MapComponent] ⚠ Image ${imageName} not found on map after adding!`);
+                console.warn(
+                  `[MapComponent] ⚠ Image ${imageName} not found on map after adding!`,
+                );
               }
             } catch (error) {
               console.error(
@@ -141,10 +106,6 @@
           }
 
           groupMarkersLoaded = true;
-          console.log(
-            `[MapComponent] Group markers loading complete. Total images in map:`,
-            Object.keys(markers).length,
-          );
         } catch (error) {
           console.error("[MapComponent] Failed to load group markers: ", error);
           // Continue anyway - rides can still be displayed with default icon
@@ -179,7 +140,7 @@
     {#if mapInstance}
       <RecenterButton map={mapInstance} />
     {/if}
-    <SpecialEventLayers isDarkMode={mode.current === "dark"} />
+    <!-- <SpecialEventLayers isDarkMode={mode.current === "dark"} /> -->
     <ParkLayer isDarkMode={mode.current === "dark"} />
 
     <RidesNotShown />

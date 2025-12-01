@@ -17,7 +17,7 @@ type GeoJSONFeature struct {
 // GeoJSONGeometry represents GeoJSON geometry with coordinates
 // Coordinates are [lon, lat, elevation]
 type GeoJSONGeometry struct {
-	Type        string        `json:"type"`
+	Type        string      `json:"type"`
 	Coordinates [][]float64 `json:"coordinates"`
 }
 
@@ -127,8 +127,8 @@ func ConvertPolylineToGeoJSON(polyline string, name string) (GeoJSONFeature, err
 			Type:        "LineString",
 			Coordinates: coords,
 		},
-		Properties: map[string]interface{}{
-			"name":         name,
+		Properties: map[string]any{
+			"name":        name,
 			"distance_km": distanceKm,
 			"distance_mi": distanceMi,
 		},

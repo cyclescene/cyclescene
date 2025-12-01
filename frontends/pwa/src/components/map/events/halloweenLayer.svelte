@@ -10,7 +10,17 @@
   let isAnimating = $state(false);
 
   // Halloween emojis - bats and cyclists
-  const halloweenEmojis = ["🦇", "🦇", "🦇", "🦇", "🦇", "🦇", "🦇", "🦇", "🚴"]; // 89% bats, 11% cyclists
+  const halloweenEmojis = [
+    "🦇",
+    "🦇",
+    "🦇",
+    "🦇",
+    "🦇",
+    "🦇",
+    "🦇",
+    "🦇",
+    "🚴",
+  ]; // 89% bats, 11% cyclists
 
   onMount(() => {
     if (!containerDiv) return;
@@ -24,7 +34,8 @@
       // Create 100 bats flying diagonally corner to corner
       for (let i = 0; i < 100; i++) {
         const bat = document.createElement("div");
-        const randomEmoji = halloweenEmojis[Math.floor(Math.random() * halloweenEmojis.length)];
+        const randomEmoji =
+          halloweenEmojis[Math.floor(Math.random() * halloweenEmojis.length)];
         bat.textContent = randomEmoji;
         bat.style.fontSize = "40px";
 
@@ -35,7 +46,9 @@
         const endX = -100;
         const endY = window.innerHeight;
 
-        console.log(`Bat ${i} - Start: (${startX}, ${startY}), End: (${endX}, ${endY})`);
+        console.log(
+          `Bat ${i} - Start: (${startX}, ${startY}), End: (${endX}, ${endY})`,
+        );
 
         bat.style.position = "fixed";
         bat.style.left = startX + "px";
@@ -53,7 +66,9 @@
           if (progress < 1) {
             const x = startX + progress * (endX - startX);
             const y = startY + progress * (endY - startY);
-            console.log(`Bat progress: ${(progress * 100).toFixed(1)}% - X: ${x.toFixed(0)}, Y: ${y.toFixed(0)}`);
+            console.log(
+              `Bat progress: ${(progress * 100).toFixed(1)}% - X: ${x.toFixed(0)}, Y: ${y.toFixed(0)}`,
+            );
             bat.style.left = x + "px";
             bat.style.top = y + "px";
             requestAnimationFrame(animate);
@@ -78,4 +93,4 @@
 <div
   bind:this={containerDiv}
   style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: hidden;"
-/>
+></div>

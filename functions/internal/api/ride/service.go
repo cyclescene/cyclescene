@@ -16,11 +16,11 @@ import (
 )
 
 type Service struct {
-	repo              *Repository
-	magicLinkSvc      *magiclink.Service
-	editLinkBaseURL   string
-	routeFetcher      *routes.RouteFetcher
-	routeRepository   *routes.Repository
+	repo            *Repository
+	magicLinkSvc    *magiclink.Service
+	editLinkBaseURL string
+	routeFetcher    *routes.RouteFetcher
+	routeRepository *routes.Repository
 }
 
 func NewService(repo *Repository) *Service {
@@ -65,7 +65,7 @@ func (s *Service) SubmitRide(submission *Submission) (*SubmissionResponse, error
 	// Process route if provided
 	var routeID *string
 	if submission.RouteURL != "" && s.routeFetcher != nil && s.routeRepository != nil {
-		routeID, err = s.processRoute(context.Background(), submission.RouteURL)
+		routeID, err = s.processRoute(context.Background(), submission.RouteURL, submission.City)
 		if err != nil {
 			slog.Warn("Failed to process route", "error", err, "routeURL", submission.RouteURL)
 			// Continue without route if processing fails
@@ -143,7 +143,7 @@ func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionR
 	// Process route if provided
 	var routeID *string
 	if submission.RouteURL != "" && s.routeFetcher != nil && s.routeRepository != nil {
-		routeID, err := s.processRoute(context.Background(), submission.RouteURL)
+		routeID, err := s.processRoute(context.Background(), submission.RouteURL, submission.City)
 		if err != nil {
 			slog.Warn("Failed to process route", "error", err, "routeURL", submission.RouteURL)
 			// Continue without route if processing fails
@@ -174,7 +174,7 @@ func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionR
 }
 
 // processRoute fetches, converts, and deduplicates a route
-func (s *Service) processRoute(ctx context.Context, routeURL string) (*string, error) {
+func (s *Service) processRoute(ctx context.Context, routeURL string, city string) (*string, error) {
 	// Fetch and convert route
 	feature, err := s.routeFetcher.FetchAndConvert(routeURL)
 	if err != nil {
@@ -197,7 +197,7 @@ func (s *Service) processRoute(ctx context.Context, routeURL string) (*string, e
 	}
 
 	// Create or get existing route (handles deduplication)
-	routeID, err := s.routeRepository.CreateRoute(ctx, source, sourceID, routeURL, feature, distanceKm, distanceMi)
+	routeID, err := s.routeRepository.CreateRoute(ctx, source, sourceID, routeURL, city, feature, distanceKm, distanceMi)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create route: %w", err)
 	}

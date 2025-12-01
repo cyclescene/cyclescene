@@ -138,9 +138,10 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 						weburl,
 						citycode,
 						ridesource,
-						source_data
+						source_data,
+						route_id
         )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ON CONFLICT(composite_event_id) DO UPDATE SET
             id=excluded.id,
             address=excluded.address,
@@ -169,7 +170,8 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
             weburl=excluded.weburl,
 						citycode=excluded.citycode,
 						ridesource=excluded.ridesource,
-            source_data=excluded.source_data;
+            source_data=excluded.source_data,
+            route_id=excluded.route_id;
         `)
 	if err != nil {
 		return fmt.Errorf("failed to prepare ride data upsert statement: %v", err)
@@ -200,6 +202,13 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 		if ride.Safetyplan {
 			isSafetyPlan = 1
 		}
+
+		// Handle route_id - use NULL if empty string
+		var routeID interface{}
+		if ride.RouteID != "" {
+			routeID = ride.RouteID
+		}
+
 		_, err = stmt.Exec(
 			compositeKey,
 			ride.ID,
@@ -230,6 +239,7 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 			ride.CityCode,
 			ride.SourcedFrom,
 			string(sourceData),
+			routeID,
 		)
 		if err != nil {
 			slog.Error("Failed to upsert single location in batch", "key", compositeKey, "error", err.Error())

@@ -17,28 +17,28 @@ func NewRepository(db *sql.DB) *Repository {
 
 // Route represents a route with its GeoJSON data
 type Route struct {
-	ID         string          `json:"id"`
-	Type       string          `json:"type"`
-	Geometry   json.RawMessage `json:"geometry"`
-	Properties json.RawMessage `json:"properties"`
+	ID       string          `json:"id"`
+	GeoJSON  json.RawMessage `json:"geojson"`
 }
 
-// GetAllRoutes retrieves all routes from the database and formats them as GeoJSON features
-func (r *Repository) GetAllRoutes(ctx context.Context) ([]Route, error) {
+// GetAllRoutes retrieves all routes for a specific city from the database with their full GeoJSON data
+func (r *Repository) GetAllRoutes(ctx context.Context, city string) ([]Route, error) {
 	query := `
 		SELECT id, geojson
 		FROM routes
+		WHERE city = ?
 		ORDER BY created_at DESC
 	`
 
-	rows, err := r.db.QueryContext(ctx, query)
+	slog.Info("[Routes Repo] Executing query", "city", city)
+	rows, err := r.db.QueryContext(ctx, query, city)
 	if err != nil {
-		slog.Error("[Routes Repo] Query error", "error", err)
+		slog.Error("[Routes Repo] Query error", "error", err, "city", city)
 		return nil, err
 	}
 	defer rows.Close()
 
-	var routes []Route
+	routes := make([]Route, 0) // Initialize as empty slice instead of nil
 
 	for rows.Next() {
 		var id string
@@ -49,28 +49,9 @@ func (r *Repository) GetAllRoutes(ctx context.Context) ([]Route, error) {
 			continue
 		}
 
-		// Parse the GeoJSON string and reconstruct with id
-		var feature map[string]interface{}
-		if err := json.Unmarshal([]byte(geoJSON), &feature); err != nil {
-			slog.Error("[Routes Repo] Failed to unmarshal GeoJSON", "error", err, "route_id", id)
-			continue
-		}
-
-		// Extract geometry and properties from the stored GeoJSON
-		var geometryBytes, propertiesBytes json.RawMessage
-
-		if geom, ok := feature["geometry"]; ok {
-			geometryBytes, _ = json.Marshal(geom)
-		}
-		if props, ok := feature["properties"]; ok {
-			propertiesBytes, _ = json.Marshal(props)
-		}
-
 		route := Route{
-			ID:         id,
-			Type:       "Feature",
-			Geometry:   geometryBytes,
-			Properties: propertiesBytes,
+			ID:      id,
+			GeoJSON: json.RawMessage(geoJSON),
 		}
 
 		routes = append(routes, route)
@@ -81,6 +62,6 @@ func (r *Repository) GetAllRoutes(ctx context.Context) ([]Route, error) {
 		return nil, err
 	}
 
-	slog.Info("[Routes Repo] Retrieved routes", "count", len(routes))
+	slog.Info("[Routes Repo] Retrieved routes", "count", len(routes), "city", city)
 	return routes, nil
 }
