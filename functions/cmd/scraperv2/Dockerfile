@@ -13,6 +13,7 @@ RUN go mod download
 # Copy only the code this service needs
 COPY cmd/scraperv2 ./cmd/scraperv2
 COPY internal/scraper ./internal/scraper
+COPY internal/routes ./internal/routes
 
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o scraper ./cmd/scraperv2
 
