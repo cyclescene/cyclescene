@@ -113,7 +113,7 @@ module "backup_schedule" {
   time_zone   = var.backup_timezone
 
   http_target = {
-    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/jobs/${module.db_backup_job.job_name}:run"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${module.db_backup_job.job_name}:run"
     http_method = "POST"
     oidc_token = {
       service_account_email = module.backup_service_account.email

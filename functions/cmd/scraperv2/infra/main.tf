@@ -95,13 +95,13 @@ resource "google_cloud_run_v2_job_iam_member" "scheduler_invoker" {
 module "scraper_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"
 
-  job_name    = "scraper-every-6h"
-  description = "Trigger scraper job every 6 hours"
-  schedule    = "0 */6 * * *" # Every 6 hours (00:00, 06:00, 12:00, 18:00)
+  job_name    = "scraper-every-3h"
+  description = "Trigger scraper job every 3 hours"
+  schedule    = "0 */3 * * *" # Every 3 hours (00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00)
   time_zone   = var.scraper_timezone
 
   http_target = {
-    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/jobs/${module.scraper_job.job_name}:run"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${module.scraper_job.job_name}:run"
     http_method = "POST"
     oidc_token = {
       service_account_email = module.scheduler_service_account.email
