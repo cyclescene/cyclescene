@@ -88,6 +88,13 @@ resource "google_cloud_run_v2_job_iam_member" "scheduler_invoker" {
   member   = "serviceAccount:${module.scheduler_service_account.email}"
 }
 
+# Grant the scheduler service account permission to create its own OIDC tokens
+resource "google_project_iam_member" "scheduler_token_creator" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountTokenCreator"
+  member  = "serviceAccount:${module.scheduler_service_account.email}"
+}
+
 # Cloud Scheduler to trigger the job daily at midnight
 module "token_cleaner_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"
