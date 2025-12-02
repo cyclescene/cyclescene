@@ -115,8 +115,12 @@ module "backup_schedule" {
   http_target = {
     uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${module.db_backup_job.job_name}:run"
     http_method = "POST"
+    headers = {
+      "Content-Type" = "application/json"
+    }
     oidc_token = {
       service_account_email = module.backup_service_account.email
+      audience              = "https://${var.region}-run.googleapis.com"
     }
   }
 
