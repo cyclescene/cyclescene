@@ -141,7 +141,7 @@ module "backup_schedule" {
     }
     oidc_token = {
       service_account_email = module.backup_service_account.email
-      audience              = "https://${var.region}-run.googleapis.com"
+      audience              = "https://run.googleapis.com/"
     }
   }
 
