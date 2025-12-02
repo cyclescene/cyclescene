@@ -102,9 +102,3 @@ variable "cloud_run_service_name" {
   type        = string
   default     = null
 }
-
-variable "service_account_email" {
-  description = "Service account email for Cloud Scheduler job to run as"
-  type        = string
-  default     = null
-}

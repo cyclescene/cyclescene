@@ -113,11 +113,10 @@ resource "google_service_account_iam_member" "scheduler_user" {
 module "token_cleaner_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"
 
-  job_name              = "token-cleaner-daily"
-  description           = "Trigger token cleaner job daily at midnight"
-  schedule              = "0 0 * * *" # Every day at midnight UTC
-  time_zone             = "UTC"
-  service_account_email = module.scheduler_service_account.email
+  job_name    = "token-cleaner-daily"
+  description = "Trigger token cleaner job daily at midnight"
+  schedule    = "0 0 * * *" # Every day at midnight UTC
+  time_zone   = "UTC"
 
   http_target = {
     uri         = "https://run.googleapis.com/v2/projects/${var.project_id}/locations/${var.region}/jobs/${module.token_cleaner_job.job_name}:run"

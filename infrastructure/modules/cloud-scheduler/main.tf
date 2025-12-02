@@ -1,11 +1,10 @@
 resource "google_cloud_scheduler_job" "job" {
-  name                = var.job_name
-  description         = var.description
-  schedule            = var.schedule
-  time_zone           = var.time_zone
-  region              = var.region
-  attempt_deadline    = var.attempt_deadline
-  service_account_email = var.service_account_email
+  name             = var.job_name
+  description      = var.description
+  schedule         = var.schedule
+  time_zone        = var.time_zone
+  region           = var.region
+  attempt_deadline = var.attempt_deadline
 
   retry_config {
     retry_count          = var.retry_count

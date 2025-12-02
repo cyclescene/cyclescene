@@ -116,11 +116,10 @@ resource "google_service_account_iam_member" "scheduler_user" {
 module "scraper_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"
 
-  job_name              = "scraper-every-3h"
-  description           = "Trigger scraper job every 3 hours"
-  schedule              = "0 */3 * * *" # Every 3 hours (00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00)
-  time_zone             = var.scraper_timezone
-  service_account_email = module.scheduler_service_account.email
+  job_name    = "scraper-every-3h"
+  description = "Trigger scraper job every 3 hours"
+  schedule    = "0 */3 * * *" # Every 3 hours (00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00)
+  time_zone   = var.scraper_timezone
 
   http_target = {
     uri         = "https://run.googleapis.com/v2/projects/${var.project_id}/locations/${var.region}/jobs/${module.scraper_job.job_name}:run"

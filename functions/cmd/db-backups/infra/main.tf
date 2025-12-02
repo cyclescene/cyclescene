@@ -128,11 +128,10 @@ resource "google_service_account_iam_member" "scheduler_user" {
 module "backup_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"
 
-  job_name              = "db-backup-daily"
-  description           = "Trigger database backup job daily"
-  schedule              = var.backup_schedule
-  time_zone             = var.backup_timezone
-  service_account_email = module.backup_service_account.email
+  job_name    = "db-backup-daily"
+  description = "Trigger database backup job daily"
+  schedule    = var.backup_schedule
+  time_zone   = var.backup_timezone
 
   http_target = {
     uri         = "https://run.googleapis.com/v2/projects/${var.project_id}/locations/${var.region}/jobs/${module.db_backup_job.job_name}:run"
