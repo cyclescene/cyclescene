@@ -122,7 +122,7 @@ module "scraper_schedule" {
   time_zone   = var.scraper_timezone
 
   http_target = {
-    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${data.google_project.project.number}/jobs/${module.scraper_job.job_name}:run"
+    uri         = "https://run.googleapis.com/v2/projects/${var.project_id}/locations/${var.region}/jobs/${module.scraper_job.job_name}:run"
     http_method = "POST"
     headers = {
       "Content-Type" = "application/json"
