@@ -10,6 +10,7 @@ backup_timezone  = "UTC"
 # Environment variables for the backup job
 env_vars = {
   TURSO_DB_URL= "libsql://cyclescene-spacesedan.aws-us-west-2.turso.io"
+  TURSO_DB_HTTP_URL= "https://cyclescene-spacesedan.aws-us-west-2.turso.io"
   TURSO_DB_RO_TOKEN= "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicm8iLCJpYXQiOjE3NTk2MDI3NDcsImlkIjoiYTk3MWQ4NjYtNmYyMC00MTliLTg3NzItNjUxOGQwNjFiMWViIiwicmlkIjoiNTM1YzdmY2MtOTFkNi00ZWUzLTlkOGUtMjJhMGNiY2QzNWU0In0.YK_8-HaxQ-bpdeNe-kA_6E91MoIJQYA13aMW55Xvru1xVwwLrodLbnS7ua8UXcfh3512zP5IC9yhlVEKzUngDw"
   TURSO_DB_RW_TOKEN= "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3NTk2MDI3NjYsImlkIjoiYTk3MWQ4NjYtNmYyMC00MTliLTg3NzItNjUxOGQwNjFiMWViIiwicmlkIjoiNTM1YzdmY2MtOTFkNi00ZWUzLTlkOGUtMjJhMGNiY2QzNWU0In0.FsnvHvKo6mo15dLttjm1ljUnzjs0XHOHQ0leynLMD_Vj9X4sqwyq_Ve3CA3hOL3BbHlK8nEM226JYLA0ZADFCw"
   GOOGLE_GEOCODING_API_KEY= "AIzaSyD-fHHpeRPcQPF1qswg2DRBD-L-QYO-S4w"
