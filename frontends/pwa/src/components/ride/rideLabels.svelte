@@ -10,7 +10,7 @@
   export let ride;
 </script>
 
-<div class="flex flex-row gap-2.5">
+<div class="mt-2 flex flex-row gap-2.5">
   {#if ride.cancelled}
     <RideLabel class="border-red-500 text-red-500">
       <svelte:component this={CancelledIcon} />

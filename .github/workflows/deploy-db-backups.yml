@@ -96,7 +96,7 @@ jobs:
       - name: Deploy with OpenTofu
         working-directory: functions/cmd/db-backups/infra
         env:
-          TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
+          TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_HTTP_URL }}
           TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
           TF_VAR_turso_db_ro_token: ${{ secrets.TURSO_DB_RO_TOKEN }}
         run: |

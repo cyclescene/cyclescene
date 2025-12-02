@@ -6,6 +6,21 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.3.0",
+      date: "December 2, 2025",
+      changes: {
+        Added: [
+          "New CardLabel component with contextual icons for ride information.",
+        ],
+        Changed: [
+          "Improved ride card typography and spacing.",
+          "Added text truncation for long ride titles and venue names.",
+          "Simplified location cards layout for better map visibility.",
+          "Enhanced navigation bar styling with optimized icon sizing.",
+        ],
+      },
+    },
+    {
       version: "1.2.0",
       date: "November 29, 2025",
       changes: {

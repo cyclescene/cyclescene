@@ -14,53 +14,33 @@
   let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
 
   $effect(() => {
-    if (!map || !route) return;
-
-    const fitMapToRoute = () => {
-      if (!map || !route) return;
-
+    if (map && route) {
+      console.log("[RideRouteMap] Route data:", route);
+      // Fit map to route bounds
       const coordinates = route.geojson.geometry.coordinates;
-      if (!coordinates || coordinates.length === 0) {
-        return;
+      if (coordinates && coordinates.length > 0) {
+        console.log(
+          "[RideRouteMap] Fitting bounds to coordinates:",
+          coordinates.length,
+        );
+        const bounds = new LngLatBounds();
+        coordinates.forEach((coord) => {
+          bounds.extend([coord[0], coord[1]] as [number, number]);
+        });
+
+        console.log("[RideRouteMap] Calculated bounds:", bounds.toArray());
+
+        // Use a small timeout to ensure map is ready/sized
+        setTimeout(() => {
+          if (map) {
+            console.log("[RideRouteMap] Executing fitBounds");
+            map.fitBounds(bounds, { padding: 40, duration: 800 });
+          }
+        }, 100);
+      } else {
+        console.warn("[RideRouteMap] No coordinates found in route");
       }
-
-      const bounds = new LngLatBounds();
-      coordinates.forEach((coord: [number, number, number]) => {
-        bounds.extend([coord[0], coord[1]] as [number, number]);
-      });
-
-      // Use fitBounds with reasonable padding
-      map.fitBounds(bounds, {
-        padding: { top: 50, bottom: 50, left: 50, right: 50 },
-        duration: 800,
-        maxZoom: 16,
-      });
-    };
-
-    // Wait for the source to be loaded on the map
-    const onSourceData = (e: any) => {
-      if (e.sourceId === ROUTE_SOURCE_ID && e.isSourceLoaded) {
-        fitMapToRoute();
-        map.off("sourcedata", onSourceData);
-      }
-    };
-
-    // Check if style is loaded first
-    if (map.isStyleLoaded()) {
-      // Small delay to ensure GeoJSONSource is added
-      setTimeout(fitMapToRoute, 100);
-    } else {
-      map.once("style.load", () => {
-        setTimeout(fitMapToRoute, 100);
-      });
     }
-
-    // Also listen for source data changes
-    map.on("sourcedata", onSourceData);
-
-    return () => {
-      map?.off("sourcedata", onSourceData);
-    };
   });
 
   let routeGEOJSON = $derived.by(() => {

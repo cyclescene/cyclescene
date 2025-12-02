@@ -13,25 +13,20 @@
 
 {#if $mapStore.showCurrentRide && $currentRide}
   <div class="location-card-container">
-    <ScrollArea class="location-scroll-area" scrollbarYClasses={`hidden`}>
-      <Card {ride} />
-    </ScrollArea>
+    <Card {ride} />
   </div>
 {/if}
 
 <style>
   .location-card-container {
     position: absolute;
-    bottom: calc(var(--footer-height) + 15px);
+    /* bottom: calc(var(--footer-height) + 15px); */
+    bottom: 25px;
     left: 0;
     width: 100%;
     background-color: transparent;
     padding: 0 1.25rem;
     z-index: 1000;
-    max-height: 35vh;
-  }
-
-  :global(.location-scroll-area) {
-    max-height: 35vh;
+    max-height: 20vh;
   }
 </style>
