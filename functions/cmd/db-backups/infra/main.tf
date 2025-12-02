@@ -16,6 +16,13 @@ provider "google" {
   region  = var.region
 }
 
+# Get the project number for API URLs
+data "google_client_config" "current" {}
+
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 # Service Account for DB backups with storage permissions
 module "backup_service_account" {
   source = "../../../../infrastructure/modules/service-account"
@@ -127,7 +134,7 @@ module "backup_schedule" {
   time_zone   = var.backup_timezone
 
   http_target = {
-    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${module.db_backup_job.job_name}:run"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${data.google_project.project.number}/jobs/${module.db_backup_job.job_name}:run"
     http_method = "POST"
     headers = {
       "Content-Type" = "application/json"

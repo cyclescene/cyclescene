@@ -16,6 +16,13 @@ provider "google" {
   region  = var.region
 }
 
+# Get the project number for API URLs
+data "google_client_config" "current" {}
+
+data "google_project" "project" {
+  project_id = var.project_id
+}
+
 # Service account for Cloud Scheduler to trigger the job
 module "scheduler_service_account" {
   source = "../../../../infrastructure/modules/service-account"
@@ -112,7 +119,7 @@ module "token_cleaner_schedule" {
   time_zone   = "UTC"
 
   http_target = {
-    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${var.project_id}/jobs/${module.token_cleaner_job.job_name}:run"
+    uri         = "https://${var.region}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${data.google_project.project.number}/jobs/${module.token_cleaner_job.job_name}:run"
     http_method = "POST"
     headers = {
       "Content-Type" = "application/json"
