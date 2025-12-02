@@ -135,9 +135,9 @@ module "scraper_schedule" {
     headers = {
       "Content-Type" = "application/json"
     }
-    oidc_token = {
+    oauth_token = {
       service_account_email = module.scheduler_service_account.email
-      audience              = "https://run.googleapis.com/"
+      scope                 = "https://www.googleapis.com/auth/cloud-platform"
     }
   }
 
