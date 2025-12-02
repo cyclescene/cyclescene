@@ -33,7 +33,8 @@ module "scheduler_service_account" {
   project_id   = var.project_id
 
   roles = [
-    "roles/run.invoker"  # Permission to invoke Cloud Run jobs
+    "roles/run.invoker",                           # Permission to invoke Cloud Run jobs
+    "roles/serviceusage.serviceUsageConsumer"      # Permission to call Google APIs (IAM, etc)
   ]
 }
 
