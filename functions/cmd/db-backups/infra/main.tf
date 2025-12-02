@@ -110,6 +110,13 @@ resource "google_project_iam_member" "scheduler_token_creator" {
   member  = "serviceAccount:${module.backup_service_account.email}"
 }
 
+# Allow the service account to be used by Cloud Scheduler
+resource "google_service_account_iam_member" "scheduler_user" {
+  service_account_id = module.backup_service_account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${module.backup_service_account.email}"
+}
+
 # Cloud Scheduler to trigger backups daily
 module "backup_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"

@@ -98,6 +98,13 @@ resource "google_project_iam_member" "scheduler_token_creator" {
   member  = "serviceAccount:${module.scheduler_service_account.email}"
 }
 
+# Allow the service account to be used by Cloud Scheduler
+resource "google_service_account_iam_member" "scheduler_user" {
+  service_account_id = module.scheduler_service_account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${module.scheduler_service_account.email}"
+}
+
 # Cloud Scheduler to trigger scraper every 6 hours
 module "scraper_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"
