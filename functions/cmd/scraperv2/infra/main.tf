@@ -48,6 +48,13 @@ resource "google_service_account_iam_member" "wif_can_act_as_scheduler" {
   member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
 }
 
+# Allow the scheduler service account to act as itself (needed for Terraform)
+resource "google_service_account_iam_member" "scheduler_can_act_as_itself" {
+  service_account_id = module.scheduler_service_account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${module.scheduler_service_account.email}"
+}
+
 # Service account for the scraper job itself
 module "scraper_job_service_account" {
   source = "../../../../infrastructure/modules/service-account"

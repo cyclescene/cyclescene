@@ -60,6 +60,13 @@ resource "google_service_account_iam_member" "wif_can_act_as_scheduler" {
   member             = "serviceAccount:github-actions@${var.project_id}.iam.gserviceaccount.com"
 }
 
+# Allow the scheduler service account to act as itself (needed for Terraform)
+resource "google_service_account_iam_member" "scheduler_can_act_as_itself" {
+  service_account_id = module.scheduler_service_account.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${module.scheduler_service_account.email}"
+}
+
 # Allow GitHub Actions WIF service account to act as the backup service account
 resource "google_service_account_iam_member" "wif_can_act_as_backup" {
   service_account_id = module.backup_service_account.name
