@@ -2,7 +2,7 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import * as Card from "$lib/components/ui/card";
   import Separator from "$lib/components/ui/separator/separator.svelte";
-  import { triggerForegroundSync, rides, savedRidesStore } from "$lib/stores";
+  import { rides, savedRidesStore } from "$lib/stores";
 
   async function handleClearAndRefreshRides() {
     if (
@@ -41,6 +41,7 @@
       <Card.Title class="grow text-left">
         <Button
           variant="ghost"
+          class="w-full justify-start"
           disabled={false}
           onclick={handleClearAndRefreshRides}
         >
@@ -51,8 +52,11 @@
     <Separator />
     <Card.Header class=" flex p-0">
       <Card.Title class="grow text-left">
-        <Button variant="ghost" disabled={false} onclick={handleClearSavedRides}
-          >Clear saved rides</Button
+        <Button
+          variant="ghost"
+          class="w-full justify-start"
+          disabled={false}
+          onclick={handleClearSavedRides}>Clear saved rides</Button
         >
       </Card.Title>
     </Card.Header>
