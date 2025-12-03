@@ -6,23 +6,27 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
-      version: "1.4.0",
+      version: "1.4.1",
       date: "December 3, 2025",
       changes: {
         Added: [
           "Custom date picker component replacing bits-ui Calendar to fix edge cases with repeated date selection.",
           "Visual indicator for today's date in the calendar (accent background with primary border).",
+          "Previous and next month days now displayed in calendar grid with reduced opacity for context.",
           "IndexedDB upsert functionality instead of clearing entire database on ride data refresh, preserving data consistency.",
         ],
         Fixed: [
           "Fixed issue where clicking the same date twice in the date picker would clear the selection.",
           "Fixed map zooming out excessively on background ride data refresh by separating initialization from data updates.",
           "Fixed date picker crashing when selecting the same date consecutively.",
+          "Fixed duplicate dates appearing in calendar for months with fewer than 31 days.",
         ],
         Changed: [
           "Map now initializes to starting coordinates/zoom level on load, independent of ride data changes.",
+          "Map initialization simplified to use MapLibre component props instead of effects.",
           "Map bounds fitting only occurs when rides change, not on every background sync.",
           "IndexedDB sync now updates/inserts rides instead of clearing and repopulating the entire store.",
+          "Calendar date calculation now uses proper calendar math with leap year handling.",
         ],
       },
     },
