@@ -27,5 +27,8 @@
     padding: 0 1.25rem;
     z-index: 1000;
     max-height: 20vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
   }
 </style>
