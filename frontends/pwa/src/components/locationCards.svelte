@@ -20,7 +20,7 @@
 <style>
   .location-card-container {
     position: absolute;
-    bottom: calc(var(--footer-height) + 35px + 15px);
+    bottom: 15px;
     left: 0;
     width: 100%;
     background-color: transparent;
