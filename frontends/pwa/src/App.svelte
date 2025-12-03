@@ -209,7 +209,5 @@
     width: 100%;
     height: var(--footer-height);
     overflow: hidden;
-    padding-bottom: env(safe-area-inset-bottom);
-    box-sizing: border-box;
   }
 </style>
