@@ -52,18 +52,6 @@
     currentRideStore.clearRide();
   }
 
-  // Initialize map to starting position once on load
-  // This runs only once when mapInstance is ready, not on data changes
-  $effect(() => {
-    if (!mapInstance) {
-      return;
-    }
-    mapInstance.flyTo({
-      center: [STARTING_LNG, STARTING_LAT],
-      zoom: STARTING_ZOOM,
-    });
-  });
-
   // Fit map bounds to rides when they load
   // Only triggers when rides exist and change, preserving user's manual pan/zoom during background syncs
   $effect(() => {
@@ -127,6 +115,8 @@
     style={source}
     onclick={handleMapClick}
     attributionControl={false}
+    center={[STARTING_LNG, STARTING_LAT]}
+    zoom={STARTING_ZOOM}
   >
     {#if $rideGeoJSON && iconLoaded && groupMarkersLoaded}
       <GeoJSONSource data={$rideGeoJSON} id={SOURCE_ID}>
