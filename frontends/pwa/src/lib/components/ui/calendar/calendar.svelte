@@ -30,34 +30,54 @@
 	// Get today's date for highlighting
 	const todaysDate = today(getLocalTimeZone());
 
+	// Helper to get days in a month using simple month math
+	const getDaysInMonth = (m) => {
+		const monthNum = m.month;
+		const year = m.year;
+		// Days in each month (non-leap year)
+		const daysPerMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+		// Check for leap year
+		if (monthNum === 2 && ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0)) {
+			return 29;
+		}
+		return daysPerMonth[monthNum - 1];
+	};
+
 	// Generate calendar data for the displayed month
 	const getCalendarDays = (month) => {
 		try {
-			const start = startOfMonth(month);
-			const dayOfWeek = start.toDate(getLocalTimeZone()).getDay();
-
-			// Calculate days in month by getting the last day of the month
-			let daysInMonth = 31;
-			for (let i = 31; i >= 28; i--) {
-				try {
-					start.set({ day: i });
-					daysInMonth = i;
-					break;
-				} catch {
-					// Day doesn't exist in this month, try previous day
-				}
-			}
+			const dayOfWeek = startOfMonth(month).toDate(getLocalTimeZone()).getDay();
+			const daysInMonth = getDaysInMonth(month);
 
 			const days = [];
 
-			// Add empty cells for days before month starts
-			for (let i = 0; i < dayOfWeek; i++) {
-				days.push(null);
+			// Add previous month's days
+			const prevMonth = month.subtract({ months: 1 });
+			const prevMonthDays = getDaysInMonth(prevMonth);
+			const startDay = prevMonthDays - dayOfWeek + 1;
+
+			for (let i = startDay; i <= prevMonthDays; i++) {
+				// Create fresh date each iteration
+				const d = startOfMonth(prevMonth).set({ day: i });
+				days.push({ date: d, isCurrentMonth: false });
 			}
 
-			// Add days of the month
+			// Add current month's days
 			for (let i = 1; i <= daysInMonth; i++) {
-				days.push(start.set({ day: i }));
+				// Create fresh date each iteration
+				const d = startOfMonth(month).set({ day: i });
+				days.push({ date: d, isCurrentMonth: true });
+			}
+
+			// Add next month's days
+			const nextMonth = month.add({ months: 1 });
+			const nextMonthDays = getDaysInMonth(nextMonth);
+			const remainingDays = 42 - days.length;
+
+			for (let i = 1; i <= remainingDays; i++) {
+				// Create fresh date each iteration
+				const d = startOfMonth(nextMonth).set({ day: i });
+				days.push({ date: d, isCurrentMonth: false });
 			}
 
 			// Group into weeks
@@ -155,20 +175,21 @@
 	<!-- Calendar grid -->
 	<div class="grid grid-cols-7 gap-2">
 		{#each weeks as week}
-			{#each week as date}
-				{#if date}
+			{#each week as dayObj}
+				{#if dayObj}
 					<button
-						onclick={() => handleDayClick(date)}
+						onclick={() => handleDayClick(dayObj.date)}
 						class={cn(
 							"p-2 rounded-md text-sm font-medium transition h-9 w-9 flex items-center justify-center",
-							value && date.toString() === value.toString()
+							!dayObj.isCurrentMonth ? "text-muted-foreground opacity-50" : "",
+							value && dayObj.date.toString() === value.toString()
 								? "bg-primary text-primary-foreground"
-								: date.toString() === todaysDate.toString()
+								: dayObj.date.toString() === todaysDate.toString()
 								? "bg-accent text-accent-foreground border-2 border-primary"
 								: "hover:bg-accent"
 						)}
 					>
-						{date.day}
+						{dayObj.date.day}
 					</button>
 				{:else}
 					<div class="h-9 w-9"></div>
