@@ -207,7 +207,7 @@
   footer {
     flex-shrink: 0;
     width: 100%;
-    height: var(--footer-height);
+    height: calc(var(--footer-height) + 35px);
     overflow: hidden;
   }
 </style>
