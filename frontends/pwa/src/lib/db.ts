@@ -30,7 +30,17 @@ const dbPromise = openDB(DB_NAME, DB_VERSION, {
 export async function saveRidesToDB(rides: RideData[]) {
   const db = await dbPromise
   const tx = db.transaction(ALLRIDES_STORE_NAME, "readwrite")
-  await tx.objectStore(ALLRIDES_STORE_NAME).clear()
+  const rideIds = new Set(rides.map(ride => ride.id))
+  const existingRides = await tx.objectStore(ALLRIDES_STORE_NAME).getAll()
+
+  // Delete rides that are no longer in the API response
+  for (const ride of existingRides) {
+    if (!rideIds.has(ride.id)) {
+      await tx.objectStore(ALLRIDES_STORE_NAME).delete(ride.id)
+    }
+  }
+
+  // Upsert all rides from API (updates existing, adds new)
   const results = await Promise.allSettled(rides.map(ride => tx.store.put(ride)))
   await tx.done
 }

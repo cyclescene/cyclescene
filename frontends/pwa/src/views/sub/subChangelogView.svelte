@@ -6,6 +6,27 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.4.0",
+      date: "December 3, 2025",
+      changes: {
+        Added: [
+          "Custom date picker component replacing bits-ui Calendar to fix edge cases with repeated date selection.",
+          "Visual indicator for today's date in the calendar (accent background with primary border).",
+          "IndexedDB upsert functionality instead of clearing entire database on ride data refresh, preserving data consistency.",
+        ],
+        Fixed: [
+          "Fixed issue where clicking the same date twice in the date picker would clear the selection.",
+          "Fixed map zooming out excessively on background ride data refresh by separating initialization from data updates.",
+          "Fixed date picker crashing when selecting the same date consecutively.",
+        ],
+        Changed: [
+          "Map now initializes to starting coordinates/zoom level on load, independent of ride data changes.",
+          "Map bounds fitting only occurs when rides change, not on every background sync.",
+          "IndexedDB sync now updates/inserts rides instead of clearing and repopulating the entire store.",
+        ],
+      },
+    },
+    {
       version: "1.3.0",
       date: "December 2, 2025",
       changes: {

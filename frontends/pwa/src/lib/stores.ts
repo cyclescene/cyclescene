@@ -433,7 +433,7 @@ export const dateStore = {
   },
   addDays: (offset: number) => {
     currentDate.update((currentStoredDate) => {
-      if (!currentStoredDate) {
+      if (!currentStoredDate || typeof currentStoredDate.add !== 'function') {
         return today(getLocalTimeZone()).add({ days: offset })
       }
       return currentStoredDate.add({ days: offset })
@@ -441,14 +441,18 @@ export const dateStore = {
   },
   subtractDays: (offset: number) => {
     currentDate.update((currentStoredDate) => {
-      if (!currentStoredDate) {
-        return today(getLocalTimeZone()).add({ days: offset })
+      if (!currentStoredDate || typeof currentStoredDate.subtract !== 'function') {
+        return today(getLocalTimeZone()).subtract({ days: offset })
       }
       return currentStoredDate.subtract({ days: offset })
     })
   },
-  setSpecificDate: (date: CalendarDate) => {
-    currentDate.set(date)
+  setSpecificDate: (date: CalendarDate | null) => {
+    if (date && typeof date.add === 'function' && typeof date.subtract === 'function') {
+      currentDate.set(date)
+    } else if (!date) {
+      currentDate.set(today(getLocalTimeZone()))
+    }
   }
 }
 
@@ -458,28 +462,29 @@ export const formattedDate = derived([currentDate], ([$currentDate]) => {
     return "LoadingDate"
   }
 
+  // Guard against invalid CalendarDate objects
+  try {
+    const dateFormatter = new DateFormatter("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
 
-
-  const dateFormatter = new DateFormatter("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
-
-
-  const todaysDate = today(getLocalTimeZone());
-  const tomorrowsDate = todaysDate?.add({ days: 1 });
-  const yesterdaysDate = todaysDate?.subtract({ days: 1 });
-  if ($currentDate.compare(todaysDate) === 0) {
-    return "Today";
-  } else if ($currentDate.compare(tomorrowsDate) === 0) {
-    return "Tomorrow";
-  } else if ($currentDate.compare(yesterdaysDate) === 0) {
-    return "Yesterday";
-  } else {
-    return dateFormatter.format($currentDate.toDate(getLocalTimeZone()));
+    const todaysDate = today(getLocalTimeZone());
+    const tomorrowsDate = todaysDate?.add({ days: 1 });
+    const yesterdaysDate = todaysDate?.subtract({ days: 1 });
+    if ($currentDate.compare(todaysDate) === 0) {
+      return "Today";
+    } else if ($currentDate.compare(tomorrowsDate) === 0) {
+      return "Tomorrow";
+    } else if ($currentDate.compare(yesterdaysDate) === 0) {
+      return "Yesterday";
+    } else {
+      return dateFormatter.format($currentDate.toDate(getLocalTimeZone()));
+    }
+  } catch (e) {
+    return "LoadingDate";
   }
-
 })
 
 

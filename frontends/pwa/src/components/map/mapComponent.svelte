@@ -5,18 +5,18 @@
     currentRideStore,
     mapStore,
     rideGeoJSON,
+    STARTING_ZOOM,
     TILE_URLS,
     todaysRides,
   } from "$lib/stores";
   import { mode } from "mode-watcher";
   import RideLayers from "./rideLayers.svelte";
   import ParkLayer from "./parkLayer.svelte";
-  import SpecialEventLayers from "./specialEventLayers.svelte";
   import RecenterButton from "./recenterButton.svelte";
   import LocationCards from "../locationCards.svelte";
   import RidesNotShown from "../ride/ridesNotShown.svelte";
   import { loadAllMarkersForCity } from "$lib/markers";
-  import { CITY_CODE } from "$lib/config";
+  import { CITY_CODE, STARTING_LAT, STARTING_LNG } from "$lib/config";
 
   const SOURCE_ID = "ride-source";
   const ICON_NAME = "custom-bike-pin";
@@ -52,6 +52,20 @@
     currentRideStore.clearRide();
   }
 
+  // Initialize map to starting position once on load
+  // This runs only once when mapInstance is ready, not on data changes
+  $effect(() => {
+    if (!mapInstance) {
+      return;
+    }
+    mapInstance.flyTo({
+      center: [STARTING_LNG, STARTING_LAT],
+      zoom: STARTING_ZOOM,
+    });
+  });
+
+  // Fit map bounds to rides when they load
+  // Only triggers when rides exist and change, preserving user's manual pan/zoom during background syncs
   $effect(() => {
     if (!mapInstance || $todaysRides.length === 0) {
       return;

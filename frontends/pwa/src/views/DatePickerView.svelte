@@ -12,16 +12,25 @@
   const todaysDate = today(getLocalTimeZone());
   let value = $state(todaysDate);
 
+  // Update store when user selects a date
+  const handleDateSelect = (selectedDate) => {
+    if (selectedDate) {
+      dateStore.setSpecificDate(selectedDate);
+      currentRideStore.clearRide();
+      mapStore.showCurrentRide(false);
+      goBackInHistory();
+    }
+  };
+
+  // Watch for value changes and handle selection
   $effect(() => {
-    dateStore.setSpecificDate(value);
-    currentRideStore.clearRide();
-    mapStore.showCurrentRide(false);
-    goBackInHistory();
+    if (value) {
+      handleDateSelect(value);
+    }
   });
 
   function onClickToday() {
-    dateStore.setSpecificDate(todaysDate);
-    goBackInHistory();
+    value = todaysDate;
   }
 </script>
 
