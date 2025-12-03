@@ -27,6 +27,13 @@
 
 	let displayMonth = $state(startOfMonth(value));
 
+	// Update display month when value changes from external sources (like clicking Today button)
+	$effect(() => {
+		if (value) {
+			displayMonth = startOfMonth(value);
+		}
+	});
+
 	// Get today's date for highlighting
 	const todaysDate = today(getLocalTimeZone());
 
