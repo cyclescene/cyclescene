@@ -2,7 +2,7 @@
   import MapPin from "~icons/mingcute/map-pin-line";
   import Flash from "~icons/lets-icons/flash-light";
   import Clock from "~icons/hugeicons/clock-01";
-  import type { Component } from "svelte";
+  import { type Component } from "svelte";
 
   let {
     label,
@@ -12,23 +12,17 @@
     children?: any;
   } = $props();
 
-  let Icon: Component;
-  switch (label) {
-    case "newsflash":
-      Icon = Flash;
-      break;
-    case "startTime":
-      Icon = Clock;
-      break;
-    case "venue":
-      Icon = MapPin;
-      break;
-    case "date":
-      Icon = Clock;
-      break;
-    default:
-      Icon = MapPin; // fallback icon
-  }
+  let Icon: Component = $derived(
+    label === "newsflash"
+      ? Flash
+      : label === "startTime"
+        ? Clock
+        : label === "venue"
+          ? MapPin
+          : label === "date"
+            ? Clock
+            : MapPin, // fallback
+  );
 </script>
 
 <div

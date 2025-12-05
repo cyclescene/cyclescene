@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import * as Card from "$lib/components/ui/card";
   import {
     navigateTo,
@@ -9,13 +9,14 @@
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
     SUB_VIEW_COVID_SAFETY_RIDES,
   } from "$lib/stores";
+  import type { RideData } from "$lib/types";
   import { cn, formatDate, formatTime } from "$lib/utils";
   import CardLabel from "./cardLabel.svelte";
   import RideLabels from "./ride/rideLabels.svelte";
 
-  export let ride;
+  let { ride }: { ride: RideData } = $props();
 
-  function onCardClick(ride) {
+  function onCardClick(ride: RideData) {
     navigateTo(VIEW_RIDE_DETAILS);
     currentRideStore.setRide(ride);
   }
@@ -41,9 +42,9 @@
     </Card.Header>
 
     <Card.Content>
-      {#if ride.newflash}
+      {#if ride.newsflash}
         <CardLabel label="newsflash">
-          <p class="text-lg">{ride.newflash}</p>
+          <p class="text-lg">{ride.newsflash}</p>
         </CardLabel>
       {/if}
       <CardLabel label="venue">
