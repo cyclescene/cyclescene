@@ -55,6 +55,14 @@ type Shift2BikeEvent struct {
 	RouteID string `json:"-"`
 }
 
+// GetID returns the unique identifier for the event (caldaily_id)
+func (e *Shift2BikeEvent) GetID() string {
+	if e.CaldailyID != "" {
+		return e.CaldailyID
+	}
+	return e.ID
+}
+
 type Shift2BikeEvents struct {
 	Events []Shift2BikeEvent `json:"events"`
 }

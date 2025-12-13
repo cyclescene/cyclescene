@@ -6,6 +6,17 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.4.2",
+      date: "December 13, 2025",
+      changes: {
+        Changed: [
+          "Shift2Bikes events now synced directly from their live API to ensure only active, up-to-date rides are displayed.",
+          "Event occurrence ID (caldaily_id) now used as unique identifier for Shift2Bikes events instead of composite ID.",
+          "Scraped Shift2Bikes data filtered against live API to remove outdated or cancelled events from the map.",
+        ],
+      },
+    },
+    {
       version: "1.4.1",
       date: "December 3, 2025",
       changes: {

@@ -235,6 +235,8 @@ func main() {
 	}
 
 	// store ride information
+	// No need to upsert ride data since we are using the shift2bikes API
+	// scraper will now just store route and geocode data
 	if err = scraper.BulkUpsertRideData(db, shift2BikesEvents.Events); err != nil {
 		slog.Error("unable to bulk upsert ride data", "locations_len", len(rideLocations), "error", err.Error())
 		log.Fatalf("unable to bulk upsert ride data: %v", err)

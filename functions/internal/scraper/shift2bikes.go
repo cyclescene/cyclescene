@@ -69,6 +69,9 @@ func buildShift2BikesURLPast() (string, error) {
 
 func fetchAndDecode(url string, target any) error {
 	req, _ := http.NewRequest(http.MethodGet, url, nil)
+	req.Header.Set("User-Agent", "CycleScene")
+	req.Header.Set("x-cycle-scene-version", "1.0.0")
+	req.Header.Set("Api-Version", "3")
 
 	client := &http.Client{
 		Timeout: 30 * time.Second,

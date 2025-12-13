@@ -181,7 +181,7 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 	for i := range rideData {
 		ride := rideData[i]
 
-		compositeKey := fmt.Sprintf("%s_%s", ride.ID, ride.Date)
+		compositeKey := ride.CaldailyID
 
 		sourceData, marshalErr := json.Marshal(ride)
 		if marshalErr != nil {

@@ -3,7 +3,7 @@ import { twMerge } from "tailwind-merge";
 
 import { parseTime, DateFormatter, parseDate, getLocalTimeZone, today } from "@internationalized/date";
 import { SvelteMap } from "svelte/reactivity";
-import type { RideData } from "./types";
+import type { RideData, ShiftEvent } from "./types";
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
@@ -84,3 +84,17 @@ export function getSortedUniqueDatesWithToday(savedRides: RideData[]) {
 
   return uniqueSortedDates
 }
+
+
+
+export function filterActiveShiftEvents(scrapedEvents: RideData[], shiftResponse: { events: any[] }): RideData[] {
+  const activeIds = new Set(shiftResponse.events.map(e => e.caldaily_id))
+  return scrapedEvents.filter(event => {
+    if (event.ridesource !== 'shift2bikes') {
+      return true
+    }
+    // Only keep exact caldaily_id matches (new format), filter out old composite format (ID_Date)
+    return activeIds.has(event.id)
+  })
+}
+
