@@ -1,6 +1,6 @@
 <script lang="ts">
   import MapPin from "~icons/mingcute/map-pin-line";
-  import Flash from "~icons/lets-icons/flash-light";
+  import Flash from "~icons/lets-icons/flash";
   import Clock from "~icons/hugeicons/clock-01";
   import { type Component } from "svelte";
 
@@ -29,6 +29,6 @@
   class="flex flex-row items-center
   gap-2"
 >
-  <Icon height="18" width="18" inlinn="true" style="color: orange;" />
+  <Icon height="22" width="22" inlinn="true" style="color: orange;" />
   {@render children?.()}
 </div>

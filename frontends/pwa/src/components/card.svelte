@@ -44,13 +44,17 @@
     <Card.Content>
       {#if ride.newsflash}
         <CardLabel label="newsflash">
-          <p class="text-lg">{ride.newsflash}</p>
+          <p class="text-lg">
+            {ride.newsflash.length > 80
+              ? ride.newsflash.substring(0, 80) + "..."
+              : ride.newsflash}
+          </p>
         </CardLabel>
       {/if}
       <CardLabel label="venue">
         <p class="text-lg">
-          {ride.venue.length > 30
-            ? ride.venue.substring(0, 30) + "..."
+          {ride.venue.length > 80
+            ? ride.venue.substring(0, 80) + "..."
             : ride.venue}
         </p>
       </CardLabel>

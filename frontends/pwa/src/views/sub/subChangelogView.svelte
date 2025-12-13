@@ -13,6 +13,7 @@
           "Shift2Bikes events now synced directly from their live API to ensure only active, up-to-date rides are displayed.",
           "Event occurrence ID (caldaily_id) now used as unique identifier for Shift2Bikes events instead of composite ID.",
           "Scraped Shift2Bikes data filtered against live API to remove outdated or cancelled events from the map.",
+          "Live updates for cancellation status and newsflash alerts from Shift2Bikes without requiring full data re-scrape.",
         ],
       },
     },

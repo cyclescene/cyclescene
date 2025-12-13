@@ -87,14 +87,29 @@ export function getSortedUniqueDatesWithToday(savedRides: RideData[]) {
 
 
 
-export function filterActiveShiftEvents(scrapedEvents: RideData[], shiftResponse: { events: any[] }): RideData[] {
-  const activeIds = new Set(shiftResponse.events.map(e => e.caldaily_id))
-  return scrapedEvents.filter(event => {
+export function filterActiveShiftEvents(scrapedEvents: RideData[], shiftResponse: { events: ShiftEvent[] }): RideData[] {
+  const activeEventMap = new Map(shiftResponse.events.map(e => [e.caldaily_id, e]))
+
+  return scrapedEvents.map(event => {
     if (event.ridesource !== 'shift2bikes') {
-      return true
+      return event
     }
-    // Only keep exact caldaily_id matches (new format), filter out old composite format (ID_Date)
-    return activeIds.has(event.id)
-  })
+
+    const activeEvent = activeEventMap.get(event.id)
+    if (!activeEvent) {
+      return null
+    }
+
+    // Update cancelled and newsflash if they changed
+    const updated = { ...event }
+    if (activeEvent.cancelled !== event.cancelled) {
+      updated.cancelled = activeEvent.cancelled ? 1 : 0
+    }
+    if (activeEvent.newsflash && activeEvent.newsflash !== event.newsflash) {
+      updated.newsflash = activeEvent.newsflash
+    }
+
+    return updated
+  }).filter((event): event is RideData => event !== null)
 }
 
