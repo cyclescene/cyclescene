@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { ScrollArea } from "$lib/components/ui/scroll-area/index";
   import { currentRide, mapStore } from "$lib/stores";
   import type { RideData } from "$lib/types";
   import Card from "./card.svelte";

@@ -29,6 +29,6 @@
   class="flex flex-row items-center
   gap-2"
 >
-  <Icon height="22" width="22" inlinn="true" style="color: orange;" />
+  <Icon height="22" width="22" inline="true" style="color: orange;" />
   {@render children?.()}
 </div>

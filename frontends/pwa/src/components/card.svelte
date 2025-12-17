@@ -20,6 +20,13 @@
     navigateTo(VIEW_RIDE_DETAILS);
     currentRideStore.setRide(ride);
   }
+
+  function trimString(str: string, maxLength: number) {
+    if (str.length > maxLength) {
+      return str.substring(0, maxLength) + "...";
+    }
+    return str;
+  }
 </script>
 
 {#if ride}
@@ -34,28 +41,22 @@
     on:keydown={() => onCardClick(ride)}
   >
     <Card.Header class="">
-      <Card.Title class={`${ride.cancelled ? "line-through" : ""} text-xl`}
-        >{ride.title.length > 80
-          ? ride.title.substring(0, 80) + "..."
-          : ride.title}</Card.Title
-      >
+      <Card.Title class={`${ride.cancelled ? "line-through" : ""} text-xl`}>
+        {trimString(ride.title, 60)}
+      </Card.Title>
     </Card.Header>
 
     <Card.Content>
       {#if ride.newsflash}
         <CardLabel label="newsflash">
           <p class="text-lg">
-            {ride.newsflash.length > 80
-              ? ride.newsflash.substring(0, 80) + "..."
-              : ride.newsflash}
+            {trimString(ride.newsflash, 40)}
           </p>
         </CardLabel>
       {/if}
       <CardLabel label="venue">
         <p class="text-lg">
-          {ride.venue.length > 80
-            ? ride.venue.substring(0, 80) + "..."
-            : ride.venue}
+          {trimString(ride.venue, 40)}
         </p>
       </CardLabel>
       {#if $activeView === SUB_VIEW_ADULT_ONLY_RIDES || $activeView === SUB_VIEW_FAMILY_FRIENDLY_RIDES || $activeView === SUB_VIEW_COVID_SAFETY_RIDES}

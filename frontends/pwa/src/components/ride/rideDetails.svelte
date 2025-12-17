@@ -8,6 +8,11 @@
   import RideMap from "./rideMap.svelte";
   import RideRouteMap from "./rideRouteMap.svelte";
   import RideRouteDetails from "./rideRouteDetails.svelte";
+  import LoopIcon from "~icons/qlementine-icons/loop-16";
+  import MapPinIcon from "~icons/mingcute/map-pin-line";
+  import ClockIcon from "~icons/hugeicons/clock-01";
+  import EmailIcon from "~icons/clarity/email-line";
+  import LinkIcon from "~icons/bx/link";
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
   const CITY_CODE = import.meta.env.VITE_CITY_CODE;
@@ -15,7 +20,6 @@
 
   const ride = $derived($currentRide);
   const route = $derived($currentRoute);
-
 
   const imageUrl = $derived.by(() =>
     ride && ride?.ridesource === "Shift2Bikes"
@@ -70,11 +74,7 @@
       <div
         class="flex flex-col gap-5 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]"
       >
-        <!-- <div -->
-        <!--   class="h-[400px] w-full bg-blue-500 flex items-center justify-center mx-auto text-5xl" -->
-        <!-- > -->
         <RideMap {ride} />
-        <!-- </div> -->
 
         <h2 class="text-3xl">{ride.title}</h2>
         <p>{ride.newsflash}</p>
@@ -82,7 +82,10 @@
 
         <Card.Root role="button" tabindex="0" onclick={handleAddtoCalendar}>
           <Card.Header>
-            <Card.Description>Meetup Time</Card.Description>
+            <Card.Description class="flex flex-row gap-1 items-center">
+              <ClockIcon height="15" width="15" style="color: orange;" />
+              <span> Meetup Time </span>
+            </Card.Description>
             <Card.Title class="text-2xl">
               {formatTime(ride?.starttime)}
               {formatDate(ride.date)}
@@ -92,16 +95,24 @@
 
         <Card.Root role="button" tabindex="0" onclick={handleOpenNativeMapApp}>
           <Card.Header>
-            <Card.Description>Meetup Location</Card.Description>
+            <Card.Description class="flex flex-row gap-1 items-center">
+              <MapPinIcon height="15" width="15" style="color: orange;" />
+              <span> Meetup Location </span>
+            </Card.Description>
             <Card.Title class="text-2xl">
               {ride.venue}</Card.Title
             >
             <Card.Description>{ride.address}</Card.Description>
-            <Card.Description
-              >{ride.loopride
-                ? "Ride is a loop"
-                : "Ride not a loop"}</Card.Description
-            >
+            <Card.Description class="flex flex-row gap-1 items-center">
+              <LoopIcon
+                height="15"
+                width="15"
+                style="transform: rotate(90deg); color: orange;"
+              />
+              <span>
+                {ride.loopride ? "Ride is a loop" : "Ride not a loop"}
+              </span>
+            </Card.Description>
           </Card.Header>
 
           {#if ride.locdetails != ""}
@@ -132,16 +143,22 @@
             <Card.Title>{ride.organizer}</Card.Title>
 
             {#if ride.email}
-              <Card.Title>
-                {ride.email}
+              <Card.Title class="flex flex-row gap-1 items-center">
+                <EmailIcon height="22" width="22" style="color: orange;" />
+                <span> {ride.email} </span>
               </Card.Title>
             {/if}
 
             {#if ride.weburl && ride.webname}
               <a href={ride.weburl} target="_blank" rel="noopener noreferrer">
-                <Card.Title class="text-yellow-400 mt-1"
-                  >{ride.webname}</Card.Title
+                <Card.Title
+                  class="text-yellow-400 mt-1 flex flex-row gap-1 items-center"
                 >
+                  <LinkIcon height="22" width="22" style="color: orange;" />
+                  <span>
+                    {ride.webname}
+                  </span>
+                </Card.Title>
               </a>
             {/if}
           </Card.Header>
