@@ -171,7 +171,7 @@
     </div>
   {:else if rides.length === 0}
     <div class="flex items-center justify-center py-12">
-      <Card.Root class="max-w-md">
+      <Card.Root class="min-w-md">
         <Card.Header class="text-center">
           <Card.Title>No Pending Rides</Card.Title>
           <Card.Description>

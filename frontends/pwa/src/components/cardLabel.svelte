@@ -25,10 +25,12 @@
   );
 </script>
 
-<div
-  class="flex flex-row items-center
-  gap-2"
->
-  <Icon height="22" width="22" inline="true" style="color: orange;" />
+<div class="flex flex-row items-center gap-1.5">
+  <Icon
+    height="22"
+    width="22"
+    inline="true"
+    style="color: orange; min-width: 22px;"
+  />
   {@render children?.()}
 </div>

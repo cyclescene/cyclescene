@@ -1,7 +1,7 @@
 import { CalendarDate, parseDate } from "@internationalized/date";
-import { LngLatBounds, type LngLatLike, type Map } from "maplibre-gl"
+import { LngLatBounds, type LngLatLike, type Map } from "maplibre-gl";
 import { getPastRides, getUpcomingRides, getAllRoutes, type RouteGeoJSON, getShiftRides } from "./api";
-import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB, clearAllRides, clearSavedRides, saveRoutesToDB, getRoutesFromDB, getRouteFromDB, clearAllRoutes } from "./db";
+import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB, clearAllRides, clearSavedRides, saveRoutesToDB, getRoutesFromDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
@@ -56,13 +56,17 @@ export const TILE_URLS = {
 const RIDES_SYNC_TAG = "update-rides-6hr"
 const SYNC_INTERVAL = 6 * 60 * 60 * 1000
 
+interface RidesStore {
+  loading: boolean;
+  loadingStage: string
+  rideData: RideData[];
+  error: string | null;
+}
+
 function createRidesStore() {
-  const { subscribe, set, update } = writable<{
-    loading: boolean,
-    rideData: RideData[],
-    error: String | null
-  }>({
+  const { subscribe, set, update } = writable<RidesStore>({
     loading: true,
+    loadingStage: "",
     rideData: [],
     error: null
   })
@@ -71,7 +75,7 @@ function createRidesStore() {
   function updateStoreAndDB(freshRides: RideData[]) {
     saveRidesToDB(freshRides).then(() => {
       getRidesfromDB()
-        .then((rides) => (set({ loading: false, rideData: rides, error: null })))
+        .then((rides) => (set({ loading: false, rideData: rides, loadingStage: "", error: null })))
         .catch(e => {
           update((store) => ({
             ...store, loading: false, error: `${e}`
@@ -97,10 +101,12 @@ function createRidesStore() {
   return {
     subscribe,
     init: async () => {
+      update(store => ({ ...store, loading: true, loadingStage: "Fetching rides..." }))
       try {
-        let cachedRides: RideData[]
+        let cachedRides = await getRidesfromDB()
         // on initial load, fetch from API if online
         if (window.navigator.onLine === true) {
+          update(store => ({ ...store, loading: true, loadingStage: "Fetching rides from API..." }))
           let upcomingRides = await getUpcomingRides()
           const pastRides = await getPastRides()
           if (CITY_CODE === 'pdx') {
@@ -110,6 +116,7 @@ function createRidesStore() {
 
           const freshRides = [...upcomingRides, ...pastRides]
 
+          update(store => ({ ...store, loading: true, loadingStage: "Diffing rides..." }))
           // Deduplicate rides by ID - keep first occurrence
           const seenIds = new Set<string>()
           const dedupedRides = freshRides.filter(ride => {
@@ -120,16 +127,19 @@ function createRidesStore() {
             return true
           })
 
+          update(store => ({ ...store, loading: true, loadingStage: `Saving ${dedupedRides.length} rides to cache...` }))
           await saveRidesToDB(dedupedRides)
           cachedRides = await getRidesfromDB()
           // otherwise, load from IndexedDB
         } else {
+          update(store => ({ ...store, loading: true, loadingStage: "Fetching rides from cache" }))
           cachedRides = await getRidesfromDB()
         }
+
         // call the API to get fresh rides and save them to IndexedDB on init
-        set({ loading: false, rideData: cachedRides, error: null })
+        set({ loading: false, loadingStage: "", rideData: cachedRides, error: null })
       } catch (err) {
-        update(store => ({ ...store, loading: false, error: "Unable to get idb ride data" }))
+        update(store => ({ ...store, loading: false, loadingStage: "", error: "Unable to get idb ride data" }))
       }
 
       if ('serviceWorker' in navigator) {
@@ -161,9 +171,9 @@ function createRidesStore() {
         // Save to IndexedDB
         await saveRidesToDB(freshRides)
         // Update the store
-        set({ loading: false, rideData: freshRides, error: null })
+        set({ loading: false, loadingStage: "", rideData: freshRides, error: null })
       } catch (e) {
-        update(() => ({ loading: false, rideData: [], error: `Failed to refresh rides: ${e}` }))
+        update(() => ({ loading: false, loadingStage: "", rideData: [], error: `Failed to refresh rides: ${e}` }))
       }
     }
   }

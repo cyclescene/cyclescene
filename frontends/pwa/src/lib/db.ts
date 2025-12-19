@@ -41,7 +41,7 @@ export async function saveRidesToDB(rides: RideData[]) {
   }
 
   // Upsert all rides from API (updates existing, adds new)
-  const results = await Promise.allSettled(rides.map(ride => tx.store.put(ride)))
+  await Promise.all(rides.map(ride => tx.store.put(ride)))
   await tx.done
 }
 
@@ -114,7 +114,7 @@ export async function saveRoutesToDB(routes: RouteGeoJSON[]) {
   const db = await dbPromise
   const tx = db.transaction(ROUTES_STORE_NAME, "readwrite")
   await tx.objectStore(ROUTES_STORE_NAME).clear()
-  const results = await Promise.allSettled(routes.map(route => tx.store.put(route)))
+  await Promise.all(routes.map(route => tx.store.put(route)))
   await tx.done
 }
 

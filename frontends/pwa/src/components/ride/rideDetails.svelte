@@ -8,11 +8,12 @@
   import RideMap from "./rideMap.svelte";
   import RideRouteMap from "./rideRouteMap.svelte";
   import RideRouteDetails from "./rideRouteDetails.svelte";
-  import LoopIcon from "~icons/qlementine-icons/loop-16";
   import MapPinIcon from "~icons/mingcute/map-pin-line";
   import ClockIcon from "~icons/hugeicons/clock-01";
   import EmailIcon from "~icons/clarity/email-line";
   import LinkIcon from "~icons/bx/link";
+  import InfoIcon from "~icons/charm/info";
+  import Flash from "~icons/lets-icons/flash";
 
   const API_BASE = import.meta.env.VITE_API_BASE_URL;
   const CITY_CODE = import.meta.env.VITE_CITY_CODE;
@@ -26,6 +27,8 @@
       ? SHIFT2BIKES_URL + ride?.image
       : ride?.image,
   );
+
+  $inspect(ride);
 
   function handleOpenNativeMapApp() {
     if (ride) {
@@ -77,12 +80,21 @@
         <RideMap {ride} />
 
         <h2 class="text-3xl">{ride.title}</h2>
-        <p>{ride.newsflash}</p>
+        {#if ride.newsflash}
+          <div class="flex flex-row gap-1 items-center">
+            <Flash
+              height="22"
+              width="22"
+              style="color: orange; min-width: 22px;"
+            />
+            <p class="whitespace-pre-wrap text-lg">{ride.newsflash}</p>
+          </div>
+        {/if}
         <RideLabels {ride} />
 
         <Card.Root role="button" tabindex="0" onclick={handleAddtoCalendar}>
           <Card.Header>
-            <Card.Description class="flex flex-row gap-1 items-center">
+            <Card.Description class="flex flex-row gap-1 items-center p-0">
               <ClockIcon height="15" width="15" style="color: orange;" />
               <span> Meetup Time </span>
             </Card.Description>
@@ -91,7 +103,33 @@
               {formatDate(ride.date)}
             </Card.Title>
           </Card.Header>
+          {#if ride.timedetails != ""}
+            <Card.Footer class="flex flex-row gap-1 items-start">
+              <InfoIcon
+                height="20"
+                width="20"
+                style="color: orange; min-width: 20px;"
+              />
+              <span class="text-lg p-0 -mt-1">
+                {ride?.timedetails}
+              </span>
+            </Card.Footer>
+          {/if}
         </Card.Root>
+
+        {#if ride.endtime}
+          <Card.Root>
+            <Card.Header>
+              <Card.Description class="flex flex-row gap-1 items-center p-0">
+                <ClockIcon height="15" width="15" style="color: orange;" />
+                <span> End Time </span>
+              </Card.Description>
+              <Card.Title class="text-2xl">
+                {formatTime(ride?.endtime)}</Card.Title
+              >
+            </Card.Header>
+          </Card.Root>
+        {/if}
 
         <Card.Root role="button" tabindex="0" onclick={handleOpenNativeMapApp}>
           <Card.Header>
@@ -102,21 +140,20 @@
             <Card.Title class="text-2xl">
               {ride.venue}</Card.Title
             >
-            <Card.Description>{ride.address}</Card.Description>
-            <Card.Description class="flex flex-row gap-1 items-center">
-              <LoopIcon
-                height="15"
-                width="15"
-                style="transform: rotate(90deg); color: orange;"
-              />
-              <span>
-                {ride.loopride ? "Ride is a loop" : "Ride not a loop"}
-              </span>
-            </Card.Description>
+            <Card.Description class="text-lg">{ride.address}</Card.Description>
           </Card.Header>
 
           {#if ride.locdetails != ""}
-            <Card.Footer>{ride.locdetails}</Card.Footer>
+            <Card.Footer class="flex flex-row gap-1 items-start">
+              <InfoIcon
+                height="20"
+                width="20"
+                style="color: orange; min-width: 20px;"
+              />
+              <span class="text-lg p-0 -mt-1">
+                {ride?.locdetails}
+              </span>
+            </Card.Footer>
           {/if}
         </Card.Root>
 
@@ -137,7 +174,7 @@
           <img src={imageUrl} alt={`Image for ${ride.title} bike ride`} />
         {/if}
 
-        <p class="text-lg">{ride.details}</p>
+        <p class="text-lg whitespace-pre-wrap">{ride.details}</p>
         <Card.Root>
           <Card.Header>
             <Card.Title>{ride.organizer}</Card.Title>

@@ -63,8 +63,7 @@
     document.title = `Cycle Scene - ${cityName}`;
 
     await rides.init();
-    savedRidesStore.init();
-
+    await savedRidesStore.init();
     await routesStore.init();
 
     // Tell service worker the city code (non-blocking)
@@ -132,10 +131,20 @@
   $: ActiveComponent = viewMap[$activeView];
   $: isMapVisible = $activeView === VIEW_MAP;
   $: isDatePickerVisible = $activeView === VIEW_DATE_PICKER;
+  $: ridesLoading = $rides.loading;
+  $: ridesLoadingStage = $rides.loadingStage;
 </script>
 
 <main class="flex flex-col">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />
+  {#if ridesLoading}
+    <div class="loading-overlay">
+      <div class="loading-spinner">
+        <div class="spinner"></div>
+        <p>{ridesLoadingStage}</p>
+      </div>
+    </div>
+  {/if}
   <header class="shrink">
     <svelte:component this={ActiveHeaderComponent} />
   </header>
@@ -209,5 +218,46 @@
     width: 100%;
     height: calc(var(--footer-height) + 35px);
     overflow: hidden;
+  }
+
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+
+  .loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-top: 4px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .loading-spinner p {
+    color: white;
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
   }
 </style>

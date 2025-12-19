@@ -12,6 +12,11 @@
   const todaysDate = today(getLocalTimeZone());
   let value = $state(todaysDate);
 
+  // Update calendar when dateStore changes (from chevron buttons)
+  $effect(() => {
+    value = $dateStore;
+  });
+
   // Update store when user selects a date
   const handleDateSelect = (selectedDate) => {
     if (selectedDate) {
