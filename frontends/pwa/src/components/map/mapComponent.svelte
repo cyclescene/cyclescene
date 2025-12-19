@@ -20,8 +20,7 @@
 
   const SOURCE_ID = "ride-source";
   const ICON_NAME = "custom-bike-pin";
-  const GEOAPIFY_API_URL =
-    "https://api.geoapify.com/v2/icon/?type=awesome&color=%23ff0000&size=42&icon=bicycle&contentSize=15&strokeColor=%23ff0000&shadowColor=%23ff0000&contentColor=%23ffffff&noShadow&noWhiteCircle&scaleFactor=2&apiKey=d4d9d0642bfc40488a64cd3b43b4a63e";
+  const BIKE_PIN_ICON_PATH = "/bike-pin-icon.png";
 
   let mapInstance: Map | undefined = $state(undefined);
   let iconLoaded = $state(false);
@@ -65,7 +64,7 @@
     if (mapInstance && !iconLoaded) {
       async function loadCustomIcon() {
         try {
-          const response = await mapInstance!.loadImage(GEOAPIFY_API_URL);
+          const response = await mapInstance!.loadImage(BIKE_PIN_ICON_PATH);
           mapInstance!.addImage(ICON_NAME, response.data);
           iconLoaded = true;
         } catch (error) {
@@ -91,13 +90,21 @@
               const imageName = `group-marker-${markerKey}`;
               mapInstance!.addImage(imageName, response.data);
             } catch (error) {
-              // Continue anyway
+              // Fallback to bike pin icon if marker fails to load
+              try {
+                const bikeIconResponse = await mapInstance!.loadImage(BIKE_PIN_ICON_PATH);
+                const imageName = `group-marker-${markerKey}`;
+                mapInstance!.addImage(imageName, bikeIconResponse.data);
+              } catch (fallbackError) {
+                // Continue anyway if fallback also fails
+              }
             }
           }
 
           groupMarkersLoaded = true;
         } catch (error) {
-          // Continue anyway - rides can still be displayed with default icon
+          // If loading markers fails entirely, mark as loaded anyway so rides display with default icon
+          groupMarkersLoaded = true;
         }
       }
 

@@ -6,7 +6,9 @@
   export let rides = [];
 </script>
 
-<div class="scroll-area w-full p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
+<div
+  class="scroll-area w-full p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]"
+>
   <ScrollArea class={`relative`} scrollbarYClasses={"hidden"}>
     <div class="flex flex-col gap-2">
       {#if rides && rides.length > 0}

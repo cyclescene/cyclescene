@@ -139,7 +139,9 @@ function createRidesStore() {
         // call the API to get fresh rides and save them to IndexedDB on init
         set({ loading: false, loadingStage: "", rideData: cachedRides, error: null })
       } catch (err) {
-        update(store => ({ ...store, loading: false, loadingStage: "", error: "Unable to get idb ride data" }))
+        // Still try to show cached rides even if there was an error
+        const cachedRidesOnError = await getRidesfromDB().catch(() => [])
+        update(store => ({ ...store, loading: false, loadingStage: "", rideData: cachedRidesOnError, error: "Unable to get ride data" }))
       }
 
       if ('serviceWorker' in navigator) {

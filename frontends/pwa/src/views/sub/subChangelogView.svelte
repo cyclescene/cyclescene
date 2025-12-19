@@ -6,6 +6,29 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.4.3",
+      date: "December 18, 2025",
+      changes: {
+        Added: [
+          "Staged loading screen with progressive status messages (Fetching, Diffing, Saving) during ride data initialization.",
+          "Local bike pin icon in public assets for offline marker support.",
+          "Fallback to bike pin icon if group markers fail to load for improved resilience.",
+          "Error recovery in rides store initialization to display cached rides even if fetch fails.",
+        ],
+        Fixed: [
+          "DatePickerView chevron buttons now stay within the current view instead of navigating away.",
+          "Map markers now visible when offline by using locally cached icon.",
+          "Chevron navigation no longer triggers unexpected view changes.",
+          "Promise.allSettled compatibility issues by using Promise.all in database operations.",
+        ],
+        Changed: [
+          "Bike pin icon now loads from local assets instead of Geoapify API, improving offline support and performance.",
+          "DatePickerView date synchronization logic to distinguish between user calendar selection and chevron button updates.",
+          "Ride initialization error handling to preserve cached data on failures.",
+        ],
+      },
+    },
+    {
       version: "1.4.2",
       date: "December 13, 2025",
       changes: {

@@ -11,20 +11,23 @@
 
   const todaysDate = today(getLocalTimeZone());
   let value = $state(todaysDate);
+  let isFromDateStore = false;
 
   // Update calendar when dateStore changes (from chevron buttons)
   $effect(() => {
+    isFromDateStore = true;
     value = $dateStore;
   });
 
-  // Update store when user selects a date
+  // Update store when user selects a date (only from calendar clicks, not from chevron buttons)
   const handleDateSelect = (selectedDate) => {
-    if (selectedDate) {
+    if (selectedDate && !isFromDateStore) {
       dateStore.setSpecificDate(selectedDate);
       currentRideStore.clearRide();
       mapStore.showCurrentRide(false);
       goBackInHistory();
     }
+    isFromDateStore = false;
   };
 
   // Watch for value changes and handle selection
