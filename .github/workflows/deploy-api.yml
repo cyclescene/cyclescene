@@ -38,15 +38,15 @@ jobs:
         with:
           go-version: '1.24'
           cache: true
-          cache-dependency-path: 'functions/go.sum'
+          cache-dependency-path: 'backend/go.sum'
 
       - name: Run linting
-        working-directory: functions
+        working-directory: backend
         run: go vet ./...
         continue-on-error: true
 
       - name: Run tests
-        working-directory: functions
+        working-directory: backend
         run: go test ./... -v
         continue-on-error: true
 
@@ -75,7 +75,7 @@ jobs:
           gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
 
       - name: Build Docker image
-        working-directory: functions/cmd/api
+        working-directory: backend/cmd/api
         run: |
           docker build \
             -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REGISTRY_REPO }}/${{ env.IMAGE_NAME }}:${{ steps.image-tag.outputs.tag }} \
@@ -94,11 +94,13 @@ jobs:
           tofu_version: latest
 
       - name: Deploy with OpenTofu
-        working-directory: functions/cmd/api/infra
+        working-directory: backend/cmd/api/infra
         env:
           TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
           TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
           TF_VAR_turso_db_ro_token: ${{ secrets.TURSO_DB_RO_TOKEN }}
+          TF_VAR_turso_monitoring_db_url: ${{ secrets.TURSO_MONITORING_DB_URL }}
+          TF_VAR_turso_monitoring_db_rw_token: ${{ secrets.TURSO_MONITORING_DB_RW_TOKEN }}
           TF_VAR_edit_link_base_url: ${{ secrets.EDIT_LINK_BASE_URL }}
           TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY }}
         run: |
