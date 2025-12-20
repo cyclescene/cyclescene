@@ -80,6 +80,20 @@ variable "turso_db_rw_token" {
   sensitive   = true
 }
 
+variable "turso_monitoring_db_url" {
+  description = "Turso monitoring database URL"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "turso_monitoring_db_rw_token" {
+  description = "Turso monitoring database read-write token"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
 variable "optimizer_cpu_limit" {
   description = "CPU limit for image optimizer service"
   type        = string

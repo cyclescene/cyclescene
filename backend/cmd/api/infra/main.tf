@@ -109,15 +109,17 @@ module "api_service" {
   env_vars = merge(
     var.env_vars,
     {
-      STAGING_BUCKET_NAME   = module.user_media_bucket.bucket_name
-      GCP_PROJECT           = var.project_id
-      SERVICE_ACCOUNT_EMAIL = module.api_service_account.email
-      TURSO_DB_URL          = var.turso_db_url
-      TURSO_DB_RW_TOKEN     = var.turso_db_rw_token
-      IMAGE_OPTIMIZER_URL   = var.image_optimizer_url
-      EVENTARC_CHANNEL_NAME = var.eventarc_channel_name
-      RESEND_API_KEY        = var.resend_api_key
-      EDIT_LINK_BASE_URL    = var.edit_link_base_url
+      STAGING_BUCKET_NAME      = module.user_media_bucket.bucket_name
+      GCP_PROJECT              = var.project_id
+      SERVICE_ACCOUNT_EMAIL    = module.api_service_account.email
+      TURSO_DB_URL             = var.turso_db_url
+      TURSO_DB_RW_TOKEN        = var.turso_db_rw_token
+      TURSO_MONITORING_DB_URL  = var.turso_monitoring_db_url
+      TURSO_MONITORING_DB_RW_TOKEN = var.turso_monitoring_db_rw_token
+      IMAGE_OPTIMIZER_URL      = var.image_optimizer_url
+      EVENTARC_CHANNEL_NAME    = var.eventarc_channel_name
+      RESEND_API_KEY           = var.resend_api_key
+      EDIT_LINK_BASE_URL       = var.edit_link_base_url
     }
   )
 
