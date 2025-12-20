@@ -36,8 +36,8 @@ module "scheduler_service_account" {
   project_id   = var.project_id
 
   roles = [
-    "roles/run.invoker",                           # Permission to invoke Cloud Run jobs
-    "roles/serviceusage.serviceUsageConsumer"      # Permission to call Google APIs (IAM, etc)
+    "roles/run.invoker",                      # Permission to invoke Cloud Run jobs
+    "roles/serviceusage.serviceUsageConsumer" # Permission to call Google APIs (IAM, etc)
   ]
 }
 
@@ -65,7 +65,7 @@ module "scraper_job_service_account" {
   project_id   = var.project_id
 
   roles = [
-    "roles/serviceusage.serviceUsageConsumer"  # Required to call Google APIs (geocoding)
+    "roles/serviceusage.serviceUsageConsumer" # Required to call Google APIs (geocoding)
   ]
 }
 
@@ -80,9 +80,9 @@ resource "google_service_account_iam_member" "wif_can_act_as_scraper_job" {
 module "scraper_job" {
   source = "../../../../infrastructure/modules/cloud-run-job"
 
-  job_name               = "pdx-scraper"
-  image                  = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/scraperv2:${var.image_tag}"
-  service_account_email  = module.scraper_job_service_account.email
+  job_name              = "pdx-scraper"
+  image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/scraperv2:${var.image_tag}"
+  service_account_email = module.scraper_job_service_account.email
 
   env_vars = var.env_vars
 
@@ -124,9 +124,9 @@ resource "google_service_account_iam_member" "scheduler_user" {
 module "scraper_schedule" {
   source = "../../../../infrastructure/modules/cloud-scheduler"
 
-  job_name    = "scraper-every-3h"
-  description = "Trigger scraper job every 3 hours"
-  schedule    = "0 */3 * * *" # Every 3 hours (00:00, 03:00, 06:00, 09:00, 12:00, 15:00, 18:00, 21:00)
+  job_name    = "scraper-every-30m"
+  description = "Trigger scraper job every 30 minutes"
+  schedule    = "*/30 * * * *" # Every 30 minutes
   time_zone   = var.scraper_timezone
 
   http_target = {
