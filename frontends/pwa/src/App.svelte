@@ -32,10 +32,8 @@
     VIEW_SAVED,
     VIEW_SETTINGS,
   } from "./lib/stores.js";
-  import { getUpcomingRides, getPastRides, getShiftRides } from "./lib/api.js";
+  import { getUpcomingRides, getPastRides } from "./lib/api.js";
   import { getRidesfromDB, saveRidesToDB } from "./lib/db.js";
-  import { filterActiveShiftEvents } from "./lib/utils.js";
-  import { CITY_CODE } from "./lib/config.js";
   import DatePickerView from "./views/DatePickerView.svelte";
 
   import ListView from "./views/ListView.svelte";
@@ -105,24 +103,10 @@
             // Fetch fresh data and upsert (keeps existing markers visible during sync)
             const upcomingRides = await getUpcomingRides();
             const pastRides = await getPastRides();
-            let freshRides = [...upcomingRides, ...pastRides];
-
-            // Handle Shift2Bikes for PDX
-            if (CITY_CODE === 'pdx') {
-              const shiftRides = await getShiftRides();
-              freshRides = filterActiveShiftEvents(freshRides, shiftRides);
-            }
-
-            // Deduplicate rides by ID
-            const seenIds = new Set<string>();
-            const dedupedRides = freshRides.filter(ride => {
-              if (seenIds.has(ride.id)) return false;
-              seenIds.add(ride.id);
-              return true;
-            });
+            const freshRides = [...upcomingRides, ...pastRides];
 
             // Save to DB (upserts existing, adds new, removes stale)
-            await saveRidesToDB(dedupedRides);
+            await saveRidesToDB(freshRides);
 
             // Refresh store from DB
             const updatedRides = await getRidesfromDB();
