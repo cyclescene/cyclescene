@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/spacesedan/cyclescene/functions/internal/api/events"
+	"github.com/spacesedan/cyclescene/backend/internal/api/events"
 )
 
 type Handler struct {

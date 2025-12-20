@@ -9,7 +9,7 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/spacesedan/cyclescene/functions/internal/imageprocessing"
+	"github.com/spacesedan/cyclescene/backend/internal/imageprocessing"
 )
 
 type OptimizeRequest struct {

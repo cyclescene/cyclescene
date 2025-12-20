@@ -8,7 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
-	"github.com/spacesedan/cyclescene/functions/internal/imageprocessing"
+	"github.com/spacesedan/cyclescene/backend/internal/imageprocessing"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 

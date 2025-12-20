@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
-	"github.com/spacesedan/cyclescene/functions/internal/routes"
-	"github.com/spacesedan/cyclescene/functions/internal/scraper"
+	"github.com/spacesedan/cyclescene/backend/internal/routes"
+	"github.com/spacesedan/cyclescene/backend/internal/scraper"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 

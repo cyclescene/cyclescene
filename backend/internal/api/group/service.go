@@ -9,7 +9,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
+	"github.com/spacesedan/cyclescene/backend/internal/api/magiclink"
 )
 
 type Service struct {

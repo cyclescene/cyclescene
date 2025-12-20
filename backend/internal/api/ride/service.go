@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/spacesedan/cyclescene/functions/internal/api/magiclink"
-	"github.com/spacesedan/cyclescene/functions/internal/routes"
-	"github.com/spacesedan/cyclescene/functions/internal/scraper"
+	"github.com/spacesedan/cyclescene/backend/internal/api/magiclink"
+	"github.com/spacesedan/cyclescene/backend/internal/routes"
+	"github.com/spacesedan/cyclescene/backend/internal/scraper"
 )
 
 type Service struct {

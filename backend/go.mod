@@ -1,4 +1,4 @@
-module github.com/spacesedan/cyclescene/functions
+module github.com/spacesedan/cyclescene/backend
 
 go 1.24.0
 
