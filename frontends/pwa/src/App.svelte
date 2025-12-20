@@ -1,6 +1,5 @@
-<script>
+<script lang="ts">
   // Cycle Scene PWA - Main Application
-  import { onMount } from "svelte";
   import "./app.css";
   import DatePicker from "./components/datePicker.svelte";
   import NavigationBar from "./components/navigationBar.svelte";
@@ -32,8 +31,7 @@
     VIEW_SAVED,
     VIEW_SETTINGS,
   } from "./lib/stores.js";
-  import { getUpcomingRides, getPastRides } from "./lib/api.js";
-  import { getRidesfromDB, saveRidesToDB } from "./lib/db.js";
+  import { triggerForegroundSync } from "./lib/stores.js";
   import DatePickerView from "./views/DatePickerView.svelte";
 
   import ListView from "./views/ListView.svelte";
@@ -55,73 +53,61 @@
   import { SvelteSet } from "svelte/reactivity";
   import SubDataView from "./views/sub/subDataView.svelte";
 
-  onMount(async () => {
-    // Set dynamic page title based on city
-    const cityCode = import.meta.env.VITE_CITY_CODE || "pdx";
-    const cityNames = {
-      pdx: "Portland",
-      slc: "Salt Lake City",
-    };
-    const cityName = cityNames[cityCode] || cityCode.toUpperCase();
-    document.title = `Cycle Scene - ${cityName}`;
+  // Initialization effect (runs once on mount)
+  let initialized = $state(false);
 
-    await rides.init();
-    await savedRidesStore.init();
-    await routesStore.init();
+  $effect(() => {
+    if (initialized) return;
 
-    // Tell service worker the city code (non-blocking)
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.ready
-        .then((registration) => {
-          if (registration.active) {
-            registration.active.postMessage({
-              type: "SET_CITY_CODE",
-              cityCode: cityCode,
-            });
-          }
-        })
-        .catch((err) => {
-          console.error("Service worker error:", err);
-        });
-    }
+    (async () => {
+      // Set dynamic page title based on city
+      const cityCode = import.meta.env.VITE_CITY_CODE || "pdx";
+      const cityNames = {
+        pdx: "Portland",
+        slc: "Salt Lake City",
+      };
+      const cityName = cityNames[cityCode] || cityCode.toUpperCase();
+      document.title = `Cycle Scene - ${cityName}`;
 
-    mapStore.fitMap();
+      await rides.init();
+      await savedRidesStore.init();
+      await routesStore.init();
+
+      // Tell service worker the city code (non-blocking)
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.ready
+          .then((registration) => {
+            if (registration.active) {
+              registration.active.postMessage({
+                type: "SET_CITY_CODE",
+                cityCode: cityCode,
+              });
+            }
+          })
+          .catch((err) => {
+            console.error("Service worker error:", err);
+          });
+      }
+
+      initialized = true;
+    })();
   });
 
   // Automatic sync on app focus (critical for iOS, helpful for all platforms)
   $effect(() => {
-    const handleVisibilityChange = async () => {
+    const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         // Check if data is stale (> 30 minutes old)
         const lastSync = $syncStatus.lastSyncTime;
-        const isStale = !lastSync || Date.now() - lastSync.getTime() > 30 * 60 * 1000;
+        const isStale =
+          !lastSync || Date.now() - lastSync.getTime() > 30 * 60 * 1000;
 
         if (isStale && navigator.onLine) {
-          console.log("[App] Data is stale, auto-syncing...");
-          syncStatus.setSyncing();
-          try {
-            // Fetch fresh data and upsert (keeps existing markers visible during sync)
-            const upcomingRides = await getUpcomingRides();
-            const pastRides = await getPastRides();
-            const freshRides = [...upcomingRides, ...pastRides];
-
-            // Save to DB (upserts existing, adds new, removes stale)
-            await saveRidesToDB(freshRides);
-
-            // Refresh store from DB
-            const updatedRides = await getRidesfromDB();
-            rides.set({ loading: false, loadingStage: "", rideData: updatedRides, error: null });
-
-            syncStatus.setSuccess();
-          } catch (error) {
-            syncStatus.setError(error instanceof Error ? error.message : String(error));
-          }
+          console.log("[App] Data is stale, triggering sync...");
+          triggerForegroundSync();
         }
       }
     };
-
-    // Also check on initial load
-    handleVisibilityChange();
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
@@ -130,31 +116,26 @@
     };
   });
 
-  const headerMap = {
-    [VIEW_MAP]: DatePicker,
-    [VIEW_LIST]: DatePicker,
-    [VIEW_DATE_PICKER]: DatePicker,
-    [VIEW_OTHER_RIDES]: RideDetailsTopBar,
-    [VIEW_RIDE_DETAILS]: RideDetailsTopBar,
-    [VIEW_SAVED]: SavedTopBar,
-    [VIEW_SETTINGS]: SettingsTopBar,
-  };
-
   const SUB_VIEWS_SET = new SvelteSet(SUB_VIEWS);
 
-  $: ActiveHeaderComponent = (() => {
-    const active = $activeView;
+  let ActiveHeader = $derived(
+    $activeView === VIEW_MAP ||
+      $activeView === VIEW_DATE_PICKER ||
+      $activeView === VIEW_LIST
+      ? DatePicker
+      : $activeView === VIEW_OTHER_RIDES || $activeView === VIEW_RIDE_DETAILS
+        ? RideDetailsTopBar
+        : $activeView === VIEW_SAVED
+          ? SavedTopBar
+          : $activeView === VIEW_SETTINGS
+            ? SettingsTopBar
+            : DatePicker,
+  );
 
-    if (headerMap[active]) {
-      return headerMap[active];
-    }
-
-    if (SUB_VIEWS_SET.has(active)) {
-      return SettingsSubTopBar;
-    }
-
-    return null;
-  })();
+  // Sub-view header for settings sub-views
+  let ActiveSubHeader = $derived(
+    SUB_VIEWS_SET.has($activeView) ? SettingsSubTopBar : null,
+  );
 
   const viewMap = {
     [VIEW_LIST]: ListView,
@@ -173,11 +154,12 @@
     [SUB_VIEW_DATA]: SubDataView,
   };
 
-  $: ActiveComponent = viewMap[$activeView];
-  $: isMapVisible = $activeView === VIEW_MAP;
-  $: isDatePickerVisible = $activeView === VIEW_DATE_PICKER;
-  $: ridesLoading = $rides.loading;
-  $: ridesLoadingStage = $rides.loadingStage;
+  // Derived reactive values
+  let ActiveComponent = $derived(viewMap[$activeView]);
+  let isMapVisible = $derived($activeView === VIEW_MAP);
+  let isDatePickerVisible = $derived($activeView === VIEW_DATE_PICKER);
+  let ridesLoading = $derived($rides.loading);
+  let ridesLoadingStage = $derived($rides.loadingStage);
 </script>
 
 <main class="flex flex-col">
@@ -191,7 +173,11 @@
     </div>
   {/if}
   <header class="shrink">
-    <svelte:component this={ActiveHeaderComponent} />
+    {#if ActiveSubHeader}
+      <ActiveSubHeader />
+    {:else}
+      <ActiveHeader />
+    {/if}
   </header>
 
   <section class="grow view-container">
@@ -205,7 +191,7 @@
 
     {#if !isMapVisible && ActiveComponent}
       <div class="grow view-container">
-        <svelte:component this={ActiveComponent} />
+        <ActiveComponent />
       </div>
     {/if}
   </section>

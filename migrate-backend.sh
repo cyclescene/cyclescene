@@ -24,7 +24,7 @@ fi
 echo "Running backend database migrations..."
 echo "Database: $DATABASE_URL"
 
-cd db/migrations/main
+cd db/main
 DATABASE_URL="$DATABASE_URL" DATABASE_TOKEN="$DATABASE_TOKEN" geni up
 
 echo "Backend migrations completed successfully!"

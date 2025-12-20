@@ -31,7 +31,7 @@ fi
 echo "Running monitoring database migrations..."
 echo "Database: $DATABASE_URL"
 
-cd db/migrations/monitoring
+cd db/monitoring
 DATABASE_URL="$DATABASE_URL" DATABASE_TOKEN="$DATABASE_TOKEN" geni up
 
 echo "Monitoring database migrations completed successfully!"

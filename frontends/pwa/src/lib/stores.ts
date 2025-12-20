@@ -182,47 +182,40 @@ function createRidesStore() {
   return {
     subscribe,
     init: async () => {
-      update(store => ({ ...store, loading: true, loadingStage: "Fetching rides..." }))
+      update(store => ({ ...store, loading: true, loadingStage: "Loading rides from cache..." }))
       try {
+        // Load from IndexedDB immediately
         let cachedRides = await getRidesfromDB()
-        // on initial load, fetch from API if online
-        if (window.navigator.onLine === true) {
+
+        // Show cached data immediately
+        update(store => ({ ...store, loading: false, loadingStage: "", rideData: cachedRides, error: null }))
+
+        // Only fetch from API if cache is empty
+        if (cachedRides.length === 0 && window.navigator.onLine === true) {
           update(store => ({ ...store, loading: true, loadingStage: "Fetching rides from API..." }))
-          let upcomingRides = await getUpcomingRides()
-          const pastRides = await getPastRides()
-          if (CITY_CODE === 'pdx') {
-            const shiftRides = (await getShiftRides())
-            upcomingRides = filterActiveShiftEvents(upcomingRides, shiftRides)
-          }
-
-          const freshRides = [...upcomingRides, ...pastRides]
-
-          update(store => ({ ...store, loading: true, loadingStage: "Diffing rides..." }))
-          // Deduplicate rides by ID - keep first occurrence
-          const seenIds = new Set<string>()
-          const dedupedRides = freshRides.filter(ride => {
-            if (seenIds.has(ride.id)) {
-              return false
+          try {
+            let upcomingRides = await getUpcomingRides()
+            const pastRides = await getPastRides()
+            if (CITY_CODE === 'pdx') {
+              const shiftRides = (await getShiftRides())
+              upcomingRides = filterActiveShiftEvents(upcomingRides, shiftRides)
             }
-            seenIds.add(ride.id)
-            return true
-          })
 
-          update(store => ({ ...store, loading: true, loadingStage: `Saving ${dedupedRides.length} rides to cache...` }))
-          await saveRidesToDB(dedupedRides)
-          cachedRides = await getRidesfromDB()
-          // otherwise, load from IndexedDB
-        } else {
-          update(store => ({ ...store, loading: true, loadingStage: "Fetching rides from cache" }))
-          cachedRides = await getRidesfromDB()
+            const freshRides = [...upcomingRides, ...pastRides]
+
+            update(store => ({ ...store, loading: true, loadingStage: "Saving rides to cache..." }))
+            await saveRidesToDB(freshRides)
+            const newRides = await getRidesfromDB()
+            update(store => ({ ...store, loading: false, loadingStage: "", rideData: newRides, error: null }))
+          } catch (apiErr) {
+            console.error("Failed to fetch from API:", apiErr)
+            update(store => ({ ...store, loading: false, loadingStage: "", error: "Unable to fetch ride data from API" }))
+          }
         }
-
-        // call the API to get fresh rides and save them to IndexedDB on init
-        set({ loading: false, loadingStage: "", rideData: cachedRides, error: null })
       } catch (err) {
         // Still try to show cached rides even if there was an error
         const cachedRidesOnError = await getRidesfromDB().catch(() => [])
-        update(store => ({ ...store, loading: false, loadingStage: "", rideData: cachedRidesOnError, error: "Unable to get ride data" }))
+        update(store => ({ ...store, loading: false, loadingStage: "", rideData: cachedRidesOnError, error: "Unable to load rides" }))
       }
 
       if ('serviceWorker' in navigator) {
