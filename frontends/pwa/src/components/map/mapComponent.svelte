@@ -17,6 +17,7 @@
   import RidesNotShown from "../ride/ridesNotShown.svelte";
   import { loadAllMarkersForCity } from "$lib/markers";
   import { CITY_CODE, STARTING_LAT, STARTING_LNG } from "$lib/config";
+  import type { RideData } from "$lib/types";
 
   const SOURCE_ID = "ride-source";
   const ICON_NAME = "custom-bike-pin";
@@ -27,6 +28,15 @@
   let groupMarkersLoaded = $state(false);
   let groupMarkers: Record<string, string> = $state({});
   let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
+
+  function navigateToRide(ride: RideData) {
+    currentRideStore.setRide(ride);
+    mapStore.showCurrentRide(true);
+    mapStore.showNoLocationsRides(false);
+    if (mapInstance) {
+      mapStore.flyToSelected(mapInstance);
+    }
+  }
 
   function handleRideClick(e: MapLayerMouseEvent) {
     if (e.features && e.features.length > 0) {
@@ -142,6 +152,6 @@
     <ParkLayer isDarkMode={mode.current === "dark"} />
 
     <RidesNotShown />
-    <LocationCards />
+    <LocationCards onNavigateToRide={navigateToRide} />
   </MapLibre>
 </div>
