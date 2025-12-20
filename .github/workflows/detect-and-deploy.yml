@@ -5,7 +5,8 @@ on:
     branches:
       - main
     paths:
-      - 'functions/**'
+      - 'backend/**'
+      - 'db/**'
       - '.github/workflows/deploy-*.yml'
       - '.github/workflows/detect-and-deploy.yml'
   workflow_dispatch:
@@ -61,33 +62,40 @@ jobs:
           CHANGED_SERVICES=""
 
           # Check API service
-          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/api/|functions/internal/api/|functions/go\.)"; then
+          if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/api/|backend/internal/api/|backend/go\.)"; then
             CHANGED_SERVICES="$CHANGED_SERVICES api"
             echo "api=true" >> $GITHUB_OUTPUT
           fi
 
           # Check Image Optimizer
-          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/image-optimizer/|functions/internal/|functions/go\.)"; then
+          if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/image-optimizer/|backend/internal/|backend/go\.)"; then
             CHANGED_SERVICES="$CHANGED_SERVICES image-optimizer"
             echo "image-optimizer=true" >> $GITHUB_OUTPUT
           fi
 
           # Check Scraperv2
-          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/scraperv2/|functions/internal/scraper/|functions/go\.)"; then
+          if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/scraperv2/|backend/internal/scraper/|backend/go\.)"; then
             CHANGED_SERVICES="$CHANGED_SERVICES scraperv2"
             echo "scraperv2=true" >> $GITHUB_OUTPUT
           fi
 
           # Check Token Cleaner
-          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/token-cleaner/|functions/internal/|functions/go\.)"; then
+          if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/token-cleaner/|backend/internal/|backend/go\.)"; then
             CHANGED_SERVICES="$CHANGED_SERVICES token-cleaner"
             echo "token-cleaner=true" >> $GITHUB_OUTPUT
           fi
 
           # Check DB Backups
-          if echo "$CHANGED_FILES" | grep -qE "(functions/cmd/db-backups/|functions/internal/|functions/go\.)"; then
+          if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/db-backups/|backend/internal/|backend/go\.)"; then
             CHANGED_SERVICES="$CHANGED_SERVICES db-backups"
             echo "db-backups=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check database migrations
+          if echo "$CHANGED_FILES" | grep -qE "^db/"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES api scraperv2"
+            echo "api=true" >> $GITHUB_OUTPUT
+            echo "scraperv2=true" >> $GITHUB_OUTPUT
           fi
 
           # Output final service list
