@@ -2,22 +2,22 @@
 
 # Migration script for backend database
 # This script runs geni migrations for the backend database
-# It reads credentials from functions/.env
+# It reads credentials from backend/.env
 
 set -e
 
 # Load backend database credentials
-if [ ! -f "functions/.env" ]; then
-    echo "Error: functions/.env not found"
+if [ ! -f "backend/.env" ]; then
+    echo "Error: backend/.env not found"
     exit 1
 fi
 
-# Extract DATABASE_URL and DATABASE_TOKEN from functions/.env
-export DATABASE_URL=$(grep "^TURSO_DB_URL=" functions/.env | cut -d'=' -f2)
-export DATABASE_TOKEN=$(grep "^TURSO_DB_RW_TOKEN=" functions/.env | cut -d'=' -f2)
+# Extract DATABASE_URL and DATABASE_TOKEN from backend/.env
+export DATABASE_URL=$(grep "^TURSO_DB_URL=" backend/.env | cut -d'=' -f2)
+export DATABASE_TOKEN=$(grep "^TURSO_DB_RW_TOKEN=" backend/.env | cut -d'=' -f2)
 
 if [ -z "$DATABASE_URL" ] || [ -z "$DATABASE_TOKEN" ]; then
-    echo "Error: TURSO_DB_URL or TURSO_DB_RW_TOKEN not found in functions/.env"
+    echo "Error: TURSO_DB_URL or TURSO_DB_RW_TOKEN not found in backend/.env"
     exit 1
 fi
 
