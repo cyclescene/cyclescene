@@ -115,11 +115,8 @@ jobs:
 
   deploy-api:
     name: Deploy API
-    needs: [detect-changes, deploy-image-optimizer]
-    if: |
-      always() &&
-      needs.detect-changes.outputs.api == 'true' &&
-      (needs.detect-changes.outputs.image-optimizer == 'false' || needs.deploy-image-optimizer.result == 'success')
+    needs: detect-changes
+    if: needs.detect-changes.outputs.api == 'true'
     uses: ./.github/workflows/deploy-api.yml
     permissions:
       contents: read
