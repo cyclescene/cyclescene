@@ -42,13 +42,15 @@
   let startY = $state(0);
   let currentX = $state(0);
   let isDragging = $state(false);
+  let wasSwipe = $state(false);
   let cardElement = $state<HTMLElement>();
 
   function handlePointerDown(e: PointerEvent) {
     startX = e.clientX;
     startY = e.clientY;
+    currentX = e.clientX;
     isDragging = true;
-    cardElement?.setPointerCapture(e.pointerId);
+    // Don't capture yet - wait to see if user is actually dragging
   }
 
   function handlePointerMove(e: PointerEvent) {
@@ -58,8 +60,11 @@
     const deltaX = currentX - startX;
     const deltaY = Math.abs(e.clientY - startY);
 
-    // Only horizontal swipes
+    // Only horizontal swipes - capture pointer once we detect movement
     if (Math.abs(deltaX) > deltaY) {
+      if (!cardElement?.hasPointerCapture(e.pointerId)) {
+        cardElement?.setPointerCapture(e.pointerId);
+      }
       e.preventDefault();
       // Apply transform with dampening (divide by 3 for resistance)
       if (cardElement) {
@@ -74,8 +79,11 @@
     const deltaX = currentX - startX;
     const swipeThreshold = 50; // minimum swipe distance in pixels
 
+    wasSwipe = false; // Default to not a swipe
+
     if (Math.abs(deltaX) > swipeThreshold) {
       // Swipe detected
+      wasSwipe = true;
       if (deltaX < 0) {
         // Swiped left → next ride
         navigateToNextRide();
@@ -87,7 +95,7 @@
       e.preventDefault();
       e.stopPropagation();
     }
-    // If deltaX < swipeThreshold, do nothing - let click event propagate naturally
+    // If deltaX < swipeThreshold, wasSwipe remains false - allow click to propagate
 
     // Reset transform
     if (cardElement) {
