@@ -62,7 +62,7 @@ registerRoute(
 
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'FORCE_FOREGROUND_SYNC') {
-    event.waitUntil(fetchAndNotifyUpdate())
+    event.waitUntil(fetchAndNotifyUpdate('manual'))
   }
   if (event.data && event.data.type === 'SET_CITY_CODE') {
     CITY_CODE = event.data.cityCode;
@@ -70,13 +70,13 @@ self.addEventListener('message', (event) => {
   }
 })
 
-const RIDES_SYNC_TAG = "update-rides-6hr"
+const RIDES_SYNC_TAG = "update-rides-30min"
 
 self.addEventListener('periodicsync', (event: PeriodicSyncEvent) => {
   console.log('Service Worker: periodicsync event', event.tag);
   if (event.tag === RIDES_SYNC_TAG) {
     event.waitUntil(
-      fetchAndNotifyUpdate().catch(err => {
+      fetchAndNotifyUpdate('periodic').catch(err => {
         console.error('Periodic sync failed:', err);
         throw err;
       })
@@ -88,7 +88,7 @@ self.addEventListener('sync', (event: any) => {
   console.log('Service Worker: background sync event', event.tag);
   if (event.tag === RIDES_SYNC_TAG) {
     event.waitUntil(
-      fetchAndNotifyUpdate().catch(err => {
+      fetchAndNotifyUpdate('foreground').catch(err => {
         console.error('Background sync failed:', err);
         throw err;
       })
@@ -96,13 +96,21 @@ self.addEventListener('sync', (event: any) => {
   }
 })
 
-async function fetchAndNotifyUpdate() {
-  console.log('Service Worker: Attempting to fetch rides update');
+async function fetchAndNotifyUpdate(syncType: "periodic" | "manual" | "foreground" = "manual") {
+  const startTime = Date.now();
+  let status = "success";
+  let errorMsg = "";
+  let rideCount = 0;
+
+  console.log('Service Worker: Attempting to fetch rides update', syncType);
 
   try {
     // Guard: only attempt if city code is set
     if (!CITY_CODE || CITY_CODE === '') {
       console.warn('Service Worker: City code not set, skipping sync');
+      status = "error";
+      errorMsg = "City code not set";
+      await logSyncEvent(syncType, status, errorMsg, 0, Date.now() - startTime);
       return;
     }
 
@@ -115,11 +123,15 @@ async function fetchAndNotifyUpdate() {
     });
 
     if (!response.ok) {
+      status = "error";
+      errorMsg = `HTTP ${response.status}: ${response.statusText}`;
       console.warn(`Service Worker: API returned ${response.status} ${response.statusText}`);
+      await logSyncEvent(syncType, status, errorMsg, 0, Date.now() - startTime);
       return; // Don't throw, just return gracefully
     }
 
     const freshData = await response.json();
+    rideCount = freshData?.rides?.length || 0;
     console.log('Service Worker: Got fresh data, notifying clients');
 
     self.clients.matchAll().then(clients => {
@@ -132,8 +144,62 @@ async function fetchAndNotifyUpdate() {
     }).catch(err => {
       console.error('Service Worker: Error notifying clients:', err);
     });
+
+    await logSyncEvent(syncType, status, errorMsg, rideCount, Date.now() - startTime);
   } catch (e) {
+    status = "error";
+    errorMsg = e instanceof Error ? e.message : String(e);
     console.error("Service Worker: Sync failed to fetch rides:", e);
+    await logSyncEvent(syncType, status, errorMsg, 0, Date.now() - startTime);
     // Don't rethrow - just log the error
   }
+}
+
+async function logSyncEvent(
+  syncType: string,
+  status: string,
+  errorMsg: string,
+  rideCount: number,
+  duration: number
+) {
+  try {
+    const clientId = await getOrCreateClientId();
+
+    await fetch("https://api.cyclescene.cc/v1/sync-logs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: clientId,
+        sync_type: syncType,
+        status,
+        error_msg: errorMsg,
+        ride_count: rideCount,
+        duration,
+        city_code: CITY_CODE,
+        timestamp: new Date().toISOString(),
+      }),
+    });
+  } catch (error) {
+    // Silently fail - don't block sync if logging fails
+    console.error("[SW] Failed to log sync event:", error);
+  }
+}
+
+async function getOrCreateClientId(): Promise<string> {
+  const cache = await caches.open("app-cache");
+  const cachedResponse = await cache.match("client-id");
+
+  if (cachedResponse) {
+    const { clientId } = await cachedResponse.json();
+    return clientId;
+  }
+
+  // Generate new client ID (UUID)
+  const clientId = crypto.randomUUID();
+  await cache.put(
+    "client-id",
+    new Response(JSON.stringify({ clientId }))
+  );
+
+  return clientId;
 }

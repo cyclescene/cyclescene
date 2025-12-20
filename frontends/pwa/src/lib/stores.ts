@@ -53,8 +53,83 @@ export const TILE_URLS = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
 };
 
-const RIDES_SYNC_TAG = "update-rides-6hr"
-const SYNC_INTERVAL = 6 * 60 * 60 * 1000
+const RIDES_SYNC_TAG = "update-rides-30min"
+const SYNC_INTERVAL = 30 * 60 * 1000
+
+// Sync status store for tracking background sync events
+interface SyncStatus {
+  lastSyncTime: Date | null;
+  lastSyncStatus: "success" | "error" | "syncing" | null;
+  lastSyncError: string | null;
+  syncCount: number;
+}
+
+function createSyncStatusStore() {
+  const { subscribe, set, update } = writable<SyncStatus>({
+    lastSyncTime: null,
+    lastSyncStatus: null,
+    lastSyncError: null,
+    syncCount: 0,
+  });
+
+  // Load from localStorage on init
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("sync-status");
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        parsed.lastSyncTime = parsed.lastSyncTime ? new Date(parsed.lastSyncTime) : null;
+        set(parsed);
+      } catch (e) {
+        console.error("Failed to parse sync status:", e);
+      }
+    }
+  }
+
+  function saveToLocalStorage(state: SyncStatus) {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("sync-status", JSON.stringify(state));
+    }
+  }
+
+  return {
+    subscribe,
+    setSyncing: () => {
+      update((state) => {
+        const newState = { ...state, lastSyncStatus: "syncing" as const };
+        saveToLocalStorage(newState);
+        return newState;
+      });
+    },
+    setSuccess: () => {
+      update((state) => {
+        const newState = {
+          ...state,
+          lastSyncTime: new Date(),
+          lastSyncStatus: "success" as const,
+          lastSyncError: null,
+          syncCount: state.syncCount + 1,
+        };
+        saveToLocalStorage(newState);
+        return newState;
+      });
+    },
+    setError: (error: string) => {
+      update((state) => {
+        const newState = {
+          ...state,
+          lastSyncTime: new Date(),
+          lastSyncStatus: "error" as const,
+          lastSyncError: error,
+        };
+        saveToLocalStorage(newState);
+        return newState;
+      });
+    },
+  };
+}
+
+export const syncStatus = createSyncStatusStore();
 
 interface RidesStore {
   loading: boolean;
@@ -91,7 +166,13 @@ function createRidesStore() {
     const swMessageListener = (event: MessageEvent) => {
       const data = event.data
       if (data.type === "RIDES_UPDATE_SUCCESSFULL" && data.data) {
-        updateStoreAndDB(data.data)
+        syncStatus.setSyncing();
+        try {
+          updateStoreAndDB(data.data)
+          syncStatus.setSuccess();
+        } catch (error) {
+          syncStatus.setError(error instanceof Error ? error.message : String(error));
+        }
       }
     }
     navigator.serviceWorker.addEventListener('message', swMessageListener)

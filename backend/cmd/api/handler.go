@@ -19,6 +19,7 @@ import (
 	"github.com/spacesedan/cyclescene/functions/internal/api/ride"
 	routesapi "github.com/spacesedan/cyclescene/functions/internal/api/routes"
 	"github.com/spacesedan/cyclescene/functions/internal/api/storage"
+	"github.com/spacesedan/cyclescene/functions/internal/api/synclog"
 )
 
 var allowedDomains = []string{
@@ -143,6 +144,10 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	routesRepo := routesapi.NewRepository(db)
 	routesHandler := routesapi.NewHandler(routesRepo)
 
+	// Sync logs handler
+	synclogRepo := synclog.NewRepository(db)
+	synclogHandler := synclog.NewHandler(synclogRepo)
+
 	r.Route("/v1", func(r chi.Router) {
 		// auth handlers -- /tokens
 		authHandler.RegisterRoutes(r)
@@ -152,6 +157,9 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 
 		// routes handlers -- /routes
 		routesHandler.RegisterRoutes(r)
+
+		// sync logs handlers -- /sync-logs
+		synclogHandler.RegisterRoutes(r)
 
 		// ride handlers scraped and user submitted -- /rides
 		r.Route("/rides", func(r chi.Router) {

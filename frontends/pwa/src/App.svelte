@@ -12,6 +12,7 @@
     rides,
     routesStore,
     savedRidesStore,
+    syncStatus,
     SUB_VIEW_ABOUT,
     SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
@@ -31,6 +32,10 @@
     VIEW_SAVED,
     VIEW_SETTINGS,
   } from "./lib/stores.js";
+  import { getUpcomingRides, getPastRides, getShiftRides } from "./lib/api.js";
+  import { getRidesfromDB, saveRidesToDB } from "./lib/db.js";
+  import { filterActiveShiftEvents } from "./lib/utils.js";
+  import { CITY_CODE } from "./lib/config.js";
   import DatePickerView from "./views/DatePickerView.svelte";
 
   import ListView from "./views/ListView.svelte";
@@ -83,6 +88,62 @@
     }
 
     mapStore.fitMap();
+  });
+
+  // Automatic sync on app focus (critical for iOS, helpful for all platforms)
+  $effect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        // Check if data is stale (> 30 minutes old)
+        const lastSync = $syncStatus.lastSyncTime;
+        const isStale = !lastSync || Date.now() - lastSync.getTime() > 30 * 60 * 1000;
+
+        if (isStale && navigator.onLine) {
+          console.log("[App] Data is stale, auto-syncing...");
+          syncStatus.setSyncing();
+          try {
+            // Fetch fresh data and upsert (keeps existing markers visible during sync)
+            const upcomingRides = await getUpcomingRides();
+            const pastRides = await getPastRides();
+            let freshRides = [...upcomingRides, ...pastRides];
+
+            // Handle Shift2Bikes for PDX
+            if (CITY_CODE === 'pdx') {
+              const shiftRides = await getShiftRides();
+              freshRides = filterActiveShiftEvents(freshRides, shiftRides);
+            }
+
+            // Deduplicate rides by ID
+            const seenIds = new Set<string>();
+            const dedupedRides = freshRides.filter(ride => {
+              if (seenIds.has(ride.id)) return false;
+              seenIds.add(ride.id);
+              return true;
+            });
+
+            // Save to DB (upserts existing, adds new, removes stale)
+            await saveRidesToDB(dedupedRides);
+
+            // Refresh store from DB
+            const updatedRides = await getRidesfromDB();
+            rides.set({ loading: false, loadingStage: "", rideData: updatedRides, error: null });
+
+            syncStatus.setSuccess();
+          } catch (error) {
+            syncStatus.setError(error instanceof Error ? error.message : String(error));
+          }
+        }
+      }
+    };
+
+    // Also check on initial load
+    handleVisibilityChange();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   });
 
   const headerMap = {
