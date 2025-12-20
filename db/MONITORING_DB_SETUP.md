@@ -36,18 +36,34 @@ TURSO_MONITORING_DB_URL=libsql://cycle-scene-monitoring-xxxxx.turso.io
 TURSO_MONITORING_DB_RW_TOKEN=eyJ...
 ```
 
-### 4. Run Database Migrations
+### 4. Initialize Database Schema
 
-The monitoring database migrations are in `db/migrations/monitoring/`.
-
-To initialize the monitoring database with the schema:
+Create the `sync_logs` table in the monitoring database. You can use the Turso console or CLI:
 
 ```bash
-# If using a migration tool
-turso db shell cycle-scene-monitoring < db/migrations/monitoring/1734782400_create_sync_logs_table.up.sql
+turso db shell cycle-scene-monitoring
 ```
 
-Or execute the migration manually in the Turso console.
+Then execute the schema creation:
+
+```sql
+CREATE TABLE IF NOT EXISTS sync_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_id TEXT NOT NULL,
+    sync_type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    error_msg TEXT,
+    ride_count INTEGER DEFAULT 0,
+    duration INTEGER DEFAULT 0,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    city_code TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_sync_logs_client_id ON sync_logs (client_id);
+CREATE INDEX IF NOT EXISTS idx_sync_logs_timestamp ON sync_logs (timestamp);
+CREATE INDEX IF NOT EXISTS idx_sync_logs_status ON sync_logs (status);
+CREATE INDEX IF NOT EXISTS idx_sync_logs_city_code ON sync_logs (city_code);
+```
 
 ## Tables
 
