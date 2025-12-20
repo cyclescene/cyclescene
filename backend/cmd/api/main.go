@@ -13,6 +13,7 @@ import (
 
 var apiHandler http.Handler
 var db *sql.DB
+var monitoringDB *sql.DB
 
 func init() {
 	var err error
@@ -23,6 +24,8 @@ func init() {
 			log.Fatalf("failed to read environment variables: %v", err)
 		}
 	}
+
+	// Connect to main database
 	db, err = ConnectToDB()
 	if err != nil {
 		log.Fatalf("unable to connect to TursoDB: %v", err)
@@ -31,9 +34,20 @@ func init() {
 	if err := db.Ping(); err != nil {
 		log.Fatalf("failed to connect to TursoDB")
 	}
-	slog.Info("Connected to to Turso")
+	slog.Info("Connected to main Turso database")
 
-	apiHandler = NewRideAPIRouter(db)
+	// Connect to monitoring database
+	monitoringDB, err = ConnectToMonitoringDB()
+	if err != nil {
+		log.Fatalf("unable to connect to Turso monitoring DB: %v", err)
+	}
+
+	if err := monitoringDB.Ping(); err != nil {
+		log.Fatalf("failed to connect to Turso monitoring DB")
+	}
+	slog.Info("Connected to monitoring Turso database")
+
+	apiHandler = NewRideAPIRouter(db, monitoringDB)
 
 }
 

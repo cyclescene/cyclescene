@@ -41,7 +41,7 @@ func isAllowedOrigin(_ *http.Request, origin string) bool {
 	return slices.Contains(allowedDomains, origin)
 }
 
-func NewRideAPIRouter(db *sql.DB) http.Handler {
+func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 	slog.Info("Initializing CycleScene API router!")
 	var corsOptions cors.Options
 
@@ -144,8 +144,8 @@ func NewRideAPIRouter(db *sql.DB) http.Handler {
 	routesRepo := routesapi.NewRepository(db)
 	routesHandler := routesapi.NewHandler(routesRepo)
 
-	// Sync logs handler
-	synclogRepo := synclog.NewRepository(db)
+	// Sync logs handler (uses monitoring DB for analytics isolation)
+	synclogRepo := synclog.NewRepository(monitoringDB)
 	synclogHandler := synclog.NewHandler(synclogRepo)
 
 	r.Route("/v1", func(r chi.Router) {
