@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"log/slog"
@@ -112,6 +114,7 @@ func main() {
 	}
 
 	var rideLocations []scraper.Location
+	var routesToUpsert []routes.RouteToUpsert
 	for i := range shift2BikesEvents.Events {
 		event := &shift2BikesEvents.Events[i]
 		event.SourcedFrom = EVENT_SOURCE
@@ -147,15 +150,29 @@ func main() {
 							distanceMi = mi
 						}
 
-						// Create route in database
-						newRouteID, err := routeRepo.CreateRoute(context.Background(), source, sourceID, routeURL, cityCode, feature, distanceKm, distanceMi)
+						// Encode GeoJSON Feature to string
+						geoJSONBytes, err := json.Marshal(feature)
 						if err != nil {
-							slog.Error("failed to create route", "error", err, "routeURL", routeURL, "event", event.Title)
-						} else {
-							slog.Info("route created successfully", "source", source, "sourceID", sourceID, "routeID", newRouteID, "distance_km", distanceKm, "event", event.Title)
-							routeCache[cacheKey] = newRouteID
-							event.RouteID = newRouteID
+							slog.Error("failed to marshal GeoJSON", "error", err, "routeURL", routeURL, "event", event.Title)
+							continue
 						}
+
+						// Generate ID for the route
+						newRouteID := generateRouteID()
+
+						// Collect route for bulk upsert
+						routesToUpsert = append(routesToUpsert, routes.RouteToUpsert{
+							ID:         newRouteID,
+							Source:     source,
+							SourceID:   sourceID,
+							SourceURL:  routeURL,
+							GeoJSON:    string(geoJSONBytes),
+							DistanceKm: distanceKm,
+							DistanceMi: distanceMi,
+							City:       cityCode,
+						})
+						routeCache[cacheKey] = newRouteID
+						event.RouteID = newRouteID
 					}
 				}
 			}
@@ -234,6 +251,12 @@ func main() {
 		log.Fatalf("unable to bulk upsert ride locations: %v", err)
 	}
 
+	// Bulk upsert routes at the end of the scrape
+	if err = routeRepo.BulkUpsertRoutes(context.Background(), routesToUpsert); err != nil {
+		slog.Error("unable to bulk upsert routes", "routes_count", len(routesToUpsert), "error", err.Error())
+		log.Fatalf("unable to bulk upsert routes: %v", err)
+	}
+
 	// store ride information
 	// No need to upsert ride data since we are using the shift2bikes API
 	// scraper will now just store route and geocode data
@@ -243,4 +266,16 @@ func main() {
 
 	}
 
+}
+
+// generateRouteID generates a unique ID for a route using UUID v4
+func generateRouteID() string {
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		// Fallback to timestamp-based ID if random fails
+		return fmt.Sprintf("%d", time.Now().UnixNano())
+	}
+	// Simple UUID v4 format
+	return fmt.Sprintf("%08x-%04x-%04x-%04x-%012x",
+		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }

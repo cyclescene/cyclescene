@@ -70,6 +70,7 @@ type Shift2BikeEvents struct {
 type Location struct {
 	ID             int     `json:"-"`
 	City           string  `json:"city"`
+	CityState      string  `json:"-"` // Extracted city/state (e.g., "Portland, OR") for geocoding queries
 	Query          string  `json:"query"`
 	Address        string  `json:"address"`
 	Latitude       float64 `json:"lat"`

@@ -191,6 +191,55 @@ func generateID() string {
 		b[0:4], b[4:6], b[6:8], b[8:10], b[10:16])
 }
 
+// RouteToUpsert represents a route ready to be inserted/updated
+type RouteToUpsert struct {
+	ID         string
+	Source     string
+	SourceID   string
+	SourceURL  string
+	GeoJSON    string
+	DistanceKm float64
+	DistanceMi float64
+	City       string
+}
+
+// BulkUpsertRoutes inserts or replaces multiple routes in a single transaction
+func (r *Repository) BulkUpsertRoutes(ctx context.Context, routesToUpsert []RouteToUpsert) error {
+	if len(routesToUpsert) == 0 {
+		return nil
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx, `
+		INSERT OR REPLACE INTO routes (id, source, source_id, source_url, geojson, distance_km, distance_mi, city, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+	`)
+	if err != nil {
+		return fmt.Errorf("failed to prepare statement: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, route := range routesToUpsert {
+		_, err := stmt.ExecContext(ctx, route.ID, route.Source, route.SourceID, route.SourceURL, route.GeoJSON, route.DistanceKm, route.DistanceMi, route.City)
+		if err != nil {
+			return fmt.Errorf("failed to execute upsert for route %s: %w", route.SourceID, err)
+		}
+		slog.Info("upserted route", "source", route.Source, "sourceID", route.SourceID, "routeID", route.ID)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	slog.Info("bulk upserted routes", "count", len(routesToUpsert))
+	return nil
+}
+
 // isUniqueConstraintError checks if error is a unique constraint violation
 func isUniqueConstraintError(err error) bool {
 	return err != nil && (err.Error() == "UNIQUE constraint failed: routes.source, routes.source_id" ||
