@@ -111,6 +111,9 @@ jobs:
           TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
           TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
           TF_VAR_turso_db_ro_token: ${{ secrets.TURSO_DB_RO_TOKEN }}
+          TF_VAR_strava_access_token: ${{ secrets.STRAVA_ACCESS_TOKEN }}
+          TF_VAR_rwgps_auth_token: ${{ secrets.RWGPS_AUTH_TOKEN }}
+          TF_VAR_rwgps_api_key: ${{ secrets.RWGPS_API_KEY }}
         run: |
           tofu init \
             -backend-config="bucket=${{ env.PROJECT_ID }}-terraform-state" \

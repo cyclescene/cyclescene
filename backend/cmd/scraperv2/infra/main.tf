@@ -84,7 +84,17 @@ module "scraper_job" {
   image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/scraperv2:${var.image_tag}"
   service_account_email = module.scraper_job_service_account.email
 
-  env_vars = var.env_vars
+  env_vars = merge(
+    var.env_vars,
+    {
+      TURSO_DB_URL       = var.turso_db_url
+      TURSO_DB_RW_TOKEN  = var.turso_db_rw_token
+      TURSO_DB_RO_TOKEN  = var.turso_db_ro_token
+      STRAVA_ACCESS_TOKEN = var.strava_access_token
+      RWGPS_AUTH_TOKEN   = var.rwgps_auth_token
+      RWGPS_API_KEY      = var.rwgps_api_key
+    }
+  )
 
   cpu_limit    = "1"
   memory_limit = "512Mi"
