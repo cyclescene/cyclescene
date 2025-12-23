@@ -94,9 +94,9 @@ func CreateLocationFromEvent(event *Shift2BikeEvent) Location {
 	// Normalize the address
 	normalizedAddress := NormalizeAddress(rawAddress)
 
-	// If address is empty, try normalizing the venue
+	// If address is empty, single word, or a useless single word, try normalizing the venue instead
 	rawVenue := strings.TrimSpace(event.Venue)
-	if normalizedAddress == "" && rawVenue != "" {
+	if (normalizedAddress == "" || (isSingleWord(normalizedAddress) && isUselessSingleWord(normalizedAddress))) && rawVenue != "" {
 		normalizedAddress = NormalizeAddress(rawVenue)
 		// Also try to extract city from venue if not found in address
 		if extractedCity == "" {
@@ -248,6 +248,54 @@ func hasIntersectionMarker(tokens []string) bool {
 		}
 	}
 	return false
+}
+
+// isSingleWord checks if a string is just one word (no spaces)
+func isSingleWord(s string) bool {
+	return strings.TrimSpace(s) != "" && !strings.Contains(strings.TrimSpace(s), " ")
+}
+
+// isUselessSingleWord checks if a single word is too generic to be useful
+func isUselessSingleWord(s string) bool {
+	s = strings.ToLower(strings.TrimSpace(s))
+
+	genericWords := map[string]bool{
+		"circle":    true,
+		"park":      true,
+		"plaza":     true,
+		"square":    true,
+		"trail":     true,
+		"bridge":    true,
+		"path":      true,
+		"way":       true,
+		"lane":      true,
+		"loop":      true,
+		"road":      true,
+		"street":    true,
+		"avenue":    true,
+		"ave":       true,
+		"drive":     true,
+		"dr":        true,
+		"court":     true,
+		"ct":        true,
+		"place":     true,
+		"pl":        true,
+		"corner":    true,
+		"junction":  true,
+		"lot":       true,
+		"area":      true,
+		"zone":      true,
+		"n":         true,
+		"s":         true,
+		"e":         true,
+		"w":         true,
+		"ne":        true,
+		"nw":        true,
+		"se":        true,
+		"sw":        true,
+	}
+
+	return genericWords[s]
 }
 
 // parseIntersection extracts and normalizes an intersection address
