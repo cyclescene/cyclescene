@@ -13,4 +13,5 @@ type SyncLog struct {
 	Duration  int       `json:"duration"`     // Sync duration in milliseconds
 	Timestamp time.Time `json:"timestamp"`
 	CityCode  string    `json:"city_code"`
+	OS        string    `json:"os"`           // Operating system (iOS, Android, Linux, Windows, macOS, etc.)
 }

@@ -4,7 +4,7 @@
 --
 
 CREATE TABLE schema_migrations (id VARCHAR(255) NOT NULL PRIMARY KEY);
-CREATE TABLE sync_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, client_id TEXT NOT NULL, sync_type TEXT NOT NULL, status TEXT NOT NULL, error_msg TEXT, ride_count INTEGER DEFAULT 0, duration INTEGER DEFAULT 0, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, city_code TEXT);
+CREATE TABLE sync_logs (id INTEGER PRIMARY KEY AUTOINCREMENT, client_id TEXT NOT NULL, sync_type TEXT NOT NULL, status TEXT NOT NULL, error_msg TEXT, ride_count INTEGER DEFAULT 0, duration INTEGER DEFAULT 0, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, city_code TEXT, os TEXT DEFAULT 'Unknown');
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE INDEX idx_sync_logs_client_id ON sync_logs (client_id);
 CREATE INDEX idx_sync_logs_timestamp ON sync_logs (timestamp);

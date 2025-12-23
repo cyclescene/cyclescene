@@ -124,13 +124,23 @@ async function fetchAndNotifyUpdate(syncType: "periodic" | "manual" | "foregroun
 
     if (!response.ok) {
       status = "error";
-      errorMsg = `HTTP ${response.status}: ${response.statusText}`;
-      console.warn(`Service Worker: API returned ${response.status} ${response.statusText}`);
+      const statusText = response.statusText || 'No status text';
+      errorMsg = `HTTP ${response.status} ${statusText} from ${url}`;
+      console.warn(`Service Worker: API returned ${response.status} ${statusText}`);
       await logSyncEvent(syncType, status, errorMsg, 0, Date.now() - startTime);
       return; // Don't throw, just return gracefully
     }
 
-    const freshData = await response.json();
+    let freshData;
+    try {
+      freshData = await response.json();
+    } catch (parseErr) {
+      status = "error";
+      errorMsg = `Failed to parse API response: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`;
+      console.error("Service Worker: Failed to parse API response:", parseErr);
+      await logSyncEvent(syncType, status, errorMsg, 0, Date.now() - startTime);
+      return;
+    }
     rideCount = freshData?.rides?.length || 0;
     console.log('Service Worker: Got fresh data, notifying clients');
 
@@ -164,6 +174,7 @@ async function logSyncEvent(
 ) {
   try {
     const clientId = await getOrCreateClientId();
+    const os = detectOS();
 
     await fetch("https://api.cyclescene.cc/v1/sync-logs", {
       method: "POST",
@@ -176,12 +187,33 @@ async function logSyncEvent(
         ride_count: rideCount,
         duration,
         city_code: CITY_CODE,
+        os,
         timestamp: new Date().toISOString(),
       }),
     });
   } catch (error) {
     // Silently fail - don't block sync if logging fails
     console.error("[SW] Failed to log sync event:", error);
+  }
+}
+
+function detectOS(): string {
+  const userAgent = self.navigator.userAgent.toLowerCase();
+
+  if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+    return 'iOS';
+  } else if (userAgent.includes('android')) {
+    return 'Android';
+  } else if (userAgent.includes('win')) {
+    return 'Windows';
+  } else if (userAgent.includes('mac')) {
+    return 'macOS';
+  } else if (userAgent.includes('linux')) {
+    return 'Linux';
+  } else if (userAgent.includes('x11')) {
+    return 'Unix';
+  } else {
+    return 'Unknown';
   }
 }
 

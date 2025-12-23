@@ -17,8 +17,8 @@ func NewRepository(db *sql.DB) *Repository {
 // LogSync inserts a new sync log entry into the database
 func (r *Repository) LogSync(log *SyncLog) error {
 	query := `
-		INSERT INTO sync_logs (client_id, sync_type, status, error_msg, ride_count, duration, timestamp, city_code)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO sync_logs (client_id, sync_type, status, error_msg, ride_count, duration, timestamp, city_code, os)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.Exec(
@@ -31,6 +31,7 @@ func (r *Repository) LogSync(log *SyncLog) error {
 		log.Duration,
 		log.Timestamp,
 		log.CityCode,
+		log.OS,
 	)
 
 	if err != nil {
@@ -51,7 +52,7 @@ func (r *Repository) LogSync(log *SyncLog) error {
 // GetRecentLogs retrieves recent sync logs across all clients
 func (r *Repository) GetRecentLogs(limit int) ([]SyncLog, error) {
 	query := `
-		SELECT id, client_id, sync_type, status, error_msg, ride_count, duration, timestamp, city_code
+		SELECT id, client_id, sync_type, status, error_msg, ride_count, duration, timestamp, city_code, os
 		FROM sync_logs
 		ORDER BY timestamp DESC
 		LIMIT ?
@@ -77,6 +78,7 @@ func (r *Repository) GetRecentLogs(limit int) ([]SyncLog, error) {
 			&log.Duration,
 			&log.Timestamp,
 			&log.CityCode,
+			&log.OS,
 		)
 		if err != nil {
 			slog.Error("Failed to scan log row", "error", err)
@@ -96,7 +98,7 @@ func (r *Repository) GetRecentLogs(limit int) ([]SyncLog, error) {
 // GetClientLogs retrieves sync logs for a specific client
 func (r *Repository) GetClientLogs(clientID string, limit int) ([]SyncLog, error) {
 	query := `
-		SELECT id, client_id, sync_type, status, error_msg, ride_count, duration, timestamp, city_code
+		SELECT id, client_id, sync_type, status, error_msg, ride_count, duration, timestamp, city_code, os
 		FROM sync_logs
 		WHERE client_id = ?
 		ORDER BY timestamp DESC
@@ -123,6 +125,7 @@ func (r *Repository) GetClientLogs(clientID string, limit int) ([]SyncLog, error
 			&log.Duration,
 			&log.Timestamp,
 			&log.CityCode,
+			&log.OS,
 		)
 		if err != nil {
 			slog.Error("Failed to scan log row", "error", err)
