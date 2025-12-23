@@ -28,6 +28,18 @@
       : ride?.image,
   );
 
+  function normalizeUrl(url: string): string {
+    if (!url) return "";
+    // If URL already has a protocol, return as-is
+    if (/^https?:\/\//.test(url)) return url;
+    // Otherwise prepend https://
+    return `https://${url}`;
+  }
+
+  const webUrl = $derived.by(() =>
+    ride?.weburl ? normalizeUrl(ride.weburl) : "",
+  );
+
   $inspect(ride);
 
   function handleOpenNativeMapApp() {
@@ -187,7 +199,7 @@
             {/if}
 
             {#if ride.weburl && ride.webname}
-              <a href={ride.weburl} target="_blank" rel="noopener noreferrer">
+              <a href={webUrl} target="_blank" rel="noopener noreferrer">
                 <Card.Title
                   class="text-yellow-400 mt-1 flex flex-row gap-1 items-center"
                 >
