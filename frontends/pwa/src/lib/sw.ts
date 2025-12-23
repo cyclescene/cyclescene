@@ -13,7 +13,7 @@ let CITY_CODE = "pdx" // fallback, will be updated via postMessage
 
 // Compute API URL dynamically based on city code
 function getApiUpcomingUrl() {
-  return API_BASE + "/upcoming?city=" + CITY_CODE;
+  return API_BASE + "/v1/rides/upcoming?city=" + CITY_CODE;
 }
 const ONE_HOUR_IN_SECONDS = 60 * 60
 const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7
