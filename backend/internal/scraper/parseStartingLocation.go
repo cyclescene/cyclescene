@@ -136,15 +136,13 @@ cleanup:
 
 func CreateGeoCodingQuery(loc *Location) string {
 	address := loc.Address
-	venue := loc.Venue
 
+	// Use normalized address if available, otherwise use venue as fallback
 	var baseQuery string
-	if address != "" && venue != "" {
-		baseQuery = fmt.Sprintf("%s, %s", address, venue)
-	} else if address != "" {
+	if address != "" {
 		baseQuery = address
-	} else if venue != "" {
-		baseQuery = venue
+	} else if loc.Venue != "" {
+		baseQuery = loc.Venue
 	} else {
 		return ""
 	}
