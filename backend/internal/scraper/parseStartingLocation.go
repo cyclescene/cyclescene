@@ -94,9 +94,19 @@ func CreateLocationFromEvent(event *Shift2BikeEvent) Location {
 	// Normalize the address
 	normalizedAddress := NormalizeAddress(rawAddress)
 
+	// If address is empty, try normalizing the venue
+	rawVenue := strings.TrimSpace(event.Venue)
+	if normalizedAddress == "" && rawVenue != "" {
+		normalizedAddress = NormalizeAddress(rawVenue)
+		// Also try to extract city from venue if not found in address
+		if extractedCity == "" {
+			extractedCity = extractCityState(rawVenue)
+		}
+	}
+
 	loc := Location{
 		Address:        normalizedAddress,
-		Venue:          strings.TrimSpace(event.Venue),
+		Venue:          rawVenue,
 		Details:        strings.TrimSpace(event.Details),
 		CityState:      extractedCity, // Store extracted city/state
 		NeedsGeocoding: true,
