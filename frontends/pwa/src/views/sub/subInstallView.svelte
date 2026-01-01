@@ -18,55 +18,44 @@
         </p>
       </div>
 
-      <!-- iOS Instructions Card -->
-      <div class="space-y-6">
+      <!-- iOS Instructions -->
+      <div class="space-y-5">
         <!-- Step 1 -->
-        <div class="flex gap-4">
+        <div class="flex gap-4 items-center">
           <div
             class="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold text-lg"
           >
             1
           </div>
-          <div class="flex-grow pt-1">
-            <p class="font-semibold text-base">Click the Share button</p>
-            <p class="text-sm text-muted-foreground mt-2">
-              Tap the share icon
-              <IconShare class="inline w-4 h-4 mx-1" />
-              at the bottom of Safari
-            </p>
-          </div>
+          <p class="font-semibold text-base flex items-center gap-2">
+            <IconShare class="w-5 h-5" />
+            Click the Share button
+          </p>
         </div>
 
         <!-- Step 2 -->
-        <div class="flex gap-4">
+        <div class="flex gap-4 items-center">
           <div
             class="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold text-lg"
           >
             2
           </div>
-          <div class="flex-grow pt-1">
-            <p class="font-semibold text-base">Scroll and click "Add to Home Screen"</p>
-            <p class="text-sm text-muted-foreground mt-2">
-              Swipe through the menu to find this option
-            </p>
-          </div>
+          <p class="font-semibold text-base">
+            Scroll and click "Add to Home Screen"
+          </p>
         </div>
 
         <!-- Step 3 -->
-        <div class="flex gap-4">
+        <div class="flex gap-4 items-center">
           <div
             class="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold text-lg"
           >
             3
           </div>
-          <div class="flex-grow pt-1">
-            <p class="font-semibold text-base">Click Add</p>
-            <p class="text-sm text-muted-foreground mt-2">
-              Tap the
-              <IconAdd class="inline w-4 h-4 mx-1" />
-              button to finish
-            </p>
-          </div>
+          <p class="font-semibold text-base flex items-center gap-2">
+            <IconAdd class="w-5 h-5" />
+            Click Add
+          </p>
         </div>
       </div>
 
