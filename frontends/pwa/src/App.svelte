@@ -7,12 +7,10 @@
 
   import {
     activeView,
-    mapStore,
+    installPromptEvent,
     rides,
     routesStore,
     savedRidesStore,
-    syncStatus,
-    installPromptEvent,
     SUB_VIEW_ABOUT,
     SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
@@ -21,9 +19,12 @@
     SUB_VIEW_COVID_SAFETY_RIDES,
     SUB_VIEW_DATA,
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
+    SUB_VIEW_INSTALL,
     SUB_VIEW_PRIVACY_POLICY,
     SUB_VIEW_TERMS_OF_USE,
     SUB_VIEWS,
+    syncStatus,
+    triggerForegroundSync,
     VIEW_DATE_PICKER,
     VIEW_LIST,
     VIEW_MAP,
@@ -32,27 +33,27 @@
     VIEW_SAVED,
     VIEW_SETTINGS,
   } from "./lib/stores.js";
-  import { triggerForegroundSync } from "./lib/stores.js";
   import DatePickerView from "./views/DatePickerView.svelte";
 
+  import { ModeWatcher } from "mode-watcher";
+  import { SvelteSet } from "svelte/reactivity";
+  import SavedTopBar from "./components/saved/savedTopbar.svelte";
+  import SettingsSubTopBar from "./components/settings/settingsSubTopBar.svelte";
+  import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
   import ListView from "./views/ListView.svelte";
   import MapView from "./views/MapView.svelte";
   import OtherRidesView from "./views/OtherRidesView.svelte";
   import RideView from "./views/RideView.svelte";
   import SavedView from "./views/SavedView.svelte";
-  import SavedTopBar from "./components/saved/savedTopbar.svelte";
-  import { ModeWatcher } from "mode-watcher";
   import SettingsView from "./views/SettingsView.svelte";
-  import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
-  import SettingsSubTopBar from "./components/settings/settingsSubTopBar.svelte";
-  import SubAppearanceView from "./views/sub/subAppearanceView.svelte";
-  import SubRideListView from "./views/sub/subRideListView.svelte";
-  import SubPrivacyPolicyView from "./views/sub/subPrivacyPolicyView.svelte";
   import SubAboutView from "./views/sub/subAboutView.svelte";
-  import SubTermsOfServiceView from "./views/sub/subTermsOfServiceView.svelte";
+  import SubAppearanceView from "./views/sub/subAppearanceView.svelte";
   import SubChangelogView from "./views/sub/subChangelogView.svelte";
-  import { SvelteSet } from "svelte/reactivity";
   import SubDataView from "./views/sub/subDataView.svelte";
+  import SubPrivacyPolicyView from "./views/sub/subPrivacyPolicyView.svelte";
+  import SubRideListView from "./views/sub/subRideListView.svelte";
+  import SubTermsOfServiceView from "./views/sub/subTermsOfServiceView.svelte";
+  import SubInstallView from "./views/sub/subInstallView.svelte";
 
   // Initialization effect (runs once on mount)
   let initialized = $state(false);
@@ -153,6 +154,7 @@
     [SUB_VIEW_ABOUT]: SubAboutView,
     [SUB_VIEW_CHANGE_LOG]: SubChangelogView,
     [SUB_VIEW_DATA]: SubDataView,
+    [SUB_VIEW_INSTALL]: SubInstallView,
   };
 
   // Derived reactive values

@@ -1,8 +1,5 @@
 {
   "extends": "@tsconfig/svelte/tsconfig.json",
-  "files": [
-    ".src/ambient-imports.d.ts"
-  ],
   "include": [
     "src/**/*"
   ],
@@ -10,12 +7,13 @@
     "node_modules/*"
   ],
   "compilerOptions": {
-    // --- ADD/UPDATE THESE LINES ---
     "moduleResolution": "bundler",
-    "module": "esnext", // Often required when using "bundler"
-    "allowSyntheticDefaultImports": true, // Often helpful for Svelte/TS/Vite projects
+    "module": "esnext",
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    // -----------------------------
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
     "paths": {
       "$lib": [
         "./src/lib"

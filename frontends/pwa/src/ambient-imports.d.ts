@@ -1,5 +1,8 @@
+import type { ComponentType } from 'svelte';
+
 declare module '*.svelte' {
-  export { SvelteComponent as default } from 'svelte';
+  const component: ComponentType;
+  export default component;
 }
 
 // Type definition for PWA appinstalled event

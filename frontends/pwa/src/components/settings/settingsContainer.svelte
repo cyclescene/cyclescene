@@ -15,6 +15,7 @@
     SUB_VIEW_COVID_SAFETY_RIDES,
     SUB_VIEW_DATA,
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
+    SUB_VIEW_INSTALL,
     SUB_VIEW_PRIVACY_POLICY,
     SUB_VIEW_TERMS_OF_USE,
   } from "$lib/stores";
@@ -69,12 +70,16 @@
   async function handleInstall() {
     console.log("[SettingsContainer] handleInstall");
     const event = $installPromptEvent;
+
     if (event) {
+      // Chromium browsers: Show native install prompt immediately
       console.log("[SettingsContainer] Showing install prompt");
       event.prompt();
       installPromptEvent.set(null);
     } else {
-      console.log("[SettingsContainer] No install prompt available");
+      // iOS/other browsers: Navigate to install instructions view
+      console.log("[SettingsContainer] Navigating to install view");
+      navigateTo(SUB_VIEW_INSTALL);
     }
   }
 </script>
