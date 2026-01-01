@@ -18,6 +18,31 @@ const FALLBACK_LNG = STARTING_LNG
 // Install prompt store
 export const installPromptEvent = writable<Event | null>(null);
 
+// Check if app is installable (not already installed)
+export const isAppInstallable = derived(installPromptEvent, ($installPromptEvent) => {
+  // If we're in browser (not client-side yet), return false
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  // Check if already installed (iOS/Safari standalone mode)
+  const isStandalone = (window.navigator as any).standalone === true;
+  if (isStandalone) {
+    return false; // App is already installed
+  }
+
+  // Check if there's a beforeinstallprompt event (Chromium browsers)
+  if ($installPromptEvent) {
+    return true; // Can install via native prompt
+  }
+
+  // For iOS/Safari not in standalone mode, show install instructions
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+
+  return isIOS; // Show install button for iOS users
+});
+
 // views
 export const VIEW_MAP = 'map'
 export const VIEW_LIST = 'list'
