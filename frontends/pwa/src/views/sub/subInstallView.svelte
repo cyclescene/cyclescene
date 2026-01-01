@@ -40,7 +40,8 @@
           >
             2
           </div>
-          <p class="font-semibold text-base">
+          <p class="font-semibold text-base flex items-center gap-2">
+            <IconAdd class="w-5 h-5" />
             Scroll and click "Add to Home Screen"
           </p>
         </div>
@@ -52,8 +53,7 @@
           >
             3
           </div>
-          <p class="font-semibold text-base flex items-center gap-2">
-            <IconAdd class="w-5 h-5" />
+          <p class="font-semibold text-base">
             Click Add
           </p>
         </div>
