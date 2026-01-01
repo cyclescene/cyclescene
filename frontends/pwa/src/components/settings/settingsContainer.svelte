@@ -99,20 +99,18 @@
         </Card.Header>
         <Separator class="" />
 
-        <!-- Install (only show if app can be installed) -->
-        {#if $installPromptEvent}
-          <Card.Header class=" flex p-0">
-            <Button
-              variant="ghost"
-              onclick={handleInstall}
-              class="w-full justify-center"
-            >
-              <Card.Title class="grow text-left">Install</Card.Title>
-              <IconChevronRight class="shrink" />
-            </Button>
-          </Card.Header>
-          <Separator class="" />
-        {/if}
+        <!-- Install -->
+        <Card.Header class=" flex p-0">
+          <Button
+            variant="ghost"
+            onclick={handleInstall}
+            class="w-full justify-center"
+          >
+            <Card.Title class="grow text-left">Install</Card.Title>
+            <IconChevronRight class="shrink" />
+          </Button>
+        </Card.Header>
+        <Separator class="" />
         <!-- Appearance -->
         <Card.Header class=" flex p-0">
           <Button

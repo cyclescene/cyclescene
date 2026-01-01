@@ -164,11 +164,6 @@
 </script>
 
 <svelte:window
-  onbeforeinstallprompt={(event) => {
-    console.log("[App] beforeinstallprompt event fired!");
-    event.preventDefault();
-    installPromptEvent.set(event);
-  }}
   onappinstalled={() => {
     console.log("[App] App installed!");
     installPromptEvent.set(null);
