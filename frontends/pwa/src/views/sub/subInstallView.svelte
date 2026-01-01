@@ -28,8 +28,8 @@
             1
           </div>
           <p class="font-semibold text-base flex items-center gap-2">
-            <IconShare class="w-5 h-5" />
             Click the Share button
+            <IconShare class="w-5 h-5" />
           </p>
         </div>
 
@@ -41,8 +41,8 @@
             2
           </div>
           <p class="font-semibold text-base flex items-center gap-2">
-            <IconAdd class="w-5 h-5" />
             Scroll and click "Add to Home Screen"
+            <IconAdd class="w-5 h-5" />
           </p>
         </div>
 
@@ -53,9 +53,7 @@
           >
             3
           </div>
-          <p class="font-semibold text-base">
-            Click Add
-          </p>
+          <p class="font-semibold text-base">Click Add</p>
         </div>
       </div>
 
