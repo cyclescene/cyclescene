@@ -6,6 +6,7 @@
   import { CITY_CODE } from "$lib/config";
   import {
     navigateTo,
+    installPromptEvent,
     SUB_VIEW_ABOUT,
     SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
@@ -64,12 +65,27 @@
       console.error("Error:", error);
     }
   }
-</script>
 
+  async function handleInstall() {
+    console.log("[SettingsContainer] handleInstall");
+    const event = $installPromptEvent;
+    if (event) {
+      console.log("[SettingsContainer] Showing install prompt");
+      event.prompt();
+      installPromptEvent.set(null);
+    } else {
+      console.log("[SettingsContainer] No install prompt available");
+    }
+  }
+</script>
 <div class="settings-container">
   <ScrollArea class="scroll-wrapper">
-    <div class="flex flex-col gap-4 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]">
+    <div
+      class="flex flex-col gap-4 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]"
+    >
+      <!-- App details -->
       <Card.Root class="p-2 gap-2">
+        <!-- About -->
         <Card.Header class=" flex p-0">
           <Button
             disabled={false}
@@ -82,6 +98,22 @@
           </Button>
         </Card.Header>
         <Separator class="" />
+
+        <!-- Install (only show if app can be installed) -->
+        {#if $installPromptEvent}
+          <Card.Header class=" flex p-0">
+            <Button
+              variant="ghost"
+              onclick={handleInstall}
+              class="w-full justify-center"
+            >
+              <Card.Title class="grow text-left">Install</Card.Title>
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+          <Separator class="" />
+        {/if}
+        <!-- Appearance -->
         <Card.Header class=" flex p-0">
           <Button
             disabled={false}
@@ -94,6 +126,8 @@
           </Button>
         </Card.Header>
       </Card.Root>
+
+      <!-- Aggregated Rides -->
       <Card.Root class="p-2 gap-2">
         {#if CITY_CODE === "pdx"}
           <Card.Header class=" flex p-0">

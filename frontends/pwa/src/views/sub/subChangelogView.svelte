@@ -6,6 +6,23 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.4.4",
+      date: "January 1, 2026",
+      changes: {
+        Added: [
+          "PWA install prompt in Settings - users can now install CycleScene as a standalone app on HTTPS and production builds.",
+          "Service worker registration via vite-plugin-pwa for improved app lifecycle management.",
+          "Global install event listener in App component to capture browser's beforeinstallprompt event.",
+          "Install store for sharing PWA installation state across components.",
+          "Type definitions for PWA events (beforeinstallprompt and appinstalled) in TypeScript.",
+        ],
+        Changed: [
+          "Install button in Settings now dynamically shows/hides based on PWA installability.",
+          "Service worker and PWA manifest configuration optimized for better browser recognition.",
+        ],
+      },
+    },
+    {
       version: "1.4.3",
       date: "December 18, 2025",
       changes: {

@@ -12,6 +12,7 @@
     routesStore,
     savedRidesStore,
     syncStatus,
+    installPromptEvent,
     SUB_VIEW_ABOUT,
     SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
@@ -161,6 +162,18 @@
   let ridesLoading = $derived($rides.loading);
   let ridesLoadingStage = $derived($rides.loadingStage);
 </script>
+
+<svelte:window
+  onbeforeinstallprompt={(event) => {
+    console.log("[App] beforeinstallprompt event fired!");
+    event.preventDefault();
+    installPromptEvent.set(event);
+  }}
+  onappinstalled={() => {
+    console.log("[App] App installed!");
+    installPromptEvent.set(null);
+  }}
+/>
 
 <main class="flex flex-col">
   <ModeWatcher themeColors={{ dark: "black", light: "white" }} />

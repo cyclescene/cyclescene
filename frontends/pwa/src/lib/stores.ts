@@ -15,6 +15,9 @@ import { filterActiveShiftEvents } from "./utils";
 const FALLBACK_LAT = STARTING_LAT
 const FALLBACK_LNG = STARTING_LNG
 
+// Install prompt store
+export const installPromptEvent = writable<Event | null>(null);
+
 // views
 export const VIEW_MAP = 'map'
 export const VIEW_LIST = 'list'
@@ -35,6 +38,7 @@ export const SUB_VIEW_PRIVACY_POLICY = "privacyPolicy"
 export const SUB_VIEW_TERMS_OF_USE = 'termsOfUse'
 export const SUB_VIEW_CHANGE_LOG = 'changeLog'
 export const SUB_VIEW_CONTACT = 'contact'
+export const SUB_VIEW_INSTALL = "install"
 export const SUB_VIEWS = [
   SUB_VIEW_APPEARANCE,
   SUB_VIEW_DATA,
@@ -46,6 +50,7 @@ export const SUB_VIEWS = [
   SUB_VIEW_TERMS_OF_USE,
   SUB_VIEW_CHANGE_LOG,
   SUB_VIEW_CONTACT,
+  SUB_VIEW_INSTALL,
 ]
 
 export const TILE_URLS = {
@@ -261,7 +266,7 @@ export function triggerForegroundSync() {
       type: "FORCE_FOREGROUND_SYNC"
     })
   } else {
-    alert("Cannot connect to the backgoung worker. Please check PWA installation")
+    alert("Cannot connect to the backgound worker. Please check PWA installation")
   }
 }
 

@@ -53,6 +53,9 @@ importers:
       workbox-strategies:
         specifier: ^7.3.0
         version: 7.3.0
+      workbox-window:
+        specifier: ^7.3.0
+        version: 7.3.0
     devDependencies:
       '@internationalized/date':
         specifier: ^3.9.0
