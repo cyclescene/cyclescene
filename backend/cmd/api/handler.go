@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"slices"
 	"time"
 
 	chi "github.com/go-chi/chi/v5"
@@ -22,24 +21,6 @@ import (
 	"github.com/spacesedan/cyclescene/backend/internal/api/synclog"
 )
 
-var allowedDomains = []string{
-	// Production domains
-	"https://cyclescene.cc",
-	"https://www.cyclescene.cc",
-	"https://form.cyclescene.cc",
-	"https://dashboard.cyclescene.cc",
-	"https://pdx.cyclescene.cc",
-	"https://slc.cyclescene.cc",
-	// Local development domains
-	"https://dev.cyclescene.cc",
-	"http://localhost:5173",
-	"http://localhost:5174",
-	"http://localhost:5175",
-}
-
-func isAllowedOrigin(_ *http.Request, origin string) bool {
-	return slices.Contains(allowedDomains, origin)
-}
 
 func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 	slog.Info("Initializing CycleScene API router!")
@@ -57,7 +38,7 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 		}
 	} else {
 		corsOptions = cors.Options{
-			AllowOriginFunc:  isAllowedOrigin,
+			AllowedOrigins:   []string{"*"},
 			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch, http.MethodOptions},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token", "X-Admin-Token"},
 			ExposedHeaders:   []string{"Link"},
