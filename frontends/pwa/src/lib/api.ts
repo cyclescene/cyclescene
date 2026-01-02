@@ -32,15 +32,7 @@ export async function getShiftRides() {
   url.searchParams.set('enddate', endDate.toString())
 
   try {
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'User-Agent': 'CycleScene',
-        // 'x-cycle-scene-version': '1.0.0',
-        // 'Api-Version': '3',
-      }
-
-    })
+    const response = await fetch(url.toString())
 
     return response.json() as Promise<ShiftEventResponse>
 
