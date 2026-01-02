@@ -84,32 +84,3 @@ export function getSortedUniqueDatesWithToday(savedRides: RideData[]) {
 
   return uniqueSortedDates
 }
-
-
-
-export function filterActiveShiftEvents(scrapedEvents: RideData[], shiftResponse: { events: ShiftEvent[] }): RideData[] {
-  const activeEventMap = new Map(shiftResponse.events.map(e => [e.caldaily_id, e]))
-
-  return scrapedEvents.map(event => {
-    if (event.ridesource !== 'shift2bikes') {
-      return event
-    }
-
-    const activeEvent = activeEventMap.get(event.id)
-    if (!activeEvent) {
-      return null
-    }
-
-    // Update cancelled and newsflash if they changed
-    const updated = { ...event }
-    if (activeEvent.cancelled !== event.cancelled) {
-      updated.cancelled = activeEvent.cancelled ? 1 : 0
-    }
-    if (activeEvent.newsflash && activeEvent.newsflash !== event.newsflash) {
-      updated.newsflash = activeEvent.newsflash
-    }
-
-    return updated
-  }).filter((event): event is RideData => event !== null)
-}
-

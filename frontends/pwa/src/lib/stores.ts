@@ -1,6 +1,6 @@
 import { CalendarDate, parseDate } from "@internationalized/date";
 import { LngLatBounds, type LngLatLike, type Map } from "maplibre-gl";
-import { getPastRides, getUpcomingRides, getAllRoutes, type RouteGeoJSON, getShiftRides } from "./api";
+import { getPastRides, getUpcomingRides, getAllRoutes, type RouteGeoJSON } from "./api";
 import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedRideExists, saveRidesToDB, clearAllRides, clearSavedRides, saveRoutesToDB, getRoutesFromDB } from "./db";
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
@@ -9,7 +9,6 @@ import { STARTING_LAT, STARTING_LNG } from "./config";
 import { type ValidatedRide, type RideData } from "./types";
 import type * as GeoJSON from "geojson";
 import { CITY_CODE } from "./config";
-import { filterActiveShiftEvents } from "./utils";
 
 // Portland, OR coordinates
 const FALLBACK_LAT = STARTING_LAT
@@ -224,12 +223,8 @@ function createRidesStore() {
         if (cachedRides.length === 0 && window.navigator.onLine === true) {
           update(store => ({ ...store, loading: true, loadingStage: "Fetching rides from API..." }))
           try {
-            let upcomingRides = await getUpcomingRides()
+            const upcomingRides = await getUpcomingRides()
             const pastRides = await getPastRides()
-            if (CITY_CODE === 'pdx') {
-              const shiftRides = (await getShiftRides())
-              upcomingRides = filterActiveShiftEvents(upcomingRides, shiftRides)
-            }
 
             const freshRides = [...upcomingRides, ...pastRides]
 

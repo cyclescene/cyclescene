@@ -1,5 +1,4 @@
-import type { RideData, ShiftEventResponse } from "./types"
-import { getLocalTimeZone, today } from "@internationalized/date"
+import type { RideData } from "./types"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 const CITY_CODE = import.meta.env.VITE_CITY_CODE
@@ -21,27 +20,6 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Ri
     throw error
   }
 }
-
-export async function getShiftRides() {
-  const url = new URL('https://www.shift2bikes.org/api/events.php')
-
-  const startDate = today(getLocalTimeZone())
-  const endDate = startDate.add({ days: 99 })
-
-  url.searchParams.set('startdate', startDate.toString())
-  url.searchParams.set('enddate', endDate.toString())
-
-  try {
-    const response = await fetch(url.toString())
-
-    return response.json() as Promise<ShiftEventResponse>
-
-  } catch (error) {
-    console.error('Error fetching shift2bikes data:', error)
-    throw error
-  }
-}
-
 
 export async function getUpcomingRides(): Promise<RideData[]> {
   return apiFetch('/upcoming')
@@ -80,16 +58,5 @@ export async function getAllRoutes(): Promise<RouteGeoJSON[]> {
     console.error('Error fetching routes:', error)
     throw error
   }
-}
-
-export function filterActiveShiftEvents(scrapedEvents: RideData[], shiftResponse: { events: any[] }): RideData[] {
-  const activeIds = new Set(shiftResponse.events.map(e => e.caldaily_id))
-  return scrapedEvents.filter(event => {
-    if (event.ridesource !== 'shift2bikes') {
-      return true
-    }
-    // Only keep exact caldaily_id matches (new format), filter out old composite format (ID_Date)
-    return activeIds.has(event.id)
-  })
 }
 
