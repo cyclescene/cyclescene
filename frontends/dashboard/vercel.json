@@ -1,5 +1,9 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm run build",
+  "git": {
+    "deploymentEnabled": false
+  },
   "outputDirectory": "dist",
   "framework": "sveltekit"
 }
