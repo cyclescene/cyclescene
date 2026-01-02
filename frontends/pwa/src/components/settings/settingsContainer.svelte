@@ -69,23 +69,19 @@
   }
 
   function handleInstall() {
-    console.log("[SettingsContainer] handleInstall");
     const event = $installPromptEvent;
-    console.log("[SettingsContainer] installPromptEvent:", event);
 
     if (event) {
       // Chromium browsers: Show native install prompt immediately
-      console.log("[SettingsContainer] Showing install prompt");
       event.prompt();
       installPromptEvent.set(null);
     } else {
       // iOS/other browsers: Navigate to install instructions view
-      console.log("[SettingsContainer] Navigating to install view");
-      console.log("[SettingsContainer] SUB_VIEW_INSTALL:", SUB_VIEW_INSTALL);
       navigateTo(SUB_VIEW_INSTALL);
     }
   }
 </script>
+
 <div class="settings-container">
   <ScrollArea class="scroll-wrapper">
     <div

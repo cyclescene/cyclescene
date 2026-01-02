@@ -28,8 +28,8 @@
             1
           </div>
           <p class="font-semibold text-base flex items-center gap-2">
-            Click the Share button
             <IconShare class="w-5 h-5" />
+            Click the Share button
           </p>
         </div>
 
@@ -41,8 +41,8 @@
             2
           </div>
           <p class="font-semibold text-base flex items-center gap-2">
-            Scroll and click "Add to Home Screen"
             <IconAdd class="w-5 h-5" />
+            Scroll and click "Add to Home Screen"
           </p>
         </div>
 
@@ -53,7 +53,9 @@
           >
             3
           </div>
-          <p class="font-semibold text-base">Click Add</p>
+          <p class="font-semibold text-base">
+            Click <span class="font-bold text-blue-400">Add</span>
+          </p>
         </div>
       </div>
 
@@ -61,14 +63,14 @@
       <Card.Root
         class="p-4 bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800 mt-4"
       >
-        <Card.Header class="p-0 mb-3">
+        <Card.Header class="p-0 mb-0.5">
           <Card.Title class="text-base">Benefits</Card.Title>
+          <ul class="text-sm space-y-2 text-foreground">
+            <li>✓ One-tap access from home screen</li>
+            <li>✓ Works offline</li>
+            <li>✓ App-like experience</li>
+          </ul>
         </Card.Header>
-        <ul class="text-sm space-y-2 text-foreground">
-          <li>✓ One-tap access from home screen</li>
-          <li>✓ Works offline</li>
-          <li>✓ App-like experience</li>
-        </ul>
       </Card.Root>
     </div>
   </ScrollArea>

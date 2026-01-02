@@ -32,6 +32,7 @@ func init() {
 	}
 
 	if err := db.Ping(); err != nil {
+		slog.Error("failed to connect to TursoDB", "error", err)
 		log.Fatalf("failed to connect to TursoDB")
 	}
 	slog.Info("Connected to main Turso database")
