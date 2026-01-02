@@ -290,8 +290,6 @@ export function triggerForegroundSync() {
     navigator.serviceWorker.controller.postMessage({
       type: "FORCE_FOREGROUND_SYNC"
     })
-  } else {
-    alert("Cannot connect to the backgound worker. Please check PWA installation")
   }
 }
 
