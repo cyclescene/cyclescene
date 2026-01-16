@@ -60,20 +60,22 @@
   });
 
   async function handleSavedRide() {
-    if (rideExists) {
-      toast.promise(savedRidesStore.deleteRide(ride.id), {
-        loading: "Removing...",
-        success: "Ride removed!",
-        error: "Unable to remove from saved",
-      });
-      rideExists = false;
-    } else {
-      toast.promise(savedRidesStore.saveRide(ride), {
-        loading: "Saving...",
-        success: "Ride saved!",
-        error: "Unable to save ride",
-      });
-      rideExists = true;
+    try {
+      if (rideExists) {
+        await savedRidesStore.deleteRide(ride.id);
+        rideExists = false;
+        toast.success("Ride removed!");
+      } else {
+        await savedRidesStore.saveRide(ride);
+        rideExists = true;
+        toast.success("Ride saved!");
+      }
+    } catch (error) {
+      if (rideExists) {
+        toast.error("Unable to remove from saved");
+      } else {
+        toast.error("Unable to save ride");
+      }
     }
   }
 </script>
