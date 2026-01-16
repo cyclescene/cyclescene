@@ -1,6 +1,7 @@
 <script lang="ts">
   // Cycle Scene PWA - Main Application
   import "./app.css";
+  import { errorLogger } from "./lib/errorLogger";
   import DatePicker from "./components/datePicker.svelte";
   import NavigationBar from "./components/navigationBar.svelte";
   import RideDetailsTopBar from "./components/ride/rideDetailsTopBar.svelte";
@@ -169,6 +170,18 @@
   onappinstalled={() => {
     console.log("[App] App installed!");
     installPromptEvent.set(null);
+  }}
+  onerror={(event) => {
+    errorLogger.logError('unexpected_error', event.error || new Error(event.message), {
+      component: 'global',
+      action: 'uncaught_error'
+    });
+  }}
+  onunhandledrejection={(event) => {
+    errorLogger.logError('unexpected_error', new Error(String(event.reason)), {
+      component: 'global',
+      action: 'unhandled_promise_rejection'
+    });
   }}
 />
 

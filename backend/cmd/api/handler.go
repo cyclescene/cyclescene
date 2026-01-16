@@ -11,6 +11,7 @@ import (
 	chimi "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/spacesedan/cyclescene/backend/internal/api/auth"
+	"github.com/spacesedan/cyclescene/backend/internal/api/clienterror"
 	"github.com/spacesedan/cyclescene/backend/internal/api/events"
 	"github.com/spacesedan/cyclescene/backend/internal/api/group"
 	"github.com/spacesedan/cyclescene/backend/internal/api/magiclink"
@@ -129,6 +130,10 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 	synclogRepo := synclog.NewRepository(monitoringDB)
 	synclogHandler := synclog.NewHandler(synclogRepo)
 
+	// Client errors handler (uses monitoring DB for analytics isolation)
+	clientErrorRepo := clienterror.NewRepository(monitoringDB)
+	clientErrorHandler := clienterror.NewHandler(clientErrorRepo)
+
 	r.Route("/v1", func(r chi.Router) {
 		// auth handlers -- /tokens
 		authHandler.RegisterRoutes(r)
@@ -141,6 +146,9 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 
 		// sync logs handlers -- /sync-logs
 		synclogHandler.RegisterRoutes(r)
+
+		// client error handler -- POST /client-errors only
+		r.Post("/client-errors", clientErrorHandler.LogError)
 
 		// ride handlers scraped and user submitted -- /rides
 		r.Route("/rides", func(r chi.Router) {

@@ -9,6 +9,7 @@ import { STARTING_LAT, STARTING_LNG } from "./config";
 import { type ValidatedRide, type RideData } from "./types";
 import type * as GeoJSON from "geojson";
 import { CITY_CODE } from "./config";
+import { errorLogger } from "./errorLogger";
 
 // Portland, OR coordinates
 const FALLBACK_LAT = STARTING_LAT
@@ -317,7 +318,12 @@ function createSavedRideStore() {
         set({ loading: false, data: savedRides, error: null })
 
       } catch (e) {
-        set({ loading: false, data: [], error: "Could not load saved rides" })
+        errorLogger.logError('db_error', e instanceof Error ? e : new Error(String(e)), {
+          component: 'stores.ts',
+          action: 'saveRide',
+          additionalData: { rideId: ride.id }
+        })
+        set({ loading: false, data: [], error: "Could not save ride" })
       }
     },
     deleteRide: async (rideID: string) => {
@@ -326,7 +332,12 @@ function createSavedRideStore() {
         const savedRides = await getAllSavedRides()
         set({ loading: false, data: savedRides, error: null })
       } catch (e) {
-        set({ loading: false, data: [], error: "Could not load saved rides" })
+        errorLogger.logError('db_error', e instanceof Error ? e : new Error(String(e)), {
+          component: 'stores.ts',
+          action: 'deleteRide',
+          additionalData: { rideId: rideID }
+        })
+        set({ loading: false, data: [], error: "Could not delete ride" })
       }
 
     },
@@ -335,6 +346,12 @@ function createSavedRideStore() {
         const exists = await savedRideExists(rideID)
         return exists
       } catch (e) {
+        errorLogger.logError('db_error', e instanceof Error ? e : new Error(String(e)), {
+          component: 'stores.ts',
+          action: 'isRideSaved',
+          additionalData: { rideId: rideID }
+        })
+        return false
       }
     },
     clearAll: async () => {

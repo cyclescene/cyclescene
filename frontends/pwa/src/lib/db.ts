@@ -1,6 +1,7 @@
 import { openDB } from "idb"
 import type { RideData } from "./types"
 import type { RouteGeoJSON } from "./api"
+import { errorLogger } from "./errorLogger"
 
 const DB_NAME = 'cycle-scene-pdx'
 const ALLRIDES_STORE_NAME = 'rides'
@@ -60,7 +61,12 @@ export async function addSavedRide(ride: RideData) {
   try {
     await tx.store.put(ride)
   } catch (e) {
-    // Error adding saved ride
+    errorLogger.logError('db_error', e instanceof Error ? e : new Error(String(e)), {
+      component: 'db.ts',
+      action: 'addSavedRide',
+      additionalData: { rideId: ride.id }
+    })
+    throw e
   }
   await tx.done
 }
@@ -72,7 +78,12 @@ export async function deleteSavedRide(rideID: string) {
   try {
     await tx.store.delete(rideID)
   } catch (e) {
-    // Error deleting saved ride
+    errorLogger.logError('db_error', e instanceof Error ? e : new Error(String(e)), {
+      component: 'db.ts',
+      action: 'deleteSavedRide',
+      additionalData: { rideId: rideID }
+    })
+    throw e
   }
   await tx.done
 }
