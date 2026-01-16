@@ -323,7 +323,7 @@ function createSavedRideStore() {
           action: 'saveRide',
           additionalData: { rideId: ride.id }
         })
-        set({ loading: false, data: [], error: "Could not save ride" })
+        update((state) => ({ ...state, loading: false, error: "Could not save ride" }))
       }
     },
     deleteRide: async (rideID: string) => {
@@ -337,7 +337,7 @@ function createSavedRideStore() {
           action: 'deleteRide',
           additionalData: { rideId: rideID }
         })
-        set({ loading: false, data: [], error: "Could not delete ride" })
+        update((state) => ({ ...state, loading: false, error: "Could not delete ride" }))
       }
 
     },
