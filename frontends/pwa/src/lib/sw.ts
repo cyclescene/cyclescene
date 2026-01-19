@@ -33,21 +33,6 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// Cache CartoDB map tiles and resources - only cache successful responses
-registerRoute(
-  ({ url }) => url.hostname === 'basemaps.cartocdn.com' || url.hostname.endsWith('.basemaps.cartocdn.com'),
-  new CacheFirst({
-    cacheName: 'cartodb-cache',
-    plugins: [
-      new CacheableResponsePlugin({ statuses: [200] }), // Only cache 200 responses, not network errors
-      new ExpirationPlugin({
-        maxEntries: 5000,
-        maxAgeSeconds: ONE_YEAR_IN_SECONDS
-      })
-    ]
-  })
-);
-
 // Cache API responses for ride data - try network first, fall back to cache
 registerRoute(
   ({ url }) => url.hostname === 'api.cyclescene.cc',
