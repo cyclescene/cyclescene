@@ -6,6 +6,24 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.5.0",
+      date: "January 18, 2026",
+      changes: {
+        Added: [
+          "Self-hosted OpenMapTiles covering California, Oregon, and Utah with enhanced geographic data.",
+          "Park names and labels now visible on the map for better location discovery.",
+          "Business locations and Points of Interest (POIs) now displayed on the map.",
+          "Comprehensive place name labels for improved navigation.",
+        ],
+        Changed: [
+          "Migrated from CartoDB basemaps to self-hosted OpenMapTiles (PMTiles) for improved performance.",
+          "Dark mode map redesigned with better visual contrast and readability.",
+          "Map font rendering optimized using Noto Sans fonts from Protomaps CDN.",
+          "Tile delivery now cached via Cloudflare CDN for faster global load times.",
+        ],
+      },
+    },
+    {
       version: "1.4.4",
       date: "January 1, 2026",
       changes: {
