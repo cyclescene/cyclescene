@@ -6,7 +6,6 @@
   import { Map } from "maplibre-gl";
   import { loadMarkerByKey } from "$lib/markers";
   import { CITY_CODE } from "$lib/config";
-  import ParkLayer from "../map/parkLayer.svelte";
 
   const { ride } = $props();
 
@@ -96,5 +95,4 @@
     {/if}
     <GeoJSONSource data={$singleRideGeoJSON} id={SOURCE_ID} />
   {/if}
-  <ParkLayer isDarkMode={mode.current === "dark"} />
 </MapLibre>

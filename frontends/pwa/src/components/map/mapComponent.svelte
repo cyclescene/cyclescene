@@ -11,7 +11,6 @@
   } from "$lib/stores";
   import { mode } from "mode-watcher";
   import RideLayers from "./rideLayers.svelte";
-  import ParkLayer from "./parkLayer.svelte";
   import RecenterButton from "./recenterButton.svelte";
   import LocationCards from "../locationCards.svelte";
   import RidesNotShown from "../ride/ridesNotShown.svelte";
@@ -148,8 +147,6 @@
     {#if mapInstance}
       <RecenterButton map={mapInstance} />
     {/if}
-    <!-- <SpecialEventLayers isDarkMode={mode.current === "dark"} /> -->
-    <ParkLayer isDarkMode={mode.current === "dark"} />
 
     <RidesNotShown />
     <LocationCards onNavigateToRide={navigateToRide} />

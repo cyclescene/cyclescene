@@ -79,8 +79,8 @@ export const SUB_VIEWS = [
 ]
 
 export const TILE_URLS = {
-  dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
-  light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json"
+  dark: "https://tiles.cyclescene.cc/dark-tiles.json",
+  light: "https://tiles.cyclescene.cc/light-tiles.json"
 };
 
 const RIDES_SYNC_TAG = "update-rides-30min"

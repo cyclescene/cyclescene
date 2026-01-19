@@ -72,7 +72,7 @@
   source={sourceId}
   layout={{
     "text-field": ["get", "name"],
-    "text-font": ["Open Sans Regular"],
+    "text-font": ["Noto Sans Regular"],
     "text-size": 12,
     "text-offset": [0, 2],
     "text-anchor": "top",

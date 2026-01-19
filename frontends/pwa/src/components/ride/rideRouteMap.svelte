@@ -3,7 +3,6 @@
   import { mode } from "mode-watcher";
   import { GeoJSONSource, RawLayer, MapLibre } from "svelte-maplibre-gl";
   import { Map, LngLatBounds } from "maplibre-gl";
-  import ParkLayer from "../map/parkLayer.svelte";
 
   const ROUTE_SOURCE_ID = "route-source";
   const ROUTE_LAYER_ID = "route-layer";
@@ -103,6 +102,4 @@
       }}
     />
   </GeoJSONSource>
-
-  <ParkLayer isDarkMode={mode.current === "dark"} />
 </MapLibre>
