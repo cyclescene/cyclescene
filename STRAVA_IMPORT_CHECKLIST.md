@@ -16,6 +16,23 @@ This checklist tracks the implementation of the Strava OAuth integration feature
 
 **Goal:** Create a robust Strava API client for OAuth and data fetching
 
+### 📁 Files Summary (Milestone 1)
+
+**New Files to Create:**
+- `backend/internal/strava/client.go` - Main Strava API client
+- `backend/internal/strava/errors.go` - Custom error types
+- `backend/internal/strava/client_test.go` - Unit tests
+
+**Existing Files to Reference:**
+- `backend/internal/strava/models.go` - Already has type definitions
+- `backend/internal/strava/session.go` - Already has session management
+- `backend/.env.example` - Update with STRAVA_DEBUG
+
+**No modifications to:**
+- API handlers (not until Milestone 3)
+- Frontend code (not until Milestone 4)
+- Database schemas
+
 ### Tasks
 
 #### 1.1 - Create Strava Client Package
@@ -93,6 +110,26 @@ go build ./cmd/api
 ## Milestone 2: Backend - Service Layer
 
 **Goal:** Build business logic for OAuth sessions and event conversion
+
+### 📁 Files Summary (Milestone 2)
+
+**New Files to Create:**
+- `backend/internal/strava/service.go` - Business logic layer
+- `backend/internal/strava/converter.go` - Event conversion (Strava → CycleScene)
+- `backend/internal/strava/service_test.go` - Service tests
+- `backend/internal/strava/converter_test.go` - Converter tests
+
+**Existing Files to Integrate With:**
+- `backend/internal/strava/client.go` - Use for API calls (from M1)
+- `backend/internal/strava/session.go` - Use for session management
+- `backend/internal/strava/models.go` - Use type definitions
+- `backend/internal/routes/fetcher.go` - Integrate for route fetching
+- `backend/internal/scraper/geocode.go` - Integrate for geocoding fallback
+
+**No modifications to:**
+- API handlers (not until Milestone 3)
+- Frontend code (not until Milestone 4)
+- Database repositories
 
 ### Tasks
 
@@ -175,6 +212,30 @@ go build ./cmd/api
 ## Milestone 3: Backend - HTTP Handlers & WebSocket
 
 **Goal:** Create API endpoints for OAuth flow and WebSocket for progress tracking
+
+### 📁 Files Summary (Milestone 3)
+
+**New Files to Create:**
+- `backend/internal/api/strava/handler.go` - HTTP handlers for OAuth
+- `backend/internal/api/strava/websocket.go` - WebSocket for import progress
+
+**Files to Modify:**
+- `backend/cmd/api/main.go` - Register Strava routes
+- `backend/cmd/api/handler.go` - Add route registrations (possibly)
+- `backend/.env.example` - Add STRAVA_CLIENT_ID, STRAVA_CLIENT_SECRET, STRAVA_CALLBACK_URL
+- `backend/cmd/api/.env.example` - Same as above
+
+**Existing Files to Use:**
+- `backend/internal/strava/service.go` - Call service methods (from M2)
+- `backend/internal/strava/session.go` - Session management
+- `backend/internal/api/ride/service.go` - Reference for submission pattern
+- `backend/internal/api/magiclink/service.go` - Send magic links with event titles
+
+**Go Dependencies to Add:**
+- WebSocket library (e.g., `gorilla/websocket` or similar)
+
+**No modifications to:**
+- Frontend code (not until Milestone 4)
 
 ### Tasks
 
@@ -302,6 +363,33 @@ curl -H "Cookie: session_id=..." http://localhost:8080/api/strava/admin-clubs
 
 **Goal:** Add Strava import UI to the form frontend
 
+### 📁 Files Summary (Milestone 4)
+
+**New Files to Create:**
+- `frontends/form/src/lib/stores/strava.ts` - Strava auth state management
+- `frontends/form/src/lib/components/StravaImport.svelte` - Main import component
+- `frontends/form/src/lib/components/ImportProgress.svelte` - Progress tracking UI
+- `frontends/form/src/lib/types/strava.ts` - TypeScript type definitions
+- `frontends/form/src/lib/utils/websocket.ts` - WebSocket client helper (optional)
+
+**Files to Modify:**
+- `frontends/form/src/routes/+page.svelte` - Add Strava import button
+- `frontends/form/.env.example` - Add PUBLIC_STRAVA_ENABLED, PUBLIC_STRAVA_DEBUG
+
+**Existing Files to Reference:**
+- `frontends/form/src/lib/stores/*` - For store patterns
+- `frontends/form/src/lib/components/*` - For component patterns
+- `frontends/form/src/routes/+page.server.ts` - For API calls pattern
+
+**Backend Endpoints to Call:**
+- `GET /api/strava/auth/initiate` (from M3)
+- `GET /api/strava/admin-clubs` (from M3)
+- `WS /api/strava/import` (from M3)
+
+**No modifications to:**
+- Backend code (complete in M1-M3)
+- Other frontend apps (dashboard, pwa, directory)
+
 ### Tasks
 
 #### 4.1 - Create Strava Auth Store
@@ -405,6 +493,26 @@ npm run dev    # Manual testing
 
 **Goal:** Ensure robust error handling and great UX
 
+### 📁 Files Summary (Milestone 5)
+
+**Files to Modify:**
+- `frontends/form/src/lib/stores/strava.ts` - Add error handling
+- `frontends/form/src/lib/components/StravaImport.svelte` - Add loading states, errors
+- `frontends/form/src/lib/components/ImportProgress.svelte` - Add retry logic
+- All Svelte components - Add ARIA labels, accessibility
+
+**New Files (Optional):**
+- `frontends/form/src/lib/components/ErrorBoundary.svelte` - Error boundary (if needed)
+
+**No new backend files:**
+- All backend work complete in M1-M3
+
+**Focus Areas:**
+- Error messages and recovery
+- Loading and skeleton states
+- Responsive design (mobile testing)
+- Accessibility (ARIA, keyboard nav)
+
 ### Tasks
 
 #### 5.1 - Error Handling
@@ -471,6 +579,28 @@ npm run build
 ## Milestone 6: Testing & Documentation
 
 **Goal:** Comprehensive testing and documentation
+
+### 📁 Files Summary (Milestone 6)
+
+**New Test Files to Create:**
+- `backend/internal/api/strava/handler_test.go` - Handler tests
+- `backend/internal/api/strava/websocket_test.go` - WebSocket tests
+- `frontends/form/src/lib/stores/strava.test.ts` - Store tests
+- `frontends/form/src/lib/components/StravaImport.test.ts` - Component tests
+
+**Documentation Files to Update:**
+- `README.md` - Add Strava setup instructions
+- `STRAVA_OAUTH_LEARNINGS.md` - Add any new discoveries
+- `backend/README.md` - Document Strava API endpoints
+- `frontends/form/README.md` - Document Strava import feature
+
+**Test Files Already Exist (from M1-M2):**
+- `backend/internal/strava/client_test.go`
+- `backend/internal/strava/service_test.go`
+- `backend/internal/strava/converter_test.go`
+
+**No new feature files:**
+- All feature code complete in M1-M5
 
 ### Tasks
 
@@ -547,6 +677,31 @@ npm run build
 ## Milestone 7: Deployment Preparation
 
 **Goal:** Prepare for production deployment
+
+### 📁 Files Summary (Milestone 7)
+
+**Infrastructure Files to Modify:**
+- `backend/cmd/api/infra/main.tf` - Add Strava secrets to Cloud Run
+- `backend/cmd/api/infra/variables.tf` - Add Strava variable definitions
+- `backend/cmd/api/infra/terraform.tfvars.example` - Document Strava vars
+
+**Environment Files to Update:**
+- Production `.env` files with real Strava credentials
+- Verify all `.env.example` files are complete
+
+**Configuration Reviews:**
+- CORS settings in `backend/cmd/api/main.go`
+- Rate limiting configurations
+- WebSocket connection limits
+- Session cleanup intervals
+
+**No new feature code:**
+- All feature development complete in M1-M6
+
+**Focus Areas:**
+- Security review (no token logging)
+- Monitoring and metrics
+- Deployment and rollback procedures
 
 ### Tasks
 
