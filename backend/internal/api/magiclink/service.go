@@ -17,6 +17,7 @@ type SendMagicLinkRequest struct {
 	Email       string // ride organizer email
 	RedirectURL string // Full URL with token (e.g., http://localhost:5174/rides/edit?token=xyz)
 	IPAddress   string // client IP for security (not used with Resend but kept for compatibility)
+	EventTitle  string // optional: title of the ride/event (for personalized emails)
 }
 
 // SendMagicLinkResponse contains the result of sending a magic link
@@ -41,7 +42,17 @@ func (s *Service) SendMagicLink(_ context.Context, req SendMagicLinkRequest) (*S
 	}
 
 	// Create email body
+	// Customize subject and body based on whether event title is provided
 	subject := "Edit Your CycleScene Ride"
+	headerText := "Edit Your Ride"
+	bodyText := "Your ride has been submitted! Click the button below to edit it anytime."
+
+	if req.EventTitle != "" {
+		subject = fmt.Sprintf("Edit Your Ride: %s", req.EventTitle)
+		headerText = fmt.Sprintf("Edit: %s", req.EventTitle)
+		bodyText = "Your ride has been submitted! Click the button below to edit it anytime."
+	}
+
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
 <html>
@@ -53,15 +64,16 @@ func (s *Service) SendMagicLink(_ context.Context, req SendMagicLinkRequest) (*S
     .header { margin-bottom: 30px; }
     .button { display: inline-block; background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0; }
     .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666; }
+    .event-title { color: #666; font-size: 14px; margin-bottom: 20px; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h2>Edit Your Ride</h2>
+      <h2>%s</h2>
     </div>
 
-    <p>Your ride has been submitted! Click the button below to edit it anytime.</p>
+    <p>%s</p>
 
     <a href="%s" class="button">Edit Your Ride</a>
 
@@ -77,7 +89,7 @@ func (s *Service) SendMagicLink(_ context.Context, req SendMagicLinkRequest) (*S
   </div>
 </body>
 </html>
-`, req.RedirectURL, req.RedirectURL)
+`, headerText, bodyText, req.RedirectURL, req.RedirectURL)
 
 	// Send email via Resend
 	slog.Info("Sending magic link email via Resend", "email", req.Email, "redirect_url", req.RedirectURL)

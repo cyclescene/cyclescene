@@ -4,54 +4,63 @@ import { zod4 as zod } from 'sveltekit-superforms/adapters';
 import { fail, redirect } from '@sveltejs/kit';
 import { rideSubmissionSchema } from '$lib/schemas/ride';
 import type { PageServerLoad, Actions } from './$types';
-import { API_URL } from '$env/static/private';
+import { API_URL, API_DEV_MODE } from '$env/static/private';
 
 
 export const load: PageServerLoad = async ({ url, request }) => {
   const token = url.searchParams.get('token');
   const city = url.searchParams.get('city');
+  const isDevMode = API_DEV_MODE === 'true';
 
-  // Validate token and origin
-  if (!token || !city) {
-    throw redirect(302, '/error?message=Missing token or city');
-  }
+  // In dev mode, allow access without token but require city
+  if (isDevMode) {
+    if (!city) {
+      throw redirect(302, '/error?message=Missing city parameter');
+    }
+    console.log('[DEV MODE] Skipping token validation');
+  } else {
+    // Production mode: require both token and city
+    if (!token || !city) {
+      throw redirect(302, '/error?message=Missing token or city');
+    }
 
-  // Check referrer to ensure request came from PWA
-  const referrer = request.headers.get('referer') || '';
-  const validReferrers = [
-    'https://pdx.cyclescene.cc',
-    'https://slc.cyclescene.cc',
-    'http://localhost' // for dev only
-  ];
+    // Check referrer to ensure request came from PWA
+    const referrer = request.headers.get('referer') || '';
+    const validReferrers = [
+      'https://pdx.cyclescene.cc',
+      'https://slc.cyclescene.cc',
+      'http://localhost' // for dev only
+    ];
 
-  const isValidReferrer = validReferrers.some(valid => referrer.startsWith(valid));
+    const isValidReferrer = validReferrers.some(valid => referrer.startsWith(valid));
 
-  if (!isValidReferrer) {
-    throw redirect(302, '/error?message=Invalid referrer');
-  }
+    if (!isValidReferrer) {
+      throw redirect(302, '/error?message=Invalid referrer');
+    }
 
-  try {
-    // Validate the token with your API - use full URL for server-side fetch
-    const response = await fetch(`${API_URL}/v1/tokens/validate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token, city })
-    });
+    try {
+      // Validate the token with your API - use full URL for server-side fetch
+      const response = await fetch(`${API_URL}/v1/tokens/validate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token, city })
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        throw redirect(302, '/error?message=Token validation failed');
+      }
+
+      const validation = await response.json();
+
+      if (!validation.valid) {
+        throw redirect(302, '/error?message=Invalid or expired token');
+      }
+    } catch (err) {
+      console.error('Token validation failed:', err);
       throw redirect(302, '/error?message=Token validation failed');
     }
-
-    const validation = await response.json();
-
-    if (!validation.valid) {
-      throw redirect(302, '/error?message=Invalid or expired token');
-    }
-  } catch (err) {
-    console.error('Token validation failed:', err);
-    throw redirect(302, '/error?message=Token validation failed');
   }
 
   // Initialize form with city pre-filled
@@ -95,20 +104,29 @@ export const actions = {
       return fail(400, { form });
     }
 
+    const isDevMode = API_DEV_MODE === 'true';
     const token = url.searchParams.get('token');
-    if (!token) {
+
+    // In production, token is required
+    if (!isDevMode && !token) {
       return fail(400, {
         form,
         error: 'Missing submission token'
       });
     }
 
+    // In dev mode, use a dummy token if none provided
+    const submissionToken = isDevMode && !token ? 'dev-mode-token' : token;
+
+    if (isDevMode && !token) {
+      console.log('[DEV MODE] Using dummy token for submission');
+    }
 
     const response = await fetch(`${API_URL}/v1/rides/submit`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-BFF-Token': token,
+        'X-BFF-Token': submissionToken!,
       },
       body: JSON.stringify(form.data)
     }).catch(err => {
