@@ -28,6 +28,16 @@ func init() {
 		}
 	}
 
+	// Configure slog for DEBUG level if STRAVA_DEBUG is enabled
+	if os.Getenv("STRAVA_DEBUG") == "true" {
+		opts := &slog.HandlerOptions{
+			Level: slog.LevelDebug,
+		}
+		handler := slog.NewTextHandler(os.Stdout, opts)
+		slog.SetDefault(slog.New(handler))
+		slog.Debug("Debug logging enabled for Strava service")
+	}
+
 	// Connect to main database
 	db, err = ConnectToDB()
 	if err != nil {

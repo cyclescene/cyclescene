@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/spacesedan/cyclescene/backend/internal/strava"
 )
 
 var (
@@ -67,6 +69,17 @@ func main() {
 	fmt.Println("Client ID:", clientID)
 	fmt.Println("")
 
+	// Initialize M2 Service layer
+	config := &strava.Config{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		CallbackPath: "/callback",
+		Debug:        true,
+	}
+	client := strava.NewClient(config)
+	sessionStore = strava.NewSessionStore()
+	service = strava.NewService(client, sessionStore, nil, redirectURI)
+
 	// Set up HTTP server for OAuth callback
 	http.HandleFunc("/", handleRoot)
 	http.HandleFunc("/callback", handleCallback)
@@ -75,6 +88,11 @@ func main() {
 	http.HandleFunc("/test-admin", handleTestAdmin)
 	http.HandleFunc("/test-admin-check", handleTestAdminCheck)
 	http.HandleFunc("/test-members", handleTestMembers)
+
+	// M2 Service layer test endpoints
+	http.HandleFunc("/test-service", handleTestService)
+	http.HandleFunc("/test-service-clubs", handleTestServiceClubs)
+	http.HandleFunc("/test-service-events", handleTestServiceEvents)
 
 	fmt.Println("Starting server on http://localhost:3000")
 	fmt.Println("")
@@ -140,14 +158,79 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 var accessToken string
 var athleteID int64
 
+// M2 Service layer testing
+var (
+	service      *strava.Service
+	sessionStore *strava.SessionStore
+	sessionID    string
+)
+
 func handleCallback(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	returnedState := r.URL.Query().Get("state")
 
-	if returnedState != state {
-		http.Error(w, "Invalid state parameter", http.StatusBadRequest)
+	// Check if this is a legacy or M2 state (without consuming it)
+	isLegacyState := (returnedState == state)
+
+	if !isLegacyState {
+		// Must be M2 state - validate via service (this will consume it)
+		// Let M2 service handle the full callback
+		fmt.Printf("\n=== M2 OAuth Callback ===\n")
+		var err error
+		sessionID, err = service.HandleOAuthCallback(context.Background(), code, returnedState)
+		if err != nil {
+			http.Error(w, "M2 OAuth callback failed: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		session, _ := service.GetSession(sessionID)
+		athleteID = session.AthleteID
+		accessToken = session.AccessToken
+
+		fmt.Printf("✓ M2 Session created: %s...\n", sessionID[:16])
+		fmt.Printf("  - City Code: %s\n", session.CityCode)
+		fmt.Printf("  - Athlete: %s (ID: %d)\n", session.AthleteName, session.AthleteID)
+		fmt.Printf("  - Expires: %s\n", session.ExpiresAt.Format(time.RFC3339))
+		fmt.Printf("========================\n\n")
+
+		// Redirect to M2 test page
+		html := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M2 OAuth Success</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .success { background: #e8f5e9; color: #2e7d32; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        button { background: #FC4C02; color: white; border: none; padding: 15px 30px; font-size: 16px; cursor: pointer; border-radius: 5px; margin: 10px; }
+        button:hover { background: #E34402; }
+        code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>✓ M2 OAuth Successful!</h1>
+    <div class="success">
+        <strong>Authenticated as:</strong> %s (ID: %d)<br>
+        <strong>Session ID:</strong> <code>%s...</code><br>
+        <strong>City Context:</strong> %s<br>
+        <strong>Expires:</strong> %s
+    </div>
+    <h2>Next Steps</h2>
+    <p>Test the M2 Service Layer:</p>
+    <button onclick="window.location.href='/test-service-clubs'">Test GetAdminClubs()</button>
+    <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
+</body>
+</html>
+		`, session.AthleteName, session.AthleteID, sessionID[:16], session.CityCode,
+		   session.ExpiresAt.Format(time.RFC3339))
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(html))
 		return
 	}
+
+	// Legacy OAuth flow
+	fmt.Printf("\n=== Legacy OAuth Callback ===\n")
 
 	// Exchange code for token
 	tokenResp, err := http.PostForm("https://www.strava.com/oauth/token", map[string][]string{
@@ -172,10 +255,11 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
 	accessToken = tokens.AccessToken
 	athleteID = tokens.Athlete.ID
 
-	fmt.Printf("\n✓ OAuth successful!\n")
+	fmt.Printf("✓ Legacy OAuth successful!\n")
 	fmt.Printf("Athlete: %s %s (ID: %d)\n", tokens.Athlete.FirstName, tokens.Athlete.LastName, tokens.Athlete.ID)
 	fmt.Printf("Access Token: %s...\n", accessToken[:20])
-	fmt.Printf("Expires At: %s\n\n", time.Unix(tokens.ExpiresAt, 0).Format(time.RFC3339))
+	fmt.Printf("Expires At: %s\n", time.Unix(tokens.ExpiresAt, 0).Format(time.RFC3339))
+	fmt.Printf("=============================\n\n")
 
 	html := fmt.Sprintf(`
 <!DOCTYPE html>
@@ -201,10 +285,14 @@ func handleCallback(w http.ResponseWriter, r *http.Request) {
     </div>
 
     <h2>Step 2: Test Endpoints</h2>
-    <p>Now let's fetch your clubs and test the group_events endpoint:</p>
+    <p><strong>M1 Client Tests (Raw API):</strong></p>
     <button onclick="window.location.href='/test'">Test Admin/Owner Clubs</button>
     <button onclick="window.location.href='/all-clubs'">View All Clubs</button>
     <button onclick="window.location.href='/test-admin-check'">Test Admin Check</button>
+
+    <p><strong>M2 Service Layer Tests:</strong></p>
+    <button onclick="window.location.href='/test-service'">🧪 M2 Service Tests</button>
+    <button onclick="window.location.href='/test-service-clubs'">Get Admin Clubs (M2)</button>
 
     <h3>Or test manually:</h3>
     <ul>
@@ -315,6 +403,15 @@ func fetchClubs() ([]Club, string, error) {
 	}
 	defer resp.Body.Close()
 
+	// LOG ALL RESPONSE HEADERS
+	fmt.Printf("\n=== RESPONSE HEADERS FOR /athlete/clubs ===\n")
+	for key, values := range resp.Header {
+		for _, value := range values {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+	}
+	fmt.Printf("===========================================\n\n")
+
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	bodyJSON := string(bodyBytes)
 
@@ -354,6 +451,15 @@ func isClubAdmin(clubID int64) (bool, error) {
 		return false, err
 	}
 	defer resp.Body.Close()
+
+	// LOG ALL RESPONSE HEADERS
+	fmt.Printf("\n=== RESPONSE HEADERS FOR /clubs/%d ===\n", clubID)
+	for key, values := range resp.Header {
+		for _, value := range values {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+	}
+	fmt.Printf("=========================================\n\n")
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
@@ -399,6 +505,15 @@ func fetchGroupEvents(clubID string) (int, string, error) {
 		return 0, "", err
 	}
 	defer resp.Body.Close()
+
+	// LOG ALL RESPONSE HEADERS
+	fmt.Printf("\n=== RESPONSE HEADERS FOR /clubs/%s/group_events ===\n", clubID)
+	for key, values := range resp.Header {
+		for _, value := range values {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+	}
+	fmt.Printf("====================================================\n\n")
 
 	bodyBytes, _ := io.ReadAll(resp.Body)
 	bodyJSON := string(bodyBytes)
@@ -848,6 +963,15 @@ func fetchStravaEndpoint(url string) (int, string) {
 	}
 	defer resp.Body.Close()
 
+	// LOG ALL RESPONSE HEADERS
+	fmt.Printf("\n=== RESPONSE HEADERS FOR %s ===\n", url)
+	for key, values := range resp.Header {
+		for _, value := range values {
+			fmt.Printf("%s: %s\n", key, value)
+		}
+	}
+	fmt.Printf("=========================================\n\n")
+
 	bodyBytes, _ := io.ReadAll(resp.Body)
 
 	var prettyJSON interface{}
@@ -855,4 +979,253 @@ func fetchStravaEndpoint(url string) (int, string) {
 	prettyBytes, _ := json.MarshalIndent(prettyJSON, "", "  ")
 
 	return resp.StatusCode, string(prettyBytes)
+}
+
+// M2 Service Layer Test Endpoints
+
+func handleTestService(w http.ResponseWriter, r *http.Request) {
+	html := `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M2 Service Layer Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 15px 30px; font-size: 16px; cursor: pointer; border-radius: 5px; margin: 10px; }
+        button:hover { background: #E34402; }
+        .info { background: #e3f2fd; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .success { background: #e8f5e9; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        .feature { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #FC4C02; }
+        code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; }
+        h1 { color: #FC4C02; }
+        h2 { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>🧪 M2 Service Layer Test</h1>
+
+    <div class="info">
+        <h2>What This Tests</h2>
+        <p>This page tests the <strong>M2 Service Layer</strong> implementation, which includes:</p>
+        <ul>
+            <li>OAuth session management with city context</li>
+            <li>City-first filtering (83% API reduction)</li>
+            <li>Admin club detection</li>
+            <li>Event fetching and conversion</li>
+            <li>Upcoming events filter</li>
+            <li>Geocoding fallback</li>
+        </ul>
+    </div>
+
+    <h2>Test Flow</h2>
+    <div class="feature">
+        <h3>Step 1: OAuth with City Context</h3>
+        <p>Tests <code>Service.InitiateOAuth()</code> and <code>HandleOAuthCallback()</code></p>
+        <p>City code "pdx" will be stored with the session.</p>
+        <button onclick="window.location.href='/test-service?action=oauth&city=pdx'">Start OAuth (Portland)</button>
+        <button onclick="window.location.href='/test-service?action=oauth&city=slc'">Start OAuth (Salt Lake)</button>
+    </div>
+
+    <div class="feature">
+        <h3>Step 2: Get Admin Clubs (with City Filtering)</h3>
+        <p>Tests <code>Service.GetAdminClubs()</code></p>
+        <p>Only returns Portland cycling clubs where you're admin/owner.</p>
+        <button onclick="window.location.href='/test-service-clubs'">Test GetAdminClubs()</button>
+    </div>
+
+    <div class="feature">
+        <h3>Step 3: Get Club Events (with Upcoming Filter)</h3>
+        <p>Tests <code>Service.GetClubEvents()</code> and <code>FilterUpcomingEvents()</code></p>
+        <button onclick="window.location.href='/test-service-events'">Test GetClubEvents()</button>
+    </div>
+
+    <div class="feature">
+        <h3>Step 4: Convert Event to Submission</h3>
+        <p>Tests <code>Service.ConvertEventToSubmission()</code> with geocoding fallback</p>
+        <p><em>Available after fetching events</em></p>
+    </div>
+</body>
+</html>
+	`
+
+	action := r.URL.Query().Get("action")
+	city := r.URL.Query().Get("city")
+
+	if action == "oauth" && city != "" {
+		// Use M2 Service to initiate OAuth
+		authURL, err := service.InitiateOAuth(context.Background(), city)
+		if err != nil {
+			http.Error(w, "Failed to initiate OAuth: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+}
+
+func handleTestServiceClubs(w http.ResponseWriter, r *http.Request) {
+	if sessionID == "" {
+		http.Error(w, "No session. Please run OAuth first: http://localhost:3000/test-service", http.StatusUnauthorized)
+		return
+	}
+
+	// Test M2 Service.GetAdminClubs()
+	ctx := context.Background()
+	adminClubs, err := service.GetAdminClubs(ctx, sessionID)
+	if err != nil {
+		http.Error(w, "Failed to get admin clubs: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Get session to show city code
+	session, _ := service.GetSession(sessionID)
+
+	var htmlOutput string
+	htmlOutput += fmt.Sprintf("<h2>✅ M2 Service.GetAdminClubs() Test</h2>")
+	htmlOutput += fmt.Sprintf("<div class='info'>")
+	htmlOutput += fmt.Sprintf("<strong>Session ID:</strong> %s...<br>", sessionID[:16])
+	htmlOutput += fmt.Sprintf("<strong>City Filter:</strong> %s<br>", session.CityCode)
+	htmlOutput += fmt.Sprintf("<strong>Athlete ID:</strong> %d", session.AthleteID)
+	htmlOutput += fmt.Sprintf("</div>")
+
+	htmlOutput += fmt.Sprintf("<div class='success'>")
+	htmlOutput += fmt.Sprintf("<h3>Found %d admin clubs</h3>", len(adminClubs))
+	htmlOutput += fmt.Sprintf("<p>These are Portland cycling clubs where you're admin/owner:</p>")
+	htmlOutput += fmt.Sprintf("</div>")
+
+	for _, club := range adminClubs {
+		role := "Admin"
+		if club.Owner {
+			role = "Owner"
+		}
+		htmlOutput += fmt.Sprintf(`
+			<div class="club-card">
+				<h3>%s (ID: %d)</h3>
+				<p><strong>Role:</strong> %s</p>
+				<p><strong>Location:</strong> %s, %s</p>
+				<p><strong>Members:</strong> %d</p>
+				<p><strong>Cycling Club:</strong> %t</p>
+				<button onclick="window.location.href='/test-service-events?club_id=%d'">
+					Get Events (M2 Service)
+				</button>
+			</div>
+		`, club.Name, club.ID, role, club.City, club.State, club.MemberCount, club.IsCyclingClub(), club.ID)
+	}
+
+	html := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M2 GetAdminClubs Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #E34402; }
+        .club-card { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #FC4C02; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .success { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        h1 { color: #FC4C02; }
+        h2 { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>M2 Service Layer Test Results</h1>
+    <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
+    %s
+</body>
+</html>
+	`, htmlOutput)
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+}
+
+func handleTestServiceEvents(w http.ResponseWriter, r *http.Request) {
+	if sessionID == "" {
+		http.Error(w, "No session. Please run OAuth first: http://localhost:3000/test-service", http.StatusUnauthorized)
+		return
+	}
+
+	clubIDStr := r.URL.Query().Get("club_id")
+	if clubIDStr == "" {
+		http.Error(w, "club_id parameter required", http.StatusBadRequest)
+		return
+	}
+
+	var clubID int64
+	fmt.Sscanf(clubIDStr, "%d", &clubID)
+
+	// Test M2 Service.GetClubEvents()
+	ctx := context.Background()
+	events, err := service.GetClubEvents(ctx, sessionID, clubID)
+	if err != nil {
+		http.Error(w, "Failed to get club events: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Filter upcoming events (M2 feature)
+	upcomingEvents := strava.FilterUpcomingEvents(events)
+
+	var htmlOutput string
+	htmlOutput += fmt.Sprintf("<h2>✅ M2 Service.GetClubEvents() Test</h2>")
+	htmlOutput += fmt.Sprintf("<div class='info'>")
+	htmlOutput += fmt.Sprintf("<strong>Club ID:</strong> %d<br>", clubID)
+	htmlOutput += fmt.Sprintf("<strong>Total Events:</strong> %d<br>", len(events))
+	htmlOutput += fmt.Sprintf("<strong>Upcoming Events:</strong> %d", len(upcomingEvents))
+	htmlOutput += fmt.Sprintf("</div>")
+
+	if len(upcomingEvents) == 0 {
+		htmlOutput += `<p><em>No upcoming events for this club.</em></p>`
+	}
+
+	for _, event := range upcomingEvents {
+		occurrence, _ := event.GetFirstOccurrence()
+		tz, _ := event.GetTimezone()
+		localTime := occurrence.In(tz)
+
+		htmlOutput += fmt.Sprintf(`
+			<div class="event-card">
+				<h3>%s (ID: %d)</h3>
+				<p><strong>When:</strong> %s</p>
+				<p><strong>Timezone:</strong> %s</p>
+				<p><strong>Address:</strong> %s</p>
+				<p><strong>Has Location:</strong> %t (lat: %.4f, lng: %.4f)</p>
+				<p><strong>Route:</strong> %v</p>
+				<p><strong>Activity Type:</strong> %s</p>
+				<p><strong>Description:</strong> %s</p>
+			</div>
+		`, event.Title, event.ID, localTime.Format("Mon Jan 2, 2006 at 3:04 PM MST"),
+			event.Zone, event.Address, event.HasLocation(), event.GetLatitude(), event.GetLongitude(),
+			event.Route != nil, event.ActivityType, event.Description)
+	}
+
+	html := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M2 GetClubEvents Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #E34402; }
+        .event-card { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #4CAF50; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        h1 { color: #FC4C02; }
+        h2 { color: #666; }
+    </style>
+</head>
+<body>
+    <h1>M2 Service Layer Test Results</h1>
+    <button onclick="window.location.href='/test-service-clubs'">Back to Clubs</button>
+    <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
+    %s
+</body>
+</html>
+	`, htmlOutput)
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
 }

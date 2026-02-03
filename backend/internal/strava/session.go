@@ -8,10 +8,16 @@ import (
 	"time"
 )
 
+// stateContext holds the state token expiry and associated city code
+type stateContext struct {
+	ExpiresAt time.Time
+	CityCode  string
+}
+
 // SessionStore manages ephemeral OAuth sessions in-memory
 type SessionStore struct {
 	sessions sync.Map // map[string]*Session
-	states   sync.Map // map[string]time.Time for CSRF protection
+	states   sync.Map // map[string]*stateContext for CSRF protection with city context
 }
 
 // NewSessionStore creates a new session store
@@ -25,7 +31,13 @@ func NewSessionStore() *SessionStore {
 }
 
 // GenerateState creates a secure random state token for CSRF protection
+// This is a convenience method that calls GenerateStateWithCity with empty cityCode
 func (s *SessionStore) GenerateState() (string, error) {
+	return s.GenerateStateWithCity("")
+}
+
+// GenerateStateWithCity creates a secure random state token with associated city code
+func (s *SessionStore) GenerateStateWithCity(cityCode string) (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -33,26 +45,46 @@ func (s *SessionStore) GenerateState() (string, error) {
 
 	state := base64.URLEncoding.EncodeToString(b)
 
-	// Store state with 10 minute expiration
-	s.states.Store(state, time.Now().Add(10*time.Minute))
+	// Store state with 10 minute expiration and city context
+	s.states.Store(state, &stateContext{
+		ExpiresAt: time.Now().Add(10 * time.Minute),
+		CityCode:  cityCode,
+	})
 
 	return state, nil
 }
 
 // ValidateState checks if a state token is valid and removes it
+// This is a convenience method that ignores the city code
 func (s *SessionStore) ValidateState(state string) bool {
+	_, valid := s.ValidateStateAndGetCity(state)
+	return valid
+}
+
+// ValidateStateAndGetCity validates the state token and returns the associated city code
+// Returns (cityCode, valid) - cityCode may be empty if not set during state generation
+func (s *SessionStore) ValidateStateAndGetCity(state string) (string, bool) {
 	value, ok := s.states.LoadAndDelete(state)
 	if !ok {
-		return false
+		return "", false
 	}
 
-	expiry, ok := value.(time.Time)
-	if !ok {
-		return false
+	// Handle both old format (time.Time) and new format (*stateContext)
+	switch ctx := value.(type) {
+	case *stateContext:
+		if time.Now().After(ctx.ExpiresAt) {
+			return "", false
+		}
+		return ctx.CityCode, true
+	case time.Time:
+		// Backwards compatibility with old format
+		if time.Now().After(ctx) {
+			return "", false
+		}
+		return "", true
+	default:
+		return "", false
 	}
-
-	// Check if expired
-	return time.Now().Before(expiry)
 }
 
 // CreateSession creates a new session and returns the session ID
@@ -123,9 +155,15 @@ func (s *SessionStore) cleanupExpiredSessions() {
 
 		// Cleanup expired states
 		s.states.Range(func(key, value interface{}) bool {
-			expiry, ok := value.(time.Time)
-			if ok && now.After(expiry) {
-				s.states.Delete(key)
+			switch ctx := value.(type) {
+			case *stateContext:
+				if now.After(ctx.ExpiresAt) {
+					s.states.Delete(key)
+				}
+			case time.Time:
+				if now.After(ctx) {
+					s.states.Delete(key)
+				}
 			}
 			return true
 		})

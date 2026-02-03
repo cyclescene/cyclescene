@@ -192,18 +192,65 @@ GET https://www.strava.com/api/v3/clubs/{id}/group_events
 ## Rate Limiting
 
 ### Strava API Limits
-- **Default:** 100 requests per 15 minutes, 1000 per day
-- **Rate limit headers returned in every response:**
-  ```
-  X-RateLimit-Limit: 100,1000
-  X-RateLimit-Usage: 5,42
-  ```
+
+**⚠️ IMPORTANT UPDATE (2026-01-31):** Live testing reveals **HIGHER limits** than documented!
+
+**Documented limits:**
+- 100 requests per 15 minutes
+- 1000 requests per day
+
+**Actual limits (verified from live API):**
+- **200 requests per 15 minutes** (2x documented!)
+- **2000 requests per day** (2x documented!)
+
+**Rate limit headers returned in every response:**
+```
+X-Ratelimit-Limit: 200,2000         ← Actual limits
+X-Ratelimit-Usage: 1,1              ← Current usage (15min, daily)
+X-Readratelimit-Limit: 100,1000     ← Separate read-only limit
+```
+
+**⚠️ Case Sensitivity:**
+- Headers use `X-Ratelimit-*` (lowercase 'l' in ratelimit)
+- NOT `X-RateLimit-*` (capital R and L)
+- Using wrong case returns empty string!
+
+### Dual Rate Limit System
+
+Strava enforces **TWO independent rate limit systems**:
+
+1. **General Rate Limits** (applies to all API operations)
+   - 200 requests per 15 minutes
+   - 2000 requests per day
+   - Headers: `X-Ratelimit-Limit` / `X-Ratelimit-Usage`
+
+2. **Read-Only Rate Limits** (applies to GET requests specifically)
+   - 100 requests per 15 minutes
+   - 1000 requests per day
+   - Headers: `X-Readratelimit-Limit` / `X-Readratelimit-Usage`
+
+**⚠️ CRITICAL:** Since **ALL our operations are GET requests** (GetAthleteClubs, GetClubDetails, GetClubEvents), we're constrained by the **read-only limits (100/15min)**, not the general limits!
+
+**Rate Limit Impact on User Flow:**
+- User logs in → 1 call to exchange token
+- Fetch clubs → 1 call to `/athlete/clubs`
+- Check admin for 10 clubs → 10 calls to `/clubs/{id}`
+- Fetch events for 5 clubs → 5 calls to `/clubs/{id}/group_events`
+- **Total: ~17 calls per user session** (well within 100/15min limit)
+
+**When we'd hit limits:**
+- Power user with 50+ clubs → 1 + 50 admin checks = 51 calls (still safe)
+- 5 concurrent users with 10 clubs each → 5 × 11 = 55 calls (safe)
+- 10 concurrent users with 10 clubs each → 10 × 11 = 110 calls (**exceeds 100/15min!**)
 
 ### Recommendations
+- **MUST track BOTH rate limit systems** in monitoring DB
+- Alert when read limit exceeds 80% (80 of 100 requests in 15min window)
 - Cache club admin status (store in session during OAuth)
 - Batch event fetches per club
 - Show rate limit warnings in UI if approaching limits
 - Consider implementing exponential backoff for retries
+- Monitor `read_limit_15min_usage` specifically (not just general limits!)
 
 ---
 

@@ -85,20 +85,17 @@ func MockClubDetail(id int64, name string, admin, owner bool) *ClubDetail {
 // MockGroupEvent returns a mock GroupEvent for testing
 func MockGroupEvent(id int64, title string, clubID int64) GroupEvent {
 	return GroupEvent{
-		ID:              id,
-		Title:           title,
-		Description:     "Test event description",
-		EventTime:       "2026-02-15T18:00:00Z",
-		Address:         "123 Main St",
-		LocationCity:    "Portland",
-		LocationState:   "OR",
-		LocationCountry: "USA",
-		Latitude:        45.5152,
-		Longitude:       -122.6784,
-		ClubID:          clubID,
-		Visibility:      "public",
-		AttendingCount:  10,
-		InterestedCount: 25,
+		ID:                  id,
+		Title:               title,
+		Description:         "Test event description",
+		ActivityType:        "Ride",
+		UpcomingOccurrences: []string{"2026-02-15T18:00:00Z"},
+		Zone:                "America/Los_Angeles",
+		Address:             "123 Main St, Portland, OR",
+		StartLatLng:         []float64{45.5152, -122.6784},
+		ClubID:              clubID,
+		Private:             false,
+		WomenOnly:           false,
 	}
 }
 
