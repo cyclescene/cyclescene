@@ -345,6 +345,20 @@ http.SetCookie(w, &http.Cookie{
    - Added `/test-websocket` endpoint to strava-test for manual WebSocket testing
    - Accessible at `http://localhost:3000/test-websocket`
 
+4. **Recurring Event Support (source_id format change)**
+   - Strava returns same event ID for recurring events, but only shows next occurrence
+   - Changed `source_id` format from `{event_id}` to `{event_id}_{YYYY-MM-DD}`
+   - Example: `"3453605542995245000_2026-02-24"`
+   - Enables importing future occurrences of same recurring event
+   - Enables ride series tracking via: `WHERE source_id LIKE '{event_id}_%'`
+   - Same-date re-imports still blocked (true duplicates)
+
+5. **WebSocket Session from Cookie**
+   - WebSocket handler now reads `strava_session_id` from HttpOnly cookie
+   - `session_id` field in ImportRequest message is now optional
+   - Frontend doesn't need to know the session ID (can't read HttpOnly cookie anyway)
+   - Backwards compatible - message can still include session_id if needed
+
 ### Build Verification
 
 All builds pass:

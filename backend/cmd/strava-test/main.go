@@ -1614,9 +1614,9 @@ func handleTestImportPreview(w http.ResponseWriter, r *http.Request) {
 				<strong>Coordinates:</strong> (%.6f, %.6f)<br>
 				<strong>Date:</strong> %s at %s<br>
 				<strong>Source:</strong> strava<br>
-				<strong>SourceID:</strong> %d
+				<strong>SourceID:</strong> %d_%s
 			`, submission.Title, submission.City, submission.Address, lat, lng,
-				submission.Occurrences[0].StartDate, submission.Occurrences[0].StartTime, event.ID)
+				submission.Occurrences[0].StartDate, submission.Occurrences[0].StartTime, event.ID, submission.Occurrences[0].StartDate)
 		}
 
 		htmlOutput += fmt.Sprintf(`

@@ -100,6 +100,13 @@ type ImportResult struct {
 // HandleImport handles the WebSocket connection for importing events
 // WS /strava/import
 func (h *ImportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
+	// Extract session ID from cookie before upgrading connection
+	// This allows HttpOnly cookies to work (frontend can't read them directly)
+	cookieSessionID := ""
+	if cookie, err := r.Cookie("strava_session_id"); err == nil {
+		cookieSessionID = cookie.Value
+	}
+
 	// Accept WebSocket connection
 	// Always allow any origin since this is an internal API
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
@@ -115,7 +122,9 @@ func (h *ImportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	if h.debug {
-		slog.Debug("WebSocket connection accepted for import")
+		slog.Debug("WebSocket connection accepted for import",
+			"has_cookie_session", cookieSessionID != "",
+		)
 	}
 
 	// Read the initial import request
@@ -125,9 +134,14 @@ func (h *ImportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Use cookie session ID if not provided in message (cookie is HttpOnly)
+	if req.SessionID == "" {
+		req.SessionID = cookieSessionID
+	}
+
 	// Validate request
 	if req.SessionID == "" {
-		h.sendError(ctx, conn, "Missing session_id")
+		h.sendError(ctx, conn, "Missing session - please reconnect to Strava")
 		return
 	}
 	if req.OrganizerEmail == "" {
@@ -319,8 +333,16 @@ func (h *ImportHandler) importSingleEvent(
 	h.applyOverrides(submission, eventConfig.Overrides)
 
 	// Set source tracking for deduplication
+	// Include occurrence date in SourceID to allow importing future occurrences of recurring events
+	// Format: {strava_event_id}_{YYYY-MM-DD} e.g., "3453605542995245000_2026-02-24"
+	// This enables series tracking via: WHERE source_id LIKE '{strava_event_id}_%'
 	submission.Source = "strava"
-	submission.SourceID = fmt.Sprintf("%d", eventConfig.StravaEventID)
+	occurrenceDate := ""
+	if len(targetEvent.UpcomingOccurrences) > 0 {
+		// Extract date portion from ISO 8601 timestamp (first 10 chars: "2026-02-20")
+		occurrenceDate = targetEvent.UpcomingOccurrences[0][:10]
+	}
+	submission.SourceID = fmt.Sprintf("%d_%s", eventConfig.StravaEventID, occurrenceDate)
 
 	h.sendProgress(ctx, conn, index, total, eventConfig.StravaEventID, targetEvent.Title, "coordinates", "success", "Location processed")
 
