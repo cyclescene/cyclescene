@@ -410,53 +410,219 @@ if (import.meta.env.PUBLIC_STRAVA_DEBUG === 'true') {
 </div>
 ```
 
-### 4.5 - Create Strava Import Components
+### 4.5 - Install Additional shadcn Components
 
-#### 4.5.1 - StravaImportButton.svelte
-- [ ] "Import from Strava" button with Strava logo/colors
+Before creating components, install these shadcn components:
+
+```bash
+cd frontends/form
+pnpm dlx shadcn-svelte@latest add accordion
+pnpm dlx shadcn-svelte@latest add collapsible
+pnpm dlx shadcn-svelte@latest add progress
+pnpm dlx shadcn-svelte@latest add badge
+pnpm dlx shadcn-svelte@latest add alert
+```
+
+**shadcn Component Mapping:**
+
+| M4 Component | shadcn Components Used |
+|--------------|----------------------|
+| StravaImportButton | `Button` |
+| StravaImport | `Card`, `Button` |
+| EmailInput | `Card`, `Input`, `Label`, `Button` |
+| ClubList | `Accordion` |
+| EventList | (container only) |
+| EventCard | `Card`, `Checkbox`, `Collapsible`, `Select`, `Button` |
+| ImportProgress | `Card`, `Progress`, `Badge` |
+| ImportResults | `Card`, `Button`, `Badge`, `Alert` |
+
+### 4.6 - Create Strava Import Components
+
+#### 4.6.1 - StravaImportButton.svelte
+**shadcn:** `Button`
+- [ ] "Import from Strava" button with Strava brand color (#FC4C02)
 - [ ] Initiates OAuth popup on click
 - [ ] Listens for `postMessage` from popup
 - [ ] Calls `onAuthComplete` callback when done
 
-#### 4.5.2 - StravaImport.svelte (Main Container)
+```svelte
+<Button variant="outline" class="border-[#FC4C02] text-[#FC4C02] hover:bg-[#FC4C02] hover:text-white">
+  <StravaIcon class="mr-2 h-4 w-4" />
+  Import from Strava
+</Button>
+```
+
+#### 4.6.2 - StravaImport.svelte (Main Container)
+**shadcn:** `Card`, `Button`
 - [ ] Manages overall import state/flow
 - [ ] Renders current step component (email → select → importing → complete)
-- [ ] Handles "Back to Manual Form" action
+- [ ] "Back to Manual Form" button at top
 
-#### 4.5.3 - EmailInput.svelte
-- [ ] Email input with validation
+#### 4.6.3 - EmailInput.svelte
+**shadcn:** `Card`, `Input`, `Label`, `Button`
+- [ ] Email input with validation (reuse existing email validation pattern)
 - [ ] "Continue" button to proceed to event selection
-- [ ] Explanation text about why email is needed
+- [ ] Explanation text about why email is needed (for edit links)
 
-#### 4.5.4 - ClubList.svelte
-- [ ] Accordion of admin clubs
-- [ ] Lazy-loads events when club expanded
-- [ ] Shows loading/error states per club
+#### 4.6.4 - ClubList.svelte
+**shadcn:** `Accordion`
+- [ ] `Accordion.Root` with `multiple` for multi-expand
+- [ ] `Accordion.Item` per club
+- [ ] `Accordion.Trigger` shows club name + event count
+- [ ] `Accordion.Content` renders EventList
+- [ ] Lazy-loads events when club first expanded
+- [ ] Shows loading spinner in content while fetching
 
-#### 4.5.5 - EventList.svelte
-- [ ] List of events within a club
+```svelte
+<Accordion.Root type="multiple" bind:value={expandedClubs}>
+  {#each clubs as club}
+    <Accordion.Item value={club.id.toString()}>
+      <Accordion.Trigger>
+        {club.name} ({club.event_count} events)
+      </Accordion.Trigger>
+      <Accordion.Content>
+        <EventList events={clubEvents.get(club.id)} />
+      </Accordion.Content>
+    </Accordion.Item>
+  {/each}
+</Accordion.Root>
+```
+
+#### 4.6.5 - EventList.svelte
+- [ ] Container for EventCard components
 - [ ] Renders EventCard for each event
+- [ ] Shows "No upcoming events" message if empty
 
-#### 4.5.6 - EventCard.svelte
-- [ ] Checkbox for selection
+#### 4.6.6 - EventCard.svelte
+**shadcn:** `Card`, `Checkbox`, `Collapsible`, `Select`, `Button`
+- [ ] `Checkbox` for selection (left side)
 - [ ] Event details (title, date, location, distance)
-- [ ] "Customize" button that expands inline options
-- [ ] Audience dropdown (G/F/A/E)
-- [ ] Duration dropdown (1hr, 1.5hr, 2hr, 2.5hr, 3hr, 4hr+)
-- [ ] Image upload (reuse existing ImageUploader)
+- [ ] `Collapsible` for customize panel
+- [ ] `Select` for Audience (G/F/A/E options)
+- [ ] `Select` for Duration (preset options)
+- [ ] Reuse existing `ImageUploader` component
 
-#### 4.5.7 - ImportProgress.svelte
+```svelte
+<Card.Root class="p-4">
+  <div class="flex items-start gap-3">
+    <Checkbox bind:checked={selected} />
+    <div class="flex-1">
+      <h4 class="font-medium">{event.title}</h4>
+      <p class="text-sm text-muted-foreground">
+        📍 {event.address} • 📅 {formatDate(event)} • 🚴 {formatDistance(event)}
+      </p>
+
+      <Collapsible.Root bind:open={customizeOpen}>
+        <Collapsible.Trigger asChild let:builder>
+          <Button builders={[builder]} variant="ghost" size="sm">
+            {customizeOpen ? 'Collapse' : 'Customize'}
+          </Button>
+        </Collapsible.Trigger>
+        <Collapsible.Content class="mt-3 space-y-3">
+          <div>
+            <Label>Audience</Label>
+            <Select.Root bind:value={audience}>
+              <Select.Trigger><Select.Value /></Select.Trigger>
+              <Select.Content>
+                <Select.Item value="G">G - All Ages</Select.Item>
+                <Select.Item value="F">F - Family Friendly</Select.Item>
+                <Select.Item value="A">A - Adult (21+)</Select.Item>
+              </Select.Content>
+            </Select.Root>
+          </div>
+          <div>
+            <Label>Duration</Label>
+            <Select.Root bind:value={duration}>
+              <!-- duration options -->
+            </Select.Root>
+          </div>
+          <div>
+            <Label>Image (optional)</Label>
+            <ImageUploader onUploadComplete={handleImageUpload} />
+          </div>
+        </Collapsible.Content>
+      </Collapsible.Root>
+    </div>
+  </div>
+</Card.Root>
+```
+
+#### 4.6.7 - ImportProgress.svelte
+**shadcn:** `Card`, `Progress`, `Badge`
 - [ ] WebSocket connection management
-- [ ] Progress display per event (4 steps)
-- [ ] Handles heartbeat messages
-- [ ] Shows error states
+- [ ] `Card` per event being imported
+- [ ] `Progress` bar showing overall progress
+- [ ] `Badge` for step status (in_progress, success, error)
+- [ ] Handles heartbeat messages (keep-alive)
 
-#### 4.5.8 - ImportResults.svelte
-- [ ] Summary of imported events
-- [ ] Edit links (magic links) per event
+```svelte
+<Card.Root class="p-4">
+  <h3 class="font-medium mb-4">Importing {events.length} Events</h3>
+
+  {#each events as event, i}
+    <div class="mb-4">
+      <div class="flex items-center gap-2 mb-2">
+        {#if progress[i]?.status === 'success'}
+          <Badge variant="success">✓</Badge>
+        {:else if progress[i]?.status === 'error'}
+          <Badge variant="destructive">✗</Badge>
+        {:else}
+          <Badge variant="secondary">⟳</Badge>
+        {/if}
+        <span>{event.title}</span>
+      </div>
+      <div class="flex gap-2 text-xs text-muted-foreground">
+        <span class={stepClass('fetching', i)}>Fetching</span>
+        <span class={stepClass('coordinates', i)}>Location</span>
+        <span class={stepClass('route', i)}>Route</span>
+        <span class={stepClass('database', i)}>Saved</span>
+      </div>
+    </div>
+  {/each}
+</Card.Root>
+```
+
+#### 4.6.8 - ImportResults.svelte
+**shadcn:** `Card`, `Button`, `Badge`, `Alert`
+- [ ] `Alert` for success summary message
+- [ ] `Card` with list of imported events
+- [ ] `Badge` for success/error per event
+- [ ] `Button` for edit links (opens in new tab)
 - [ ] "Import More Events" and "Done" buttons
 
-### 4.6 - Integrate into Form Page
+```svelte
+<Alert.Root variant="success">
+  <Alert.Title>Import Complete!</Alert.Title>
+  <Alert.Description>
+    {successCount} events imported. A confirmation email has been sent.
+  </Alert.Description>
+</Alert.Root>
+
+<Card.Root class="mt-4 p-4">
+  {#each results as result}
+    <div class="flex items-center justify-between py-2">
+      <div class="flex items-center gap-2">
+        <Badge variant={result.success ? 'success' : 'destructive'}>
+          {result.success ? '✓' : '✗'}
+        </Badge>
+        <span>{result.title}</span>
+      </div>
+      {#if result.edit_url}
+        <Button variant="outline" size="sm" href={result.edit_url} target="_blank">
+          Edit →
+        </Button>
+      {/if}
+    </div>
+  {/each}
+</Card.Root>
+
+<div class="flex justify-end gap-2 mt-4">
+  <Button variant="outline" onclick={onImportMore}>Import More Events</Button>
+  <Button onclick={onDone}>Done</Button>
+</div>
+```
+
+### 4.7 - Integrate into Form Page
 - [ ] Modify `frontends/form/src/routes/+page.svelte`
 - [ ] Add `stravaMode` state variable
 - [ ] Conditionally render form OR Strava import UI
@@ -495,7 +661,7 @@ if (import.meta.env.PUBLIC_STRAVA_DEBUG === 'true') {
 {/if}
 ```
 
-### 4.7 - Add Environment Variables
+### 4.8 - Add Environment Variables
 - [ ] Update `frontends/form/.env.example`
 
 ```bash
@@ -505,7 +671,7 @@ PUBLIC_STRAVA_DEBUG=false
 PUBLIC_API_URL=https://api.cyclescene.cc
 ```
 
-### 4.8 - Testing & Validation
+### 4.9 - Testing & Validation
 - [ ] `pnpm run check` - Zero TypeScript errors
 - [ ] `pnpm run build` - Production build succeeds
 - [ ] `pnpm run lint` - No lint errors
@@ -592,6 +758,27 @@ debugLog('WebSocket message received', message);
 ---
 
 ## Completion Checklist
+
+**Prerequisites (BEFORE starting build):**
+```bash
+cd frontends/form
+
+# Install required shadcn components
+pnpm dlx shadcn-svelte@latest add accordion
+pnpm dlx shadcn-svelte@latest add collapsible
+pnpm dlx shadcn-svelte@latest add progress
+pnpm dlx shadcn-svelte@latest add badge
+pnpm dlx shadcn-svelte@latest add alert
+
+# Verify installation
+ls src/lib/components/ui/
+# Should now include: accordion, alert, badge, collapsible, progress
+```
+- [ ] `accordion` component installed
+- [ ] `collapsible` component installed
+- [ ] `progress` component installed
+- [ ] `badge` component installed
+- [ ] `alert` component installed
 
 **Code Quality:**
 - [ ] All components created with TypeScript
