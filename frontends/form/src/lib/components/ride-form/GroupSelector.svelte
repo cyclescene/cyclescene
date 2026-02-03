@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onDestroy } from "svelte";
+  import { PUBLIC_API_URL } from "$env/static/public";
   import { validateGroupCode } from "$lib/api/client";
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
@@ -18,9 +20,16 @@
   let groupName = $state<string>("");
   let debounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
 
+  // Cleanup debounce timer on component destroy
+  onDestroy(() => {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+    }
+  });
+
   async function handleRegisterGroup() {
     try {
-      const url = `http://localhost:8080/v1/tokens/submission`;
+      const url = `${PUBLIC_API_URL}/v1/tokens/submission`;
 
       const response = await fetch(url, {
         method: "POST",

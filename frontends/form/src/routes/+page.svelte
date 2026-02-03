@@ -10,6 +10,12 @@
   import DateTimePicker from "$lib/components/ride-form/DateTimePicker.svelte";
   import ImageUploader from "$lib/components/ride-form/ImageUploader.svelte";
 
+  // Strava import components
+  import { StravaImportButton, StravaImport } from "$lib/components/strava";
+
+  // Environment variables (SvelteKit way)
+  import { PUBLIC_STRAVA_ENABLED } from "$env/static/public";
+
   // shadcn imports
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
@@ -31,6 +37,22 @@
 
   let { data }: Props = $props();
 
+  // Strava import mode state
+  let stravaMode = $state(false);
+
+  // Check if Strava integration is enabled
+  const stravaEnabled = PUBLIC_STRAVA_ENABLED === "true";
+
+  // Handle OAuth completion from popup
+  function handleStravaAuthComplete() {
+    stravaMode = true;
+  }
+
+  // Handle closing Strava import (back to manual form)
+  function handleStravaClose() {
+    stravaMode = false;
+  }
+
   const { form, errors, enhance, delayed, message } = superForm(data.form, {
     validators: zodClient(rideSubmissionSchema),
     dataType: "json",
@@ -42,12 +64,27 @@
 </script>
 
 <div class="container max-w-4xl mx-auto py-4 sm:py-8 px-4">
-  <div class="mb-6 sm:mb-8">
-    <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Host a Ride</h1>
-    <p class="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
-      Share your ride with the {data.city.toUpperCase()} cycling community
-    </p>
-  </div>
+  {#if stravaMode}
+    <!-- Strava Import Mode -->
+    <StravaImport city={data.city} onClose={handleStravaClose} />
+  {:else}
+    <!-- Manual Form Mode -->
+    <div class="mb-6 sm:mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Host a Ride</h1>
+          <p class="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
+            Share your ride with the {data.city.toUpperCase()} cycling community
+          </p>
+        </div>
+        {#if stravaEnabled}
+          <StravaImportButton
+            city={data.city}
+            onAuthComplete={handleStravaAuthComplete}
+          />
+        {/if}
+      </div>
+    </div>
 
   {#if $message}
     <div
@@ -542,4 +579,5 @@
       >
     </div>
   </form>
+  {/if}
 </div>

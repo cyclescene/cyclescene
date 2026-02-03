@@ -2,21 +2,70 @@ package strava
 
 import (
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spacesedan/cyclescene/backend/internal/api/magiclink"
 	"github.com/spacesedan/cyclescene/backend/internal/api/ride"
+	"github.com/spacesedan/cyclescene/backend/internal/config"
 	"github.com/spacesedan/cyclescene/backend/internal/strava"
 )
+
+// GroupEventResponse is a frontend-safe version of GroupEvent with ID as string
+// This avoids JavaScript precision loss with large int64 event IDs
+type GroupEventResponse struct {
+	ID                  string    `json:"id"` // String to avoid JS precision loss
+	Title               string    `json:"title"`
+	Description         string    `json:"description"`
+	ActivityType        string    `json:"activity_type"`
+	UpcomingOccurrences []string  `json:"upcoming_occurrences"`
+	Zone                string    `json:"zone"`
+	Address             string    `json:"address"`
+	StartLatLng         []float64 `json:"start_latlng"`
+	RouteID             *int64    `json:"route_id"`
+	Route               any       `json:"route"`
+	SkillLevels         *string   `json:"skill_levels"`
+	Terrain             *string   `json:"terrain"`
+	WomenOnly           bool      `json:"women_only"`
+	Private             bool      `json:"private"`
+	Joined              bool      `json:"joined"`
+	ClubID              int64     `json:"club_id"`
+	Club                any       `json:"club,omitempty"`
+	OrganizingAthlete   any       `json:"organizing_athlete,omitempty"`
+}
+
+// toGroupEventResponse converts a GroupEvent to frontend-safe response
+func toGroupEventResponse(e strava.GroupEvent) GroupEventResponse {
+	return GroupEventResponse{
+		ID:                  strconv.FormatInt(e.ID, 10),
+		Title:               e.Title,
+		Description:         e.Description,
+		ActivityType:        e.ActivityType,
+		UpcomingOccurrences: e.UpcomingOccurrences,
+		Zone:                e.Zone,
+		Address:             e.Address,
+		StartLatLng:         e.StartLatLng,
+		RouteID:             e.RouteID,
+		Route:               e.Route,
+		SkillLevels:         e.SkillLevels,
+		Terrain:             e.Terrain,
+		WomenOnly:           e.WomenOnly,
+		Private:             e.Private,
+		Joined:              e.Joined,
+		ClubID:              e.ClubID,
+		Club:                e.Club,
+		OrganizingAthlete:   e.OrganizingAthlete,
+	}
+}
 
 // Handler handles Strava OAuth and import HTTP requests
 type Handler struct {
 	stravaService *strava.Service
 	importHandler *ImportHandler
+	formURL       string // Frontend form app URL for OAuth redirects
 	debug         bool
 }
 
@@ -24,6 +73,7 @@ type Handler struct {
 func NewHandler(stravaService *strava.Service) *Handler {
 	return &Handler{
 		stravaService: stravaService,
+		formURL:       getFormURL(),
 		debug:         os.Getenv("STRAVA_DEBUG") == "true",
 	}
 }
@@ -38,8 +88,19 @@ func NewHandlerWithImport(
 	return &Handler{
 		stravaService: stravaService,
 		importHandler: NewImportHandler(stravaService, rideService, magicLinkSvc, editLinkBase),
+		formURL:       getFormURL(),
 		debug:         os.Getenv("STRAVA_DEBUG") == "true",
 	}
+}
+
+// getFormURL returns the frontend form app URL from environment
+func getFormURL() string {
+	url := os.Getenv("FORM_URL")
+	if url == "" {
+		// Default to localhost for development
+		url = "http://localhost:5173"
+	}
+	return url
 }
 
 // RegisterRoutes registers the Strava routes with the chi router
@@ -99,8 +160,9 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	// Handle OAuth errors (user denied access, etc.)
 	if errorParam != "" {
 		slog.Warn("OAuth error from Strava", "error", errorParam)
-		// Redirect to frontend with error
-		http.Redirect(w, r, "/strava/error?error="+errorParam, http.StatusTemporaryRedirect)
+		// Redirect to frontend callback with error
+		redirectURL := h.formURL + "/strava/callback?error=" + errorParam
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -119,21 +181,16 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 	sessionID, err := h.stravaService.HandleOAuthCallback(r.Context(), code, state)
 	if err != nil {
 		slog.Error("OAuth callback failed", "error", err)
-		// Redirect to frontend with error
-		http.Redirect(w, r, "/strava/error?error=callback_failed", http.StatusTemporaryRedirect)
+		// Redirect to frontend callback with error
+		redirectURL := h.formURL + "/strava/callback?error=callback_failed"
+		http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 		return
 	}
 
-	// Set session cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "strava_session_id",
-		Value:    sessionID,
-		Path:     "/",
-		MaxAge:   3600, // 1 hour
-		HttpOnly: true,
-		Secure:   os.Getenv("APP_ENV") != "dev", // Secure in production
-		SameSite: http.SameSiteLaxMode,
-	})
+	// Set session cookie using centralized config
+	// Dev: HttpOnly=false so frontend can read session for WebSocket auth
+	// Prod: HttpOnly=true, Secure=true for security
+	http.SetCookie(w, config.NewSessionCookie("strava_session_id", sessionID, 3600))
 
 	if h.debug {
 		slog.Debug("OAuth callback successful, session created",
@@ -141,57 +198,14 @@ func (h *Handler) HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	// Get session to retrieve city code for redirect
-	session, ok := h.stravaService.GetSession(sessionID)
-	if !ok {
-		// Shouldn't happen, but redirect to default
-		http.Redirect(w, r, "/strava/success", http.StatusTemporaryRedirect)
-		return
-	}
+	// Redirect to frontend callback page (for popup to close)
+	// The frontend callback page will send postMessage to parent and close
+	redirectURL := h.formURL + "/strava/callback"
 
-	// In dev mode, show success page with session info for testing
-	// In production, redirect to frontend
-	if os.Getenv("APP_ENV") == "dev" {
-		w.Header().Set("Content-Type", "text/html")
-		html := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-    <title>Strava OAuth Success</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
-        .success { background: #e8f5e9; padding: 20px; border-radius: 5px; margin: 20px 0; }
-        .session-id { background: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; word-break: break-all; }
-        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; margin: 5px; }
-        button:hover { background: #E34402; }
-        h1 { color: #4CAF50; }
-    </style>
-</head>
-<body>
-    <h1>✓ OAuth Successful!</h1>
-    <div class="success">
-        <p><strong>Athlete:</strong> %s</p>
-        <p><strong>City:</strong> %s</p>
-        <p><strong>Session ID:</strong></p>
-        <div class="session-id" id="sessionId">%s</div>
-    </div>
-    <button onclick="copySessionId()">Copy Session ID</button>
-    <button onclick="window.location.href='http://localhost:3000/test-websocket'">Go to WebSocket Test</button>
-    <script>
-        function copySessionId() {
-            navigator.clipboard.writeText('%s');
-            alert('Session ID copied!');
-        }
-    </script>
-</body>
-</html>`, session.AthleteName, session.CityCode, sessionID, sessionID)
-		w.Write([]byte(html))
-		return
-	}
-
-	// Production: redirect to frontend with city code
-	redirectURL := "/strava/success"
-	if session.CityCode != "" {
-		redirectURL = "/strava/success?city=" + session.CityCode
+	if h.debug {
+		slog.Debug("Redirecting to frontend callback",
+			"redirect_url", redirectURL,
+		)
 	}
 
 	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
@@ -210,19 +224,17 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Clear the session cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "strava_session_id",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1, // Delete cookie
-		HttpOnly: true,
-		Secure:   os.Getenv("APP_ENV") != "dev",
-		SameSite: http.SameSiteLaxMode,
-	})
+	h.clearSessionCookie(w)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})
+}
+
+// clearSessionCookie clears the Strava session cookie with consistent attributes
+// Uses centralized config to ensure attributes match those used when setting
+func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, config.ClearSessionCookie("strava_session_id"))
 }
 
 // GetAdminClubs returns clubs where the user is an admin or owner
@@ -241,13 +253,8 @@ func (h *Handler) GetAdminClubs(w http.ResponseWriter, r *http.Request) {
 	clubs, err := h.stravaService.GetAdminClubs(r.Context(), sessionID)
 	if err != nil {
 		if err == strava.ErrUnauthorized {
-			// Clear invalid session cookie
-			http.SetCookie(w, &http.Cookie{
-				Name:   "strava_session_id",
-				Value:  "",
-				Path:   "/",
-				MaxAge: -1,
-			})
+			// Clear invalid session cookie (must match attributes used when setting)
+			h.clearSessionCookie(w)
 			http.Error(w, "Session expired - please reconnect to Strava", http.StatusUnauthorized)
 			return
 		}
@@ -261,7 +268,7 @@ func (h *Handler) GetAdminClubs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(clubs)
+	json.NewEncoder(w).Encode(map[string]interface{}{"clubs": clubs})
 }
 
 // GetClubEvents returns events for a specific club
@@ -296,12 +303,8 @@ func (h *Handler) GetClubEvents(w http.ResponseWriter, r *http.Request) {
 	events, err := h.stravaService.GetClubEvents(r.Context(), sessionID, clubID)
 	if err != nil {
 		if err == strava.ErrUnauthorized {
-			http.SetCookie(w, &http.Cookie{
-				Name:   "strava_session_id",
-				Value:  "",
-				Path:   "/",
-				MaxAge: -1,
-			})
+			// Clear invalid session cookie (must match attributes used when setting)
+			h.clearSessionCookie(w)
 			http.Error(w, "Session expired - please reconnect to Strava", http.StatusUnauthorized)
 			return
 		}
@@ -314,8 +317,14 @@ func (h *Handler) GetClubEvents(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("Club events fetched", "club_id", clubID, "count", len(events))
 	}
 
+	// Convert to frontend-safe response with string IDs
+	responseEvents := make([]GroupEventResponse, len(events))
+	for i, e := range events {
+		responseEvents[i] = toGroupEventResponse(e)
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(events)
+	json.NewEncoder(w).Encode(map[string]interface{}{"events": responseEvents})
 }
 
 // getSessionIDFromCookie extracts the session ID from the cookie

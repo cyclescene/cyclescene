@@ -50,27 +50,29 @@ func NewImportHandler(
 type ImportRequest struct {
 	SessionID      string              `json:"session_id"`
 	OrganizerEmail string              `json:"organizer_email"`
+	GroupCode      string              `json:"group_code,omitempty"` // Optional 4-char group code to associate rides with
 	Events         []EventImportConfig `json:"events"`
 }
 
 // EventImportConfig specifies which event to import and any overrides
-// Note: Event IDs use json:",string" to avoid JavaScript precision loss with large int64 values
+// Note: StravaEventID uses json:",string" to avoid JavaScript precision loss with large int64 values
+// ClubID is smaller and doesn't need string encoding
 type EventImportConfig struct {
 	StravaEventID int64             `json:"strava_event_id,string"`
-	ClubID        int64             `json:"club_id,string"`
+	ClubID        int64             `json:"club_id"`
 	Overrides     map[string]string `json:"overrides,omitempty"` // e.g., {"audience": "All", "image_url": "..."}
 }
 
 // ProgressMessage is sent to the client during import
 type ProgressMessage struct {
-	Type         string `json:"type"`                    // "heartbeat", "progress", "complete", "done", "error"
-	EventIndex   int    `json:"event_index,omitempty"`   // 0-indexed
-	TotalEvents  int    `json:"total_events,omitempty"`  // Total number of events being imported
-	StravaEventID int64 `json:"strava_event_id,omitempty"`
-	EventTitle   string `json:"event_title,omitempty"`
-	Step         string `json:"step,omitempty"`          // "fetching", "coordinates", "route", "database"
-	Status       string `json:"status,omitempty"`        // "in_progress", "success", "error"
-	Message      string `json:"message,omitempty"`
+	Type          string `json:"type"`                              // "heartbeat", "progress", "complete", "done", "error"
+	EventIndex    int    `json:"event_index,omitempty"`             // 0-indexed
+	TotalEvents   int    `json:"total_events,omitempty"`            // Total number of events being imported
+	StravaEventID int64  `json:"strava_event_id,string,omitempty"`  // String to avoid JS precision loss
+	EventTitle    string `json:"event_title,omitempty"`
+	Step          string `json:"step,omitempty"`                    // "fetching", "coordinates", "route", "database"
+	Status        string `json:"status,omitempty"`                  // "in_progress", "success", "error"
+	Message       string `json:"message,omitempty"`
 
 	// Complete message fields
 	CycleSceneEventID int64  `json:"cyclescene_event_id,omitempty"`
@@ -88,7 +90,7 @@ type ProgressMessage struct {
 
 // ImportResult is the result of importing a single event
 type ImportResult struct {
-	StravaEventID     int64  `json:"strava_event_id"`
+	StravaEventID     int64  `json:"strava_event_id,string"` // String to avoid JS precision loss
 	CycleSceneEventID int64  `json:"cyclescene_event_id,omitempty"`
 	EditToken         string `json:"edit_token,omitempty"`
 	EditURL           string `json:"edit_url,omitempty"`
@@ -264,7 +266,7 @@ func (h *ImportHandler) processImports(
 	totalEvents := len(req.Events)
 
 	for i, eventConfig := range req.Events {
-		result := h.importSingleEvent(ctx, conn, session, req.OrganizerEmail, eventConfig, i, totalEvents)
+		result := h.importSingleEvent(ctx, conn, session, req.OrganizerEmail, req.GroupCode, eventConfig, i, totalEvents)
 		results = append(results, result)
 
 		// Check if context was cancelled (client disconnected, timeout, etc.)
@@ -283,6 +285,7 @@ func (h *ImportHandler) importSingleEvent(
 	conn *websocket.Conn,
 	session *strava.Session,
 	organizerEmail string,
+	groupCode string,
 	eventConfig EventImportConfig,
 	index int,
 	total int,
@@ -331,6 +334,11 @@ func (h *ImportHandler) importSingleEvent(
 
 	// Apply overrides
 	h.applyOverrides(submission, eventConfig.Overrides)
+
+	// Set group code if provided (from import request level)
+	if groupCode != "" {
+		submission.GroupCode = groupCode
+	}
 
 	// Set source tracking for deduplication
 	// Include occurrence date in SourceID to allow importing future occurrences of recurring events

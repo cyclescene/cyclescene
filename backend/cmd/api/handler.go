@@ -21,6 +21,7 @@ import (
 	"github.com/spacesedan/cyclescene/backend/internal/api/storage"
 	stravaapi "github.com/spacesedan/cyclescene/backend/internal/api/strava"
 	"github.com/spacesedan/cyclescene/backend/internal/api/synclog"
+	"github.com/spacesedan/cyclescene/backend/internal/config"
 	"github.com/spacesedan/cyclescene/backend/internal/routes"
 	"github.com/spacesedan/cyclescene/backend/internal/strava"
 )
@@ -28,28 +29,13 @@ import (
 
 func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 	slog.Info("Initializing CycleScene API router!")
-	var corsOptions cors.Options
 
-	if os.Getenv("APP_ENV") == "dev" {
-		slog.Info("loading cors with dev options")
-		corsOptions = cors.Options{
-			AllowedOrigins:   []string{"*"},
-			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch, http.MethodOptions},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token", "X-Admin-Token"},
-			ExposedHeaders:   []string{"Link"},
-			AllowCredentials: false,
-			MaxAge:           300,
-		}
-	} else {
-		corsOptions = cors.Options{
-			AllowedOrigins:   []string{"*"},
-			AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch, http.MethodOptions},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token", "X-Admin-Token"},
-			ExposedHeaders:   []string{"Link"},
-			AllowCredentials: false,
-			MaxAge:           300,
-		}
-	}
+	// Load CORS config from centralized environment config
+	corsOptions := config.CORSConfig()
+	slog.Info("Loading CORS config",
+		"env", config.GetEnvironment(),
+		"origins", config.GetAllowedOrigins(),
+	)
 
 	r := chi.NewMux()
 	r.Use(chimi.Logger)

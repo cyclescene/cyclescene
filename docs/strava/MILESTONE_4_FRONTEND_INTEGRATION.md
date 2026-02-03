@@ -2,7 +2,7 @@
 
 **Goal:** Add Strava import UI to the form frontend
 
-**Status:** Planning Complete
+**Status:** COMPLETED (2026-02-03)
 
 ---
 
@@ -349,9 +349,9 @@ export interface ClubWithEvents extends StravaClub {
 ## Tasks
 
 ### 4.1 - Create TypeScript Types
-- [ ] Create `frontends/form/src/lib/types/strava.ts`
-- [ ] Define all types as specified above
-- [ ] Ensure WebSocket message types match backend exactly
+- [x] Create `frontends/form/src/lib/types/strava.ts`
+- [x] Define all types as specified above
+- [x] Ensure WebSocket message types match backend exactly
 
 **Validation:**
 ```bash
@@ -359,12 +359,12 @@ cd frontends/form && pnpm run check
 ```
 
 ### 4.2 - Create Strava API Client
-- [ ] Create `frontends/form/src/lib/api/strava.ts`
-- [ ] `initiateAuth(city: string)` - Opens OAuth popup
-- [ ] `checkSession()` - Verifies session cookie is valid
-- [ ] `fetchAdminClubs()` - GET /v1/strava/admin-clubs
-- [ ] `fetchClubEvents(clubId: number)` - GET /v1/strava/clubs/{id}/events
-- [ ] `logout()` - POST /v1/strava/logout
+- [x] Create `frontends/form/src/lib/api/strava.ts`
+- [x] `initiateAuth(city: string)` - Opens OAuth popup
+- [x] `checkSession()` - Verifies session cookie is valid
+- [x] `fetchAdminClubs()` - GET /v1/strava/admin-clubs
+- [x] `fetchClubEvents(clubId: number)` - GET /v1/strava/clubs/{id}/events
+- [x] `logout()` - POST /v1/strava/logout
 
 **Debug Points:**
 ```typescript
@@ -374,11 +374,11 @@ if (import.meta.env.PUBLIC_STRAVA_DEBUG === 'true') {
 ```
 
 ### 4.3 - Create WebSocket Client Helper
-- [ ] Create `frontends/form/src/lib/utils/strava-websocket.ts`
-- [ ] Handle connection lifecycle (connect, reconnect, close)
-- [ ] Parse incoming messages to typed `ProgressMessage`
-- [ ] Handle heartbeat messages (keep connection alive)
-- [ ] Emit events for progress updates
+- [x] Create `frontends/form/src/lib/utils/strava-websocket.ts`
+- [x] Handle connection lifecycle (connect, reconnect, close)
+- [x] Parse incoming messages to typed `ProgressMessage`
+- [x] Handle heartbeat messages (keep connection alive)
+- [x] Emit events for progress updates
 
 **Key considerations:**
 - WebSocket URL: `wss://{API_HOST}/v1/strava/import`
@@ -386,10 +386,10 @@ if (import.meta.env.PUBLIC_STRAVA_DEBUG === 'true') {
 - Event IDs must be strings (int64 precision)
 
 ### 4.4 - Create OAuth Callback Page
-- [ ] Create `frontends/form/src/routes/strava/callback/+page.svelte`
-- [ ] Send `postMessage` to parent window on load
-- [ ] Auto-close popup after short delay
-- [ ] Show fallback "Close this window" message
+- [x] Create `frontends/form/src/routes/strava/callback/+page.svelte`
+- [x] Send `postMessage` to parent window on load
+- [x] Auto-close popup after short delay
+- [x] Show fallback "Close this window" message
 
 ```svelte
 <script>
@@ -440,10 +440,10 @@ pnpm dlx shadcn-svelte@latest add alert
 
 #### 4.6.1 - StravaImportButton.svelte
 **shadcn:** `Button`
-- [ ] "Import from Strava" button with Strava brand color (#FC4C02)
-- [ ] Initiates OAuth popup on click
-- [ ] Listens for `postMessage` from popup
-- [ ] Calls `onAuthComplete` callback when done
+- [x] "Import from Strava" button with Strava brand color (#FC4C02)
+- [x] Initiates OAuth popup on click
+- [x] Listens for `postMessage` from popup
+- [x] Calls `onAuthComplete` callback when done
 
 ```svelte
 <Button variant="outline" class="border-[#FC4C02] text-[#FC4C02] hover:bg-[#FC4C02] hover:text-white">
@@ -454,24 +454,24 @@ pnpm dlx shadcn-svelte@latest add alert
 
 #### 4.6.2 - StravaImport.svelte (Main Container)
 **shadcn:** `Card`, `Button`
-- [ ] Manages overall import state/flow
-- [ ] Renders current step component (email → select → importing → complete)
-- [ ] "Back to Manual Form" button at top
+- [x] Manages overall import state/flow
+- [x] Renders current step component (email → select → importing → complete)
+- [x] "Back to Manual Form" button at top
 
 #### 4.6.3 - EmailInput.svelte
 **shadcn:** `Card`, `Input`, `Label`, `Button`
-- [ ] Email input with validation (reuse existing email validation pattern)
-- [ ] "Continue" button to proceed to event selection
-- [ ] Explanation text about why email is needed (for edit links)
+- [x] Email input with validation (reuse existing email validation pattern)
+- [x] "Continue" button to proceed to event selection
+- [x] Explanation text about why email is needed (for edit links)
 
 #### 4.6.4 - ClubList.svelte
 **shadcn:** `Accordion`
-- [ ] `Accordion.Root` with `multiple` for multi-expand
-- [ ] `Accordion.Item` per club
-- [ ] `Accordion.Trigger` shows club name + event count
-- [ ] `Accordion.Content` renders EventList
-- [ ] Lazy-loads events when club first expanded
-- [ ] Shows loading spinner in content while fetching
+- [x] `Accordion.Root` with `multiple` for multi-expand
+- [x] `Accordion.Item` per club
+- [x] `Accordion.Trigger` shows club name + event count
+- [x] `Accordion.Content` renders EventList
+- [x] Lazy-loads events when club first expanded
+- [x] Shows loading spinner in content while fetching
 
 ```svelte
 <Accordion.Root type="multiple" bind:value={expandedClubs}>
@@ -489,18 +489,18 @@ pnpm dlx shadcn-svelte@latest add alert
 ```
 
 #### 4.6.5 - EventList.svelte
-- [ ] Container for EventCard components
-- [ ] Renders EventCard for each event
-- [ ] Shows "No upcoming events" message if empty
+- [x] Container for EventCard components
+- [x] Renders EventCard for each event
+- [x] Shows "No upcoming events" message if empty
 
 #### 4.6.6 - EventCard.svelte
 **shadcn:** `Card`, `Checkbox`, `Collapsible`, `Select`, `Button`
-- [ ] `Checkbox` for selection (left side)
-- [ ] Event details (title, date, location, distance)
-- [ ] `Collapsible` for customize panel
-- [ ] `Select` for Audience (G/F/A/E options)
-- [ ] `Select` for Duration (preset options)
-- [ ] Reuse existing `ImageUploader` component
+- [x] `Checkbox` for selection (left side)
+- [x] Event details (title, date, location, distance)
+- [x] `Collapsible` for customize panel
+- [x] `Select` for Audience (G/F/A/E options)
+- [x] `Select` for Duration (preset options)
+- [x] Reuse existing `ImageUploader` component
 
 ```svelte
 <Card.Root class="p-4">
@@ -549,11 +549,11 @@ pnpm dlx shadcn-svelte@latest add alert
 
 #### 4.6.7 - ImportProgress.svelte
 **shadcn:** `Card`, `Progress`, `Badge`
-- [ ] WebSocket connection management
-- [ ] `Card` per event being imported
-- [ ] `Progress` bar showing overall progress
-- [ ] `Badge` for step status (in_progress, success, error)
-- [ ] Handles heartbeat messages (keep-alive)
+- [x] WebSocket connection management
+- [x] `Card` per event being imported
+- [x] `Progress` bar showing overall progress
+- [x] `Badge` for step status (in_progress, success, error)
+- [x] Handles heartbeat messages (keep-alive)
 
 ```svelte
 <Card.Root class="p-4">
@@ -584,11 +584,11 @@ pnpm dlx shadcn-svelte@latest add alert
 
 #### 4.6.8 - ImportResults.svelte
 **shadcn:** `Card`, `Button`, `Badge`, `Alert`
-- [ ] `Alert` for success summary message
-- [ ] `Card` with list of imported events
-- [ ] `Badge` for success/error per event
-- [ ] `Button` for edit links (opens in new tab)
-- [ ] "Import More Events" and "Done" buttons
+- [x] `Alert` for success summary message
+- [x] `Card` with list of imported events
+- [x] `Badge` for success/error per event
+- [x] `Button` for edit links (opens in new tab)
+- [x] "Import More Events" and "Done" buttons
 
 ```svelte
 <Alert.Root variant="success">
@@ -623,10 +623,10 @@ pnpm dlx shadcn-svelte@latest add alert
 ```
 
 ### 4.7 - Integrate into Form Page
-- [ ] Modify `frontends/form/src/routes/+page.svelte`
-- [ ] Add `stravaMode` state variable
-- [ ] Conditionally render form OR Strava import UI
-- [ ] Add StravaImportButton near page header
+- [x] Modify `frontends/form/src/routes/+page.svelte`
+- [x] Add `stravaMode` state variable
+- [x] Conditionally render form OR Strava import UI
+- [x] Add StravaImportButton near page header
 - [ ] Handle OAuth callback via `postMessage` listener
 
 ```svelte
