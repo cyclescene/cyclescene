@@ -37,7 +37,6 @@ export const load: PageServerLoad = async ({ url }) => {
         description: rideData.event.description || '',
         image_url: rideData.event.image_url || '',
         image_uuid: rideData.event.image_uuid || '',
-        image_srcset: rideData.event.image_srcset || '',
         audience: rideData.event.audience || '',
         ride_length: rideData.event.ride_length || '',
         area: rideData.event.area || '',

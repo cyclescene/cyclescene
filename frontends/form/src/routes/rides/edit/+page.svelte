@@ -341,7 +341,7 @@
                       type="text"
                       bind:value={occurrence.newsflash}
                       placeholder="e.g., Route change due to construction"
-                      maxlength="500"
+                      maxlength={500}
                       class="mt-1"
                     />
                     <p class="text-xs text-muted-foreground mt-1">Special message or alert for this date (max 500 characters)</p>

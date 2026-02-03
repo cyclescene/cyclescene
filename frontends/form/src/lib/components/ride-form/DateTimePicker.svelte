@@ -191,7 +191,7 @@
                 </Button>
               </Popover.Trigger>
               <Popover.Content class="w-auto p-0">
-                <Calendar bind:value={recurringStartDate} />
+                <Calendar type="single" bind:value={recurringStartDate} />
               </Popover.Content>
             </Popover.Root>
           </div>
@@ -216,7 +216,7 @@
                 </Button>
               </Popover.Trigger>
               <Popover.Content class="w-auto p-0">
-                <Calendar bind:value={recurringEndDate} />
+                <Calendar type="single" bind:value={recurringEndDate} />
               </Popover.Content>
             </Popover.Root>
           </div>
@@ -295,7 +295,7 @@
             </Button>
           </Popover.Trigger>
           <Popover.Content class="w-auto p-0">
-            <Calendar bind:value={selectedDate} />
+            <Calendar type="single" bind:value={selectedDate} />
           </Popover.Content>
         </Popover.Root>
       </div>
@@ -365,7 +365,7 @@
           type="text"
           bind:value={newsflash}
           placeholder="Route change due to construction, weather delay, etc."
-          maxlength="500"
+          maxlength={500}
           class="text-base"
         />
         <p class="text-xs text-muted-foreground">

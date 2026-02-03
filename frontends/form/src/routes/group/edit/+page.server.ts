@@ -17,16 +17,18 @@ export const load: PageServerLoad = async ({ url }) => {
     const groupData = await getGroupByEditToken(token);
 
     // Initialize form with existing data
-    const form = await superValidate(zod(groupRegistrationSchema), {
-      data: {
+    const form = await superValidate(
+      {
         code: groupData.code || '',
         name: groupData.name || '',
         description: groupData.description || '',
         city: groupData.city || '',
+        email: groupData.email || '',
         image_uuid: groupData.image_uuid || '',
         web_url: groupData.web_url || ''
-      }
-    });
+      },
+      zod(groupRegistrationSchema)
+    );
 
     return {
       form,

@@ -137,14 +137,21 @@
     // 3. Draw Image (with proper async handling)
     // Load image first, then draw it clipped to the circle
     try {
+      if (!imagePreview) {
+        throw new Error("No image preview available");
+      }
+
+      // Capture imagePreview in a local constant for type narrowing
+      const imageSrc = imagePreview;
+
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image();
         image.crossOrigin = "anonymous";
-        image.src = imagePreview;
+        image.src = imageSrc;
 
         console.log("CustomMarkerBuilder: Loading image...", {
-          srcLength: imagePreview.length,
-          srcStart: imagePreview.substring(0, 50),
+          srcLength: imageSrc.length,
+          srcStart: imageSrc.substring(0, 50),
         });
 
         if (image.complete) {
@@ -445,8 +452,15 @@
       }
 
       // Convert canvas to blob
+      if (!canvasRef) {
+        throw new Error("Canvas reference not available");
+      }
+
+      // Capture canvasRef in a local constant for type narrowing
+      const canvas = canvasRef;
+
       const blob = await new Promise<Blob | null>((resolve) =>
-        canvasRef.toBlob(resolve, "image/png"),
+        canvas.toBlob(resolve, "image/png"),
       );
 
       if (!blob) {

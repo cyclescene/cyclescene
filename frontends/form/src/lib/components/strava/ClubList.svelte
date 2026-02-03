@@ -70,18 +70,16 @@
     }
   }
 
-  // Handle accordion value change
-  function handleValueChange(value: string[]) {
-    expandedClubs = value;
-
+  // Watch for changes to expanded clubs and load events
+  $effect(() => {
     // Load events for newly expanded clubs
-    for (const clubIdStr of value) {
+    for (const clubIdStr of expandedClubs) {
       const clubId = parseInt(clubIdStr, 10);
       if (!clubEvents.has(clubId) && !loadingClubs.has(clubId)) {
         loadClubEvents(clubId);
       }
     }
-  }
+  });
 
   // Get event count for a club
   function getEventCount(clubId: number): number {
@@ -104,7 +102,7 @@
     </p>
   </div>
 {:else}
-  <Accordion.Root type="multiple" value={expandedClubs} onValueChange={handleValueChange}>
+  <Accordion.Root type="multiple" bind:value={expandedClubs}>
     {#each clubs as club (club.id)}
       <Accordion.Item value={club.id.toString()} class="border-b">
         <Accordion.Trigger class="py-4 hover:no-underline">

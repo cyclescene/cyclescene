@@ -110,7 +110,16 @@ export const actions: Actions = {
       return response
     }
 
-    throw redirect(303, `/group/success?token=${response.edit_token}&code=${response.code}&city=${city}`);
+    // Type guard: ensure response is the success type with edit_token and code
+    if ('edit_token' in response && 'code' in response) {
+      throw redirect(303, `/group/success?token=${response.edit_token}&code=${response.code}&city=${city}`);
+    }
+
+    // Fallback: should not happen, but handle gracefully
+    return fail(500, {
+      form,
+      error: 'Unexpected response from server'
+    });
 
   }
 };

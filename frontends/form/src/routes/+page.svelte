@@ -367,7 +367,7 @@
           onupdate={(occs) => {
             $form.occurrences = occs;
           }}
-          error={$errors.occurrences}
+          error={Array.isArray($errors.occurrences) ? $errors.occurrences[0] : typeof $errors.occurrences === 'object' && $errors.occurrences?._errors ? $errors.occurrences._errors[0] : typeof $errors.occurrences === 'string' ? $errors.occurrences : undefined}
         />
       </Card.Content>
     </Card.Root>
@@ -509,7 +509,7 @@
           onchange={(val) => {
             $form.group_code = val;
           }}
-          error={$errors.group_code}
+          error={Array.isArray($errors.group_code) ? $errors.group_code[0] : typeof $errors.group_code === 'object' && $errors.group_code?._errors ? $errors.group_code._errors[0] : typeof $errors.group_code === 'string' ? $errors.group_code : undefined}
         />
       </Card.Content>
     </Card.Root>

@@ -36,7 +36,7 @@
       if (!markerImageUUID) {
         // Auto-generate and upload default marker
         return new Promise((resolve, reject) => {
-          customMarkerBuilderRef?.autoGenerateAndUploadMarker().then((uuid) => {
+          customMarkerBuilderRef?.autoGenerateAndUploadMarker().then((uuid: string | null) => {
             if (uuid) {
               markerImageUUID = uuid;
               $form.image_uuid = uuid;
@@ -60,7 +60,7 @@
 
   // Marker image tracking
   let markerImageUUID = $state<string | null>(null);
-  let customMarkerBuilderRef = $state<InstanceType<typeof CustomMarkerBuilder>>();
+  let customMarkerBuilderRef = $state<{ autoGenerateAndUploadMarker: () => Promise<string | null> }>();
 
   async function checkCodeAvailability(code: string) {
     if (!code || code.length !== 4) {
