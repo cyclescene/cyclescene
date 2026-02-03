@@ -94,6 +94,12 @@ func main() {
 	http.HandleFunc("/test-service-clubs", handleTestServiceClubs)
 	http.HandleFunc("/test-service-events", handleTestServiceEvents)
 
+	// M3 Import test endpoints
+	http.HandleFunc("/test-import-select", handleTestImportSelect)
+	http.HandleFunc("/test-convert", handleTestConvert)
+	http.HandleFunc("/test-import-preview", handleTestImportPreview)
+	http.HandleFunc("/test-websocket", handleTestWebSocket)
+
 	fmt.Println("Starting server on http://localhost:3000")
 	fmt.Println("")
 	fmt.Println("Step 1: Visit http://localhost:3000 to start OAuth flow")
@@ -1044,6 +1050,20 @@ func handleTestService(w http.ResponseWriter, r *http.Request) {
         <p>Tests <code>Service.ConvertEventToSubmission()</code> with geocoding fallback</p>
         <p><em>Available after fetching events</em></p>
     </div>
+
+    <h2>M3 Import Tests</h2>
+    <div class="feature">
+        <h3>Import Preview</h3>
+        <p>Tests event conversion and preview without database</p>
+        <button onclick="window.location.href='/test-import-select'">Test Import (Preview)</button>
+    </div>
+
+    <div class="feature">
+        <h3>WebSocket Import (Full)</h3>
+        <p>Tests real WebSocket import via the main API (port 8081)</p>
+        <p>Requires OAuth on port 8081 first.</p>
+        <button onclick="window.location.href='/test-websocket'">WebSocket Test Tool</button>
+    </div>
 </body>
 </html>
 	`
@@ -1221,10 +1241,646 @@ func handleTestServiceEvents(w http.ResponseWriter, r *http.Request) {
     <h1>M2 Service Layer Test Results</h1>
     <button onclick="window.location.href='/test-service-clubs'">Back to Clubs</button>
     <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
+    <button onclick="window.location.href='/test-import-select?club_id=%d'">🚀 Test M3 Import</button>
+    %s
+</body>
+</html>
+	`, clubID, htmlOutput)
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+}
+
+// ============================================================================
+// M3 IMPORT TEST ENDPOINTS
+// ============================================================================
+
+func handleTestImportSelect(w http.ResponseWriter, r *http.Request) {
+	if sessionID == "" {
+		http.Error(w, "No session. Please run OAuth first: http://localhost:3000/test-service", http.StatusUnauthorized)
+		return
+	}
+
+	clubIDStr := r.URL.Query().Get("club_id")
+	if clubIDStr == "" {
+		// Show club selection first
+		ctx := context.Background()
+		adminClubs, err := service.GetAdminClubs(ctx, sessionID)
+		if err != nil {
+			http.Error(w, "Failed to get admin clubs: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		var htmlOutput string
+		htmlOutput += "<h2>Select a Club for Import Test</h2>"
+		htmlOutput += "<p>Choose a club to test importing events from:</p>"
+
+		for _, club := range adminClubs {
+			htmlOutput += fmt.Sprintf(`
+				<div class="club-card">
+					<h3>%s (ID: %d)</h3>
+					<p><strong>Location:</strong> %s, %s</p>
+					<p><strong>Members:</strong> %d</p>
+					<button onclick="window.location.href='/test-import-select?club_id=%d'">
+						Select This Club
+					</button>
+				</div>
+			`, club.Name, club.ID, club.City, club.State, club.MemberCount, club.ID)
+		}
+
+		html := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M3 Import Test - Select Club</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #E34402; }
+        .club-card { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #FC4C02; }
+        h1 { color: #FC4C02; }
+    </style>
+</head>
+<body>
+    <h1>🚀 M3 Import Test</h1>
+    <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
+    %s
+</body>
+</html>
+		`, htmlOutput)
+
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(html))
+		return
+	}
+
+	// Show events for the selected club
+	var clubID int64
+	fmt.Sscanf(clubIDStr, "%d", &clubID)
+
+	ctx := context.Background()
+	events, err := service.GetClubEvents(ctx, sessionID, clubID)
+	if err != nil {
+		http.Error(w, "Failed to get club events: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	upcomingEvents := strava.FilterUpcomingEvents(events)
+
+	var htmlOutput string
+	htmlOutput += fmt.Sprintf("<h2>Select Events to Import (Club %d)</h2>", clubID)
+	htmlOutput += fmt.Sprintf("<p>Found %d upcoming events:</p>", len(upcomingEvents))
+
+	if len(upcomingEvents) == 0 {
+		htmlOutput += `<p><em>No upcoming events to import.</em></p>`
+	} else {
+		htmlOutput += `<form action="/test-import-preview" method="get">`
+		htmlOutput += fmt.Sprintf(`<input type="hidden" name="club_id" value="%d">`, clubID)
+
+		for _, event := range upcomingEvents {
+			occurrence, _ := event.GetFirstOccurrence()
+			tz, _ := event.GetTimezone()
+			localTime := occurrence.In(tz)
+
+			hasLocation := "❌ No"
+			if event.HasLocation() {
+				hasLocation = fmt.Sprintf("✅ Yes (%.4f, %.4f)", event.GetLatitude(), event.GetLongitude())
+			}
+
+			hasRoute := "❌ No"
+			if event.Route != nil {
+				hasRoute = fmt.Sprintf("✅ %s (%.1f km)", event.Route.Name, event.Route.Distance/1000)
+			}
+
+			htmlOutput += fmt.Sprintf(`
+				<div class="event-card">
+					<label style="display: flex; align-items: flex-start; gap: 15px;">
+						<input type="checkbox" name="event_id" value="%d" style="margin-top: 5px; width: 20px; height: 20px;">
+						<div>
+							<h3 style="margin: 0;">%s</h3>
+							<p><strong>When:</strong> %s</p>
+							<p><strong>Location:</strong> %s</p>
+							<p><strong>Has Coordinates:</strong> %s</p>
+							<p><strong>Has Route:</strong> %s</p>
+							<p style="font-size: 12px; color: #666;">%s</p>
+						</div>
+					</label>
+					<button type="button" onclick="window.location.href='/test-convert?club_id=%d&event_id=%d'" style="margin-top: 10px;">
+						Test Convert Only
+					</button>
+				</div>
+			`, event.ID, event.Title, localTime.Format("Mon Jan 2, 2006 at 3:04 PM MST"),
+				event.Address, hasLocation, hasRoute, event.Description, clubID, event.ID)
+		}
+
+		htmlOutput += `
+			<div style="margin-top: 20px; padding: 20px; background: #e8f5e9; border-radius: 5px;">
+				<h3>Import Settings</h3>
+				<label style="display: block; margin: 10px 0;">
+					<strong>Organizer Email:</strong><br>
+					<input type="email" name="email" placeholder="your@email.com" style="padding: 10px; width: 300px; margin-top: 5px;" required>
+				</label>
+				<button type="submit" style="background: #4CAF50; margin-top: 10px;">
+					Preview Import
+				</button>
+			</div>
+		</form>`
+	}
+
+	html := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M3 Import Test - Select Events</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #E34402; }
+        .event-card { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 5px; border-left: 4px solid #4CAF50; }
+        h1 { color: #FC4C02; }
+        input[type="checkbox"] { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🚀 M3 Import Test - Select Events</h1>
+    <button onclick="window.location.href='/test-import-select'">Back to Club Selection</button>
+    <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
     %s
 </body>
 </html>
 	`, htmlOutput)
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+}
+
+func handleTestConvert(w http.ResponseWriter, r *http.Request) {
+	if sessionID == "" {
+		http.Error(w, "No session. Please run OAuth first", http.StatusUnauthorized)
+		return
+	}
+
+	clubIDStr := r.URL.Query().Get("club_id")
+	eventIDStr := r.URL.Query().Get("event_id")
+
+	if clubIDStr == "" || eventIDStr == "" {
+		http.Error(w, "club_id and event_id required", http.StatusBadRequest)
+		return
+	}
+
+	var clubID, eventID int64
+	fmt.Sscanf(clubIDStr, "%d", &clubID)
+	fmt.Sscanf(eventIDStr, "%d", &eventID)
+
+	ctx := context.Background()
+
+	// Fetch events
+	events, err := service.GetClubEvents(ctx, sessionID, clubID)
+	if err != nil {
+		http.Error(w, "Failed to get events: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Find the specific event
+	var targetEvent *strava.GroupEvent
+	for i := range events {
+		if events[i].ID == eventID {
+			targetEvent = &events[i]
+			break
+		}
+	}
+
+	if targetEvent == nil {
+		http.Error(w, "Event not found", http.StatusNotFound)
+		return
+	}
+
+	// Test the conversion
+	submission, lat, lng, err := service.ConvertEventToSubmission(ctx, sessionID, targetEvent, "test@example.com")
+
+	var htmlOutput string
+	htmlOutput += fmt.Sprintf("<h2>✅ M3 ConvertEventToSubmission Test</h2>")
+	htmlOutput += fmt.Sprintf("<div class='info'>")
+	htmlOutput += fmt.Sprintf("<strong>Strava Event ID:</strong> %d<br>", eventID)
+	htmlOutput += fmt.Sprintf("<strong>Club ID:</strong> %d", clubID)
+	htmlOutput += fmt.Sprintf("</div>")
+
+	if err != nil {
+		htmlOutput += fmt.Sprintf(`<div class="error"><h3>❌ Conversion Failed</h3><p>%s</p></div>`, err.Error())
+	} else {
+		htmlOutput += `<div class="success"><h3>✅ Conversion Successful</h3></div>`
+		htmlOutput += fmt.Sprintf(`
+			<h3>Generated CycleScene Submission:</h3>
+			<table class="data-table">
+				<tr><td><strong>Title</strong></td><td>%s</td></tr>
+				<tr><td><strong>TinyTitle</strong></td><td>%s</td></tr>
+				<tr><td><strong>Description</strong></td><td>%s</td></tr>
+				<tr><td><strong>City</strong></td><td>%s</td></tr>
+				<tr><td><strong>VenueName</strong></td><td>%s</td></tr>
+				<tr><td><strong>Address</strong></td><td>%s</td></tr>
+				<tr><td><strong>Latitude</strong></td><td>%.6f</td></tr>
+				<tr><td><strong>Longitude</strong></td><td>%.6f</td></tr>
+				<tr><td><strong>Audience</strong></td><td>%s</td></tr>
+				<tr><td><strong>DateType</strong></td><td>%s</td></tr>
+				<tr><td><strong>OrganizerEmail</strong></td><td>%s</td></tr>
+				<tr><td><strong>WebURL</strong></td><td><a href="%s" target="_blank">%s</a></td></tr>
+			</table>
+		`, submission.Title, submission.TinyTitle, submission.Description, submission.City,
+			submission.VenueName, submission.Address, lat, lng, submission.Audience,
+			submission.DateType, submission.OrganizerEmail, submission.WebURL, submission.WebURL)
+
+		if len(submission.Occurrences) > 0 {
+			htmlOutput += "<h3>Occurrences:</h3>"
+			for i, occ := range submission.Occurrences {
+				htmlOutput += fmt.Sprintf(`
+					<div class="occurrence">
+						<strong>Occurrence %d:</strong><br>
+						Date: %s<br>
+						Time: %s<br>
+						Duration: %d minutes
+					</div>
+				`, i+1, occ.StartDate, occ.StartTime, occ.EventDurationMinutes)
+			}
+		}
+	}
+
+	html := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M3 Convert Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #E34402; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .success { background: #e8f5e9; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .error { background: #ffebee; color: #c62828; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .data-table { width: 100%%; border-collapse: collapse; margin: 15px 0; }
+        .data-table td { padding: 10px; border: 1px solid #ddd; }
+        .data-table tr:nth-child(even) { background: #f9f9f9; }
+        .occurrence { background: #fff3e0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        h1 { color: #FC4C02; }
+    </style>
+</head>
+<body>
+    <h1>🔄 M3 Event Conversion Test</h1>
+    <button onclick="window.location.href='/test-import-select?club_id=%s'">Back to Event Selection</button>
+    <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
+    %s
+</body>
+</html>
+	`, clubIDStr, htmlOutput)
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+}
+
+func handleTestImportPreview(w http.ResponseWriter, r *http.Request) {
+	if sessionID == "" {
+		http.Error(w, "No session. Please run OAuth first", http.StatusUnauthorized)
+		return
+	}
+
+	clubIDStr := r.URL.Query().Get("club_id")
+	eventIDs := r.URL.Query()["event_id"]
+	email := r.URL.Query().Get("email")
+
+	if clubIDStr == "" || len(eventIDs) == 0 {
+		http.Error(w, "club_id and at least one event_id required", http.StatusBadRequest)
+		return
+	}
+
+	if email == "" {
+		email = "test@example.com"
+	}
+
+	var clubID int64
+	fmt.Sscanf(clubIDStr, "%d", &clubID)
+
+	ctx := context.Background()
+
+	// Fetch events
+	events, err := service.GetClubEvents(ctx, sessionID, clubID)
+	if err != nil {
+		http.Error(w, "Failed to get events: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Build event ID map for quick lookup
+	eventIDMap := make(map[int64]bool)
+	for _, idStr := range eventIDs {
+		var id int64
+		fmt.Sscanf(idStr, "%d", &id)
+		eventIDMap[id] = true
+	}
+
+	var htmlOutput string
+	htmlOutput += fmt.Sprintf("<h2>🚀 M3 Import Preview</h2>")
+	htmlOutput += fmt.Sprintf("<div class='info'>")
+	htmlOutput += fmt.Sprintf("<strong>Selected Events:</strong> %d<br>", len(eventIDs))
+	htmlOutput += fmt.Sprintf("<strong>Organizer Email:</strong> %s<br>", email)
+	htmlOutput += fmt.Sprintf("<strong>Club ID:</strong> %d", clubID)
+	htmlOutput += fmt.Sprintf("</div>")
+
+	htmlOutput += "<h3>Events to Import:</h3>"
+
+	successCount := 0
+	failCount := 0
+
+	for _, event := range events {
+		if !eventIDMap[event.ID] {
+			continue
+		}
+
+		// Test conversion
+		submission, lat, lng, err := service.ConvertEventToSubmission(ctx, sessionID, &event, email)
+
+		status := "✅ Ready"
+		statusClass := "success"
+		details := ""
+
+		if err != nil {
+			status = "❌ Error"
+			statusClass = "error"
+			details = err.Error()
+			failCount++
+		} else {
+			successCount++
+			details = fmt.Sprintf(`
+				<strong>Title:</strong> %s<br>
+				<strong>City:</strong> %s<br>
+				<strong>Address:</strong> %s<br>
+				<strong>Coordinates:</strong> (%.6f, %.6f)<br>
+				<strong>Date:</strong> %s at %s<br>
+				<strong>Source:</strong> strava<br>
+				<strong>SourceID:</strong> %d
+			`, submission.Title, submission.City, submission.Address, lat, lng,
+				submission.Occurrences[0].StartDate, submission.Occurrences[0].StartTime, event.ID)
+		}
+
+		htmlOutput += fmt.Sprintf(`
+			<div class="import-item %s">
+				<h4>%s - %s</h4>
+				<p class="status">%s</p>
+				<div class="details">%s</div>
+			</div>
+		`, statusClass, event.Title, status, status, details)
+	}
+
+	htmlOutput += fmt.Sprintf(`
+		<div class="summary">
+			<h3>Summary</h3>
+			<p><strong>Ready to Import:</strong> %d events</p>
+			<p><strong>Will Fail:</strong> %d events</p>
+		</div>
+	`, successCount, failCount)
+
+	if successCount > 0 {
+		htmlOutput += `
+			<div class="action-box">
+				<h3>⚠️ Note: This is a Preview Only</h3>
+				<p>To actually import events, you would need to:</p>
+				<ol>
+					<li>Run the full API server with database connection</li>
+					<li>Use the WebSocket endpoint at <code>ws://localhost:8080/v1/strava/import</code></li>
+					<li>Send a JSON message with session_id, organizer_email, and events array</li>
+				</ol>
+				<h4>Example WebSocket Message:</h4>
+				<pre>{
+  "session_id": "` + sessionID[:16] + `...",
+  "organizer_email": "` + email + `",
+  "events": [`
+		for i, idStr := range eventIDs {
+			if i > 0 {
+				htmlOutput += `,`
+			}
+			htmlOutput += fmt.Sprintf(`
+    {
+      "strava_event_id": %s,
+      "club_id": %d
+    }`, idStr, clubID)
+		}
+		htmlOutput += `
+  ]
+}</pre>
+			</div>
+		`
+	}
+
+	html := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>M3 Import Preview</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #E34402; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .import-item { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .import-item.success { background: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .import-item.error { background: #ffebee; border-left: 4px solid #f44336; }
+        .import-item h4 { margin: 0 0 10px 0; }
+        .details { font-size: 14px; color: #666; }
+        .summary { background: #fff3e0; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .action-box { background: #f5f5f5; padding: 20px; border-radius: 5px; margin: 20px 0; }
+        pre { background: #263238; color: #aed581; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        h1 { color: #FC4C02; }
+    </style>
+</head>
+<body>
+    <h1>🚀 M3 Import Preview</h1>
+    <button onclick="window.location.href='/test-import-select?club_id=%s'">Back to Event Selection</button>
+    <button onclick="window.location.href='/test-service'">Back to Test Menu</button>
+    %s
+</body>
+</html>
+	`, clubIDStr, htmlOutput)
+
+	w.Header().Set("Content-Type", "text/html")
+	w.Write([]byte(html))
+}
+
+func handleTestWebSocket(w http.ResponseWriter, r *http.Request) {
+	html := `<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Import Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1000px; margin: 50px auto; padding: 20px; }
+        button { background: #FC4C02; color: white; border: none; padding: 10px 20px; font-size: 14px; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #E34402; }
+        button:disabled { background: #ccc; }
+        .info { background: #e3f2fd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        #log { background: #263238; color: #aed581; padding: 15px; border-radius: 5px; height: 400px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        .log-entry { margin: 5px 0; padding: 5px; border-bottom: 1px solid #37474f; }
+        .log-send { color: #81d4fa; }
+        .log-recv { color: #aed581; }
+        .log-error { color: #ef9a9a; }
+        .log-info { color: #fff59d; }
+        textarea { width: 100%; height: 150px; font-family: monospace; font-size: 12px; }
+        input { padding: 8px; margin: 5px 0; }
+        h1 { color: #FC4C02; }
+    </style>
+</head>
+<body>
+    <h1>🔌 WebSocket Import Test</h1>
+
+    <div class="info">
+        <strong>Instructions:</strong>
+        <ol>
+            <li>First authenticate via <a href="http://localhost:8081/v1/strava/auth/initiate?city=pdx" target="_blank">OAuth on port 8081</a></li>
+            <li>Copy your session ID from the cookie (browser dev tools → Application → Cookies → strava_session_id)</li>
+            <li>Enter the session ID below and connect</li>
+        </ol>
+    </div>
+
+    <h2>Connection</h2>
+    <div>
+        <label>WebSocket URL:</label><br>
+        <input type="text" id="wsUrl" value="ws://localhost:8081/v1/strava/import" style="width: 400px;">
+    </div>
+    <div>
+        <label>Session ID (from strava_session_id cookie):</label><br>
+        <input type="text" id="sessionId" placeholder="paste your session ID here" style="width: 400px;">
+    </div>
+    <div style="margin-top: 10px;">
+        <button id="connectBtn" onclick="connect()">Connect</button>
+        <button id="disconnectBtn" onclick="disconnect()" disabled>Disconnect</button>
+        <span id="status" style="margin-left: 10px;">Disconnected</span>
+    </div>
+
+    <h2>Import Request</h2>
+    <div>
+        <label>Organizer Email:</label><br>
+        <input type="email" id="email" placeholder="your@email.com" style="width: 300px;">
+    </div>
+    <div>
+        <label>Events JSON (IDs must be strings to avoid precision loss):</label><br>
+        <textarea id="eventsJson">[
+  {
+    "strava_event_id": "3452409311648303182",
+    "club_id": "1947941"
+  }
+]</textarea>
+    </div>
+    <div>
+        <button id="sendBtn" onclick="sendImport()" disabled>Send Import Request</button>
+    </div>
+
+    <h2>Log</h2>
+    <div id="log"></div>
+    <button onclick="document.getElementById('log').innerHTML=''">Clear Log</button>
+
+    <script>
+        let ws = null;
+
+        function log(message, type) {
+            type = type || 'info';
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry log-' + type;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = '[' + time + '] ' + message;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function connect() {
+            const url = document.getElementById('wsUrl').value;
+            log('Connecting to ' + url + '...', 'info');
+
+            try {
+                ws = new WebSocket(url);
+
+                ws.onopen = function() {
+                    log('Connected!', 'info');
+                    document.getElementById('status').textContent = 'Connected';
+                    document.getElementById('status').style.color = 'green';
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    document.getElementById('sendBtn').disabled = false;
+                };
+
+                ws.onmessage = function(event) {
+                    log('← ' + event.data, 'recv');
+                    try {
+                        const msg = JSON.parse(event.data);
+                        if (msg.type === 'error') {
+                            log('ERROR: ' + msg.message, 'error');
+                        } else if (msg.type === 'complete' && msg.success) {
+                            log('✅ Event imported: ' + msg.edit_url, 'info');
+                        } else if (msg.type === 'done') {
+                            log('🎉 Import complete! ' + (msg.total_imported || 0) + ' imported, ' + (msg.total_failed || 0) + ' failed', 'info');
+                        }
+                    } catch (e) {}
+                };
+
+                ws.onerror = function(error) {
+                    log('WebSocket error', 'error');
+                };
+
+                ws.onclose = function() {
+                    log('Disconnected', 'info');
+                    document.getElementById('status').textContent = 'Disconnected';
+                    document.getElementById('status').style.color = 'red';
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    document.getElementById('sendBtn').disabled = true;
+                    ws = null;
+                };
+            } catch (e) {
+                log('Failed to connect: ' + e, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+            }
+        }
+
+        function sendImport() {
+            if (!ws) {
+                log('Not connected!', 'error');
+                return;
+            }
+
+            const sessionId = document.getElementById('sessionId').value;
+            const email = document.getElementById('email').value;
+            const eventsJson = document.getElementById('eventsJson').value;
+
+            if (!sessionId) {
+                log('Session ID is required!', 'error');
+                return;
+            }
+            if (!email) {
+                log('Email is required!', 'error');
+                return;
+            }
+
+            let events;
+            try {
+                events = JSON.parse(eventsJson);
+            } catch (e) {
+                log('Invalid events JSON: ' + e, 'error');
+                return;
+            }
+
+            const request = {
+                session_id: sessionId,
+                organizer_email: email,
+                events: events
+            };
+
+            const json = JSON.stringify(request, null, 2);
+            log('→ ' + json, 'send');
+            ws.send(json);
+        }
+    </script>
+</body>
+</html>`
 
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(html))

@@ -306,6 +306,11 @@ func (s *Service) GetSession(sessionID string) (*Session, bool) {
 	return s.sessionStore.GetSession(sessionID)
 }
 
+// GetSessionStore returns the session store (for testing)
+func (s *Service) GetSessionStore() *SessionStore {
+	return s.sessionStore
+}
+
 // DeleteSession removes a session (for logout)
 func (s *Service) DeleteSession(sessionID string) {
 	s.sessionStore.DeleteSession(sessionID)
@@ -316,7 +321,7 @@ func (s *Service) SetRouteRepository(repo *routes.Repository) {
 	s.routeRepo = repo
 }
 
-// ProcessRoute fetches a Strava route and stores it in the database
+// ProcessRoute fetches a Strava route and stores it in the database using session token
 // Returns the route ID for linking to events
 func (s *Service) ProcessRoute(ctx context.Context, sessionID string, routeID int64, cityCode string) (*string, error) {
 	session, ok := s.sessionStore.GetSession(sessionID)
@@ -324,12 +329,23 @@ func (s *Service) ProcessRoute(ctx context.Context, sessionID string, routeID in
 		return nil, ErrUnauthorized
 	}
 
+	return s.ProcessRouteWithToken(ctx, session.AccessToken, routeID, cityCode, session.AthleteID)
+}
+
+// ProcessRouteWithToken fetches a Strava route using the provided access token
+// This can be used with either a user token or an app-level STRAVA_ACCESS_TOKEN
+// Routes are public data, so either token type works
+func (s *Service) ProcessRouteWithToken(ctx context.Context, accessToken string, routeID int64, cityCode string, athleteID int64) (*string, error) {
 	if s.routeRepo == nil {
 		return nil, fmt.Errorf("route repository not configured")
 	}
 
-	// Create fetcher with user's access token (per-request since each user has their own token)
-	fetcher := routes.NewRouteFetcher(http.DefaultClient, session.AccessToken, "", "")
+	if accessToken == "" {
+		return nil, fmt.Errorf("access token is required for route fetching")
+	}
+
+	// Create fetcher with the provided access token
+	fetcher := routes.NewRouteFetcher(http.DefaultClient, accessToken, "", "")
 
 	// Construct Strava route export URL
 	routeURL := fmt.Sprintf("https://www.strava.com/api/v3/routes/%d/export_gpx", routeID)
@@ -337,7 +353,7 @@ func (s *Service) ProcessRoute(ctx context.Context, sessionID string, routeID in
 	if s.debug {
 		slog.Debug("Fetching Strava route",
 			"route_id", routeID,
-			"athlete_id", session.AthleteID,
+			"athlete_id", athleteID,
 			"city_code", cityCode,
 		)
 	}

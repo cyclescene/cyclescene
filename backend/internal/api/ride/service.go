@@ -205,6 +205,49 @@ func (s *Service) processRoute(ctx context.Context, routeURL string, city string
 	return &routeID, nil
 }
 
+// SubmitRideWithCoordinates creates a ride with pre-calculated coordinates (for Strava imports)
+// This skips geocoding and magic link email - caller is responsible for sending summary email
+func (s *Service) SubmitRideWithCoordinates(ctx context.Context, submission *Submission, lat, lng float64) (*SubmissionResponse, error) {
+	// Generate edit token
+	editToken, err := generateSecureToken(32)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate edit token: %w", err)
+	}
+
+	// Process route if provided
+	var routeID *string
+	if submission.RouteURL != "" && s.routeFetcher != nil && s.routeRepository != nil {
+		routeID, err = s.processRoute(ctx, submission.RouteURL, submission.City)
+		if err != nil {
+			slog.Warn("Failed to process route", "error", err, "routeURL", submission.RouteURL)
+			// Continue without route if processing fails
+		} else if routeID != nil {
+			slog.Info("Route processed successfully", "routeID", *routeID, "routeURL", submission.RouteURL)
+		}
+	}
+
+	eventID, err := s.repo.CreateRide(submission, editToken, lat, lng)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create ride: %w", err)
+	}
+
+	// Link route to ride if route was processed
+	if routeID != nil {
+		if err := s.repo.LinkRouteToRide(eventID, *routeID); err != nil {
+			slog.Warn("Failed to link route to ride", "error", err, "eventID", eventID, "routeID", *routeID)
+		}
+	}
+
+	// Note: Magic link email is NOT sent here - caller should send summary email for batch imports
+
+	return &SubmissionResponse{
+		Success:   true,
+		EventID:   eventID,
+		EditToken: editToken,
+		Message:   "Ride imported successfully and is pending review",
+	}, nil
+}
+
 // Scraped rides from Shift2Bikes
 func (s *Service) GetUpcomingRides(city string) ([]ScrapedRide, error) {
 	storedRides, err := s.repo.GetUpcomingRides(city)

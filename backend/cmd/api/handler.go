@@ -19,7 +19,10 @@ import (
 	"github.com/spacesedan/cyclescene/backend/internal/api/ride"
 	routesapi "github.com/spacesedan/cyclescene/backend/internal/api/routes"
 	"github.com/spacesedan/cyclescene/backend/internal/api/storage"
+	stravaapi "github.com/spacesedan/cyclescene/backend/internal/api/strava"
 	"github.com/spacesedan/cyclescene/backend/internal/api/synclog"
+	"github.com/spacesedan/cyclescene/backend/internal/routes"
+	"github.com/spacesedan/cyclescene/backend/internal/strava"
 )
 
 
@@ -134,6 +137,53 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 	clientErrorRepo := clienterror.NewRepository(monitoringDB)
 	clientErrorHandler := clienterror.NewHandler(clientErrorRepo)
 
+	// Strava OAuth and import handler
+	var stravaHandler *stravaapi.Handler
+	stravaConfig := strava.LoadConfig()
+
+	if stravaConfig.ClientID != "" && stravaConfig.ClientSecret != "" {
+		// Initialize Strava client
+		stravaClient := strava.NewClient(stravaConfig)
+
+		// Initialize session store (in-memory, with automatic cleanup)
+		stravaSessionStore := strava.NewSessionStore()
+
+		// Initialize monitoring repository for rate limit tracking
+		stravaMonitoringRepo := strava.NewMonitoringRepository(monitoringDB, stravaConfig.Debug)
+
+		// Initialize routes repository for route storage
+		routesRepo := routes.NewRepository(db)
+
+		// Get callback URL from environment
+		stravaCallbackURL := os.Getenv("STRAVA_CALLBACK_URL")
+
+		// Initialize Strava service
+		stravaService := strava.NewService(stravaClient, stravaSessionStore, stravaMonitoringRepo, stravaCallbackURL)
+		stravaService.SetRouteRepository(routesRepo)
+
+		// Create handler with import support if ride service and magic link service are available
+		if rideService != nil && magicLinkService != nil {
+			editLinkBaseURL := os.Getenv("EDIT_LINK_BASE_URL")
+			if editLinkBaseURL == "" {
+				editLinkBaseURL = "https://form.cyclescene.cc/rides/edit"
+			}
+			stravaHandler = stravaapi.NewHandlerWithImport(stravaService, rideService, magicLinkService, editLinkBaseURL)
+			slog.Info("Strava OAuth integration enabled with import support",
+				"callback_url", stravaCallbackURL,
+				"edit_link_base", editLinkBaseURL,
+				"debug", stravaConfig.Debug,
+			)
+		} else {
+			stravaHandler = stravaapi.NewHandler(stravaService)
+			slog.Info("Strava OAuth integration enabled (import disabled - missing ride or magic link service)",
+				"callback_url", stravaCallbackURL,
+				"debug", stravaConfig.Debug,
+			)
+		}
+	} else {
+		slog.Warn("Strava OAuth not configured - STRAVA_CLIENT_ID or STRAVA_CLIENT_SECRET missing")
+	}
+
 	r.Route("/v1", func(r chi.Router) {
 		// auth handlers -- /tokens
 		authHandler.RegisterRoutes(r)
@@ -167,6 +217,11 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 
 		// group handlers
 		groupHandler.RegisterRoutes(r)
+
+		// Strava OAuth and import handlers (if configured)
+		if stravaHandler != nil {
+			stravaHandler.RegisterRoutes(r)
+		}
 	})
 
 	return r

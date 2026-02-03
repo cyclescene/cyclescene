@@ -35,8 +35,8 @@ func (r *Repository) CreateRide(submission *Submission, editToken string, latitu
 			venue_name, address, location_details, ending_location, is_loop_ride,
 			organizer_name, organizer_email, organizer_phone, web_url, web_name, newsflash,
 			hide_email, hide_phone, hide_contact_name, group_code, edit_token, city, is_published,
-			latitude, longitude
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+			latitude, longitude, source, source_id
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
 	`,
 		submission.Title, submission.TinyTitle, submission.Description, submission.ImageURL,
 		submission.Audience, submission.RideLength, submission.Area, submission.DateType,
@@ -45,6 +45,7 @@ func (r *Repository) CreateRide(submission *Submission, editToken string, latitu
 		submission.OrganizerPhone, submission.WebURL, submission.WebName, submission.Newsflash,
 		boolToInt(submission.HideEmail), boolToInt(submission.HidePhone), boolToInt(submission.HideContactName),
 		nilIfEmpty(submission.GroupCode), editToken, submission.City, latitude, longitude,
+		nilIfEmpty(submission.Source), nilIfEmpty(submission.SourceID),
 	)
 
 	if err != nil {

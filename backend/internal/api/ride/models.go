@@ -20,6 +20,10 @@ type Submission struct {
 	Area        string `json:"area"`
 	DateType    string `json:"date_type"`
 
+	// Source tracking (for deduplication of imported events)
+	Source   string `json:"source,omitempty"`    // e.g., "strava", "manual"
+	SourceID string `json:"source_id,omitempty"` // External identifier (e.g., Strava event ID)
+
 	// Location
 	VenueName       string `json:"venue_name"`
 	Address         string `json:"address"`

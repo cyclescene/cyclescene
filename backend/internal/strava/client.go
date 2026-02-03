@@ -46,6 +46,19 @@ func NewClient(config *Config) *Client {
 	}
 }
 
+// NewClientWithBaseURL creates a new Strava API client with a custom base URL (for testing)
+func NewClientWithBaseURL(config *Config, baseURL string) *Client {
+	return &Client{
+		httpClient: &http.Client{
+			Timeout: DefaultTimeout,
+		},
+		clientID:     config.ClientID,
+		clientSecret: config.ClientSecret,
+		baseURL:      baseURL,
+		debug:        config.Debug,
+	}
+}
+
 // ExchangeToken exchanges an authorization code for access and refresh tokens
 func (c *Client) ExchangeToken(ctx context.Context, code string) (*TokenResponse, *APICallMetrics, error) {
 	start := time.Now()
