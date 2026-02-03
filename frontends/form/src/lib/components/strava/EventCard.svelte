@@ -151,11 +151,12 @@
 </script>
 
 <Card.Root class="p-4">
-  <div class="flex items-start gap-3">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
     <Checkbox
       checked={selected}
       onCheckedChange={handleCheckChange}
-      class="mt-1"
+      class="mt-1 h-5 w-5 min-h-[44px] min-w-[44px] sm:h-auto sm:w-auto sm:min-h-0 sm:min-w-0"
+      aria-label="Select {event.title} for import"
     />
     <div class="min-w-0 flex-1">
       <h4 class="font-medium leading-tight">{event.title}</h4>
@@ -177,7 +178,8 @@
 
       <Collapsible.Root bind:open={customizeOpen} class="mt-3">
         <Collapsible.Trigger
-          class="inline-flex h-8 items-center gap-1 rounded-md px-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+          class="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+          aria-label="{customizeOpen ? 'Hide' : 'Show'} customization options for {event.title}"
         >
           {customizeOpen ? "Hide Options" : "Customize"}
           <svg
@@ -185,6 +187,7 @@
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <path
               stroke-linecap="round"

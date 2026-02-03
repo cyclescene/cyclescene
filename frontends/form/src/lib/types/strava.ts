@@ -159,6 +159,33 @@ export interface AuthInitiateResponse {
 }
 
 // ============================================================================
+// Error Classes
+// ============================================================================
+
+/**
+ * Rate limit error (HTTP 429)
+ */
+export class RateLimitError extends Error {
+  retry_after_seconds: number;
+
+  constructor(message: string, retryAfterSeconds: number) {
+    super(message);
+    this.name = "RateLimitError";
+    this.retry_after_seconds = retryAfterSeconds;
+  }
+}
+
+/**
+ * Session expired error (HTTP 401 with refresh token failure)
+ */
+export class SessionExpiredError extends Error {
+  constructor(message: string = "Your session expired. Please reconnect to Strava.") {
+    super(message);
+    this.name = "SessionExpiredError";
+  }
+}
+
+// ============================================================================
 // Constants
 // ============================================================================
 

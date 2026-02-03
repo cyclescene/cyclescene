@@ -112,6 +112,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 
 		// Session management
 		r.Post("/logout", h.Logout)
+		r.Get("/check-session", h.CheckSession)
 
 		// Club and event endpoints (require session)
 		r.Get("/admin-clubs", h.GetAdminClubs)
@@ -237,6 +238,40 @@ func (h *Handler) clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, config.ClearSessionCookie("strava_session_id"))
 }
 
+// CheckSession validates the session and refreshes the access token if needed
+// GET /strava/check-session
+func (h *Handler) CheckSession(w http.ResponseWriter, r *http.Request) {
+	sessionID := h.getSessionIDFromCookie(r)
+	if sessionID == "" {
+		http.Error(w, "Unauthorized - no session", http.StatusUnauthorized)
+		return
+	}
+
+	if h.debug {
+		slog.Debug("Checking session", "session_id", sessionID[:8]+"...")
+	}
+
+	// Check and refresh session if needed
+	session, err := h.stravaService.CheckAndRefreshSession(r.Context(), sessionID)
+	if err != nil {
+		if err == strava.ErrUnauthorized {
+			h.clearSessionCookie(w)
+			http.Error(w, "Session expired - please reconnect to Strava", http.StatusUnauthorized)
+			return
+		}
+		slog.Error("Failed to check session", "error", err)
+		http.Error(w, "Failed to validate session", http.StatusInternalServerError)
+		return
+	}
+
+	if h.debug {
+		slog.Debug("Session valid", "athlete_id", session.AthleteID)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"valid": true})
+}
+
 // GetAdminClubs returns clubs where the user is an admin or owner
 // GET /strava/admin-clubs
 func (h *Handler) GetAdminClubs(w http.ResponseWriter, r *http.Request) {
@@ -258,6 +293,22 @@ func (h *Handler) GetAdminClubs(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Session expired - please reconnect to Strava", http.StatusUnauthorized)
 			return
 		}
+
+		// Check if it's an APIError (rate limit, etc.)
+		if apiErr, ok := err.(*strava.APIError); ok {
+			if apiErr.StatusCode == http.StatusTooManyRequests {
+				// Rate limit exceeded - send JSON with retry_after_seconds
+				retryAfter := strava.CalculateRetryAfterSeconds()
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusTooManyRequests)
+				json.NewEncoder(w).Encode(map[string]interface{}{
+					"error": apiErr.Message,
+					"retry_after_seconds": retryAfter,
+				})
+				return
+			}
+		}
+
 		slog.Error("Failed to fetch admin clubs", "error", err)
 		http.Error(w, "Failed to fetch clubs", http.StatusInternalServerError)
 		return

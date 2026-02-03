@@ -4,6 +4,7 @@
   import * as Card from "$lib/components/ui/card";
   import { Progress } from "$lib/components/ui/progress";
   import { Badge } from "$lib/components/ui/badge";
+  import { Button } from "$lib/components/ui/button";
   import { PUBLIC_STRAVA_DEBUG } from "$env/static/public";
   import {
     StravaImportWebSocket,
@@ -41,6 +42,9 @@
   let wsState = $state<WebSocketState>("disconnected");
   let progress = new SvelteMap<string, ProgressMessage>();
   let completedCount = $state(0);
+  let reconnectAttempts = $state({ current: 0, max: 3 });
+  let canRetry = $state(false); // Show retry button when max reconnects reached
+  let isRetrying = $state(false); // Disable retry button during retry
 
   // Steps in order
   const STEPS: ProgressStep[] = ["fetching", "coordinates", "route", "database"];
@@ -153,6 +157,41 @@
   function handleStateChange(state: WebSocketState) {
     debugLog("WebSocket state change", state);
     wsState = state;
+
+    // Update reconnect attempts
+    if (ws) {
+      reconnectAttempts = ws.getReconnectAttempts();
+    }
+
+    // Show retry button if disconnected after max reconnects and not completed
+    if (state === "disconnected" && reconnectAttempts.current >= reconnectAttempts.max && completedCount < events.length) {
+      canRetry = true;
+    }
+  }
+
+  // Handle stop button click
+  function handleStop() {
+    debugLog("User stopped import");
+    if (ws) {
+      ws.stop();
+    }
+    onError("Import stopped by user");
+  }
+
+  // Handle retry button click
+  function handleRetry() {
+    debugLog("User initiated manual retry");
+    isRetrying = true;
+    canRetry = false;
+
+    if (ws) {
+      ws.manualRetry();
+    }
+
+    // Re-enable retry button after a delay
+    setTimeout(() => {
+      isRetrying = false;
+    }, 2000);
   }
 
   // Start import on mount
@@ -178,16 +217,41 @@
   });
 </script>
 
-<Card.Root class="mx-auto max-w-2xl p-6">
+<Card.Root class="mx-auto max-w-2xl p-6" role="region" aria-label="Strava event import progress">
+  <!-- Screen reader live region for progress announcements -->
+  <div class="sr-only" aria-live="polite" aria-atomic="true">
+    {#if wsState === "connecting"}
+      {#if reconnectAttempts.current > 0}
+        Reconnecting, attempt {reconnectAttempts.current} of {reconnectAttempts.max}
+      {:else}
+        Connecting to import service
+      {/if}
+    {:else if wsState === "error"}
+      Connection error, attempting to reconnect
+    {:else if completedCount > 0 && completedCount < events.length}
+      Imported {completedCount} of {events.length} events
+    {:else if completedCount === events.length}
+      Import complete, {completedCount} events imported successfully
+    {/if}
+  </div>
+
   <Card.Header class="px-0 pt-0">
-    <Card.Title>Importing {events.length} Event{events.length !== 1 ? "s" : ""}</Card.Title>
+    <Card.Title id="import-progress-heading" tabindex={-1}>
+      Importing {events.length} Event{events.length !== 1 ? "s" : ""}
+    </Card.Title>
     <Card.Description>
       {#if wsState === "connecting"}
-        Connecting to server...
+        {#if reconnectAttempts.current > 0}
+          Reconnecting (attempt {reconnectAttempts.current}/{reconnectAttempts.max})...
+        {:else}
+          Connecting to server...
+        {/if}
       {:else if wsState === "connected"}
         Import in progress. Please don't close this window.
       {:else if wsState === "error"}
         Connection error. Retrying...
+      {:else if canRetry}
+        Connection lost after {reconnectAttempts.max} attempts.
       {:else}
         Finishing up...
       {/if}
@@ -195,6 +259,31 @@
   </Card.Header>
 
   <Card.Content class="space-y-6 px-0">
+    <!-- Action Buttons -->
+    <div class="flex gap-2">
+      {#if wsState === "connected" || wsState === "connecting"}
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={handleStop}
+          aria-label="Stop current import and return to event selection"
+        >
+          Stop Import
+        </Button>
+      {/if}
+      {#if canRetry}
+        <Button
+          variant="default"
+          size="sm"
+          onclick={handleRetry}
+          disabled={isRetrying}
+          aria-label="Retry failed import from where it stopped"
+        >
+          {isRetrying ? "Retrying..." : "Retry Import"}
+        </Button>
+      {/if}
+    </div>
+
     <!-- Overall Progress -->
     <div class="space-y-2">
       <div class="flex justify-between text-sm">

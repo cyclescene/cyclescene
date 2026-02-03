@@ -4,12 +4,14 @@
 
 import { PUBLIC_API_URL, PUBLIC_STRAVA_DEBUG } from "$env/static/public";
 import { APIError } from "./client";
-import type {
-  AdminClubsResponse,
-  ClubEventsResponse,
-  AuthInitiateResponse,
-  StravaClub,
-  StravaGroupEvent,
+import {
+  RateLimitError,
+  SessionExpiredError,
+  type AdminClubsResponse,
+  type ClubEventsResponse,
+  type AuthInitiateResponse,
+  type StravaClub,
+  type StravaGroupEvent,
 } from "$lib/types/strava";
 
 // Debug logging helper
@@ -40,6 +42,31 @@ async function fetchStravaAPI<T>(
   if (!response.ok) {
     const errorText = await response.text();
     debugLog(`API Error: ${response.status}`, errorText);
+
+    // Handle rate limit (429)
+    if (response.status === 429) {
+      let retryAfterSeconds = 900; // Default 15 minutes
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.retry_after_seconds) {
+          retryAfterSeconds = errorData.retry_after_seconds;
+        }
+      } catch {
+        // If parsing fails, use default
+      }
+      throw new RateLimitError(
+        errorText || "Rate limit exceeded",
+        retryAfterSeconds
+      );
+    }
+
+    // Handle session expired (401)
+    if (response.status === 401) {
+      throw new SessionExpiredError(
+        errorText || "Your session expired. Please reconnect to Strava."
+      );
+    }
+
     throw new APIError(
       errorText || `HTTP ${response.status}`,
       response.status,
@@ -97,7 +124,14 @@ export function initiateAuth(city: string): Promise<void> {
         debugLog("OAuth error via postMessage", event.data.error);
         window.removeEventListener("message", handleMessage);
         clearInterval(pollTimer);
-        reject(new Error(event.data.error || "Strava authorization failed"));
+
+        // Check if user denied authorization
+        const errorMsg = event.data.error || "";
+        if (errorMsg.includes("access_denied") || errorMsg.includes("cancelled")) {
+          reject(new Error("Authorization cancelled. You can try again anytime."));
+        } else {
+          reject(new Error(errorMsg || "Strava authorization failed"));
+        }
       }
     };
 
@@ -116,11 +150,13 @@ export function initiateAuth(city: string): Promise<void> {
             if (valid) {
               resolve();
             } else {
-              reject(new Error("Strava authorization was cancelled"));
+              // Session invalid after popup closed - user likely cancelled
+              reject(new Error("Authorization cancelled. You can try again anytime."));
             }
           })
           .catch(() => {
-            reject(new Error("Strava authorization was cancelled"));
+            // Session check failed - user likely cancelled
+            reject(new Error("Authorization cancelled. You can try again anytime."));
           });
       }
     }, 500);
@@ -184,6 +220,22 @@ export async function fetchClubEvents(
 }
 
 /**
+ * Check session validity before import (allows backend to refresh token if needed)
+ * @returns true if session is valid and ready for import
+ */
+export async function checkSessionForImport(): Promise<boolean> {
+  try {
+    debugLog("Checking session before import");
+    await fetchStravaAPI<{ valid: boolean }>("/v1/strava/check-session");
+    debugLog("Session valid for import");
+    return true;
+  } catch (error) {
+    debugLog("Session check failed", error);
+    return false;
+  }
+}
+
+/**
  * Logout and clear the Strava session
  */
 export async function logout(): Promise<void> {
@@ -192,6 +244,16 @@ export async function logout(): Promise<void> {
     method: "POST",
   });
   debugLog("Logout complete");
+}
+
+/**
+ * Format seconds into a human-readable time string
+ * @param seconds - Number of seconds
+ * @returns Formatted string like "5 minutes" or "1 minute"
+ */
+export function formatRetryTime(seconds: number): string {
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
 }
 
 // ============================================================================

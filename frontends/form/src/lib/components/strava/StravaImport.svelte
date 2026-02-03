@@ -3,18 +3,26 @@
   import { SvelteMap } from "svelte/reactivity";
   import * as Card from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
+  import { Skeleton } from "$lib/components/ui/skeleton";
   import { PUBLIC_STRAVA_DEBUG } from "$env/static/public";
   import EmailInput from "./EmailInput.svelte";
   import ClubList from "./ClubList.svelte";
   import ImportProgress from "./ImportProgress.svelte";
   import ImportResults from "./ImportResults.svelte";
-  import { fetchAdminClubs, logout } from "$lib/api/strava";
-  import type {
-    ImportStep,
-    StravaClub,
-    StravaGroupEvent,
-    EventImportConfig,
-    ImportResult,
+  import {
+    fetchAdminClubs,
+    logout,
+    checkSessionForImport,
+    formatRetryTime,
+  } from "$lib/api/strava";
+  import {
+    RateLimitError,
+    SessionExpiredError,
+    type ImportStep,
+    type StravaClub,
+    type StravaGroupEvent,
+    type EventImportConfig,
+    type ImportResult,
   } from "$lib/types/strava";
 
   interface Props {
@@ -38,6 +46,8 @@
   // Loading/error states
   let isLoadingClubs = $state(false);
   let error = $state<string | null>(null);
+  let rateLimitRetryAfter = $state<number | null>(null); // Seconds until rate limit resets
+  let sessionExpired = $state(false);
 
   // Debug logging
   function debugLog(message: string, data?: unknown) {
@@ -56,14 +66,38 @@
   async function loadClubs() {
     isLoadingClubs = true;
     error = null;
+    rateLimitRetryAfter = null;
+    sessionExpired = false;
 
     try {
       adminClubs = await fetchAdminClubs();
       debugLog("Clubs loaded", { count: adminClubs.length });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to load clubs";
-      debugLog("Error loading clubs", message);
-      error = message;
+      debugLog("Error loading clubs", err);
+
+      // Handle rate limit errors
+      if (err instanceof RateLimitError) {
+        rateLimitRetryAfter = err.retry_after_seconds;
+        error = `CycleScene is experiencing high Strava import usage. Please try again in ${formatRetryTime(err.retry_after_seconds)}.`;
+        // Log to monitoring (console for now)
+        console.log(
+          JSON.stringify({
+            event: "strava_rate_limit_hit",
+            retry_after_seconds: err.retry_after_seconds,
+            timestamp: new Date().toISOString(),
+          })
+        );
+      }
+      // Handle session expired errors
+      else if (err instanceof SessionExpiredError) {
+        sessionExpired = true;
+        error = err.message;
+      }
+      // Handle other errors
+      else {
+        const message = err instanceof Error ? err.message : "Failed to load clubs";
+        error = message;
+      }
     } finally {
       isLoadingClubs = false;
     }
@@ -115,8 +149,8 @@
     selectedEvents.set(eventId, config);
   }
 
-  // Start import
-  function handleStartImport() {
+  // Start import (with session check)
+  async function handleStartImport() {
     if (selectedEvents.size === 0) {
       error = "Please select at least one event to import";
       return;
@@ -124,7 +158,36 @@
 
     debugLog("Starting import", { count: selectedEvents.size });
     error = null;
+
+    // Check session validity before starting import
+    try {
+      const valid = await checkSessionForImport();
+      if (!valid) {
+        sessionExpired = true;
+        error = "Your session expired. Please reconnect to Strava.";
+        return;
+      }
+    } catch (err) {
+      if (err instanceof SessionExpiredError) {
+        sessionExpired = true;
+        error = err.message;
+        return;
+      }
+      // Other errors, proceed anyway (will be caught by WebSocket)
+      debugLog("Session check warning", err);
+    }
+
     step = "importing";
+  }
+
+  // Handle reconnect for expired sessions
+  function handleReconnect() {
+    debugLog("Reconnecting after session expiry");
+    sessionExpired = false;
+    error = null;
+    rateLimitRetryAfter = null;
+    // Reload clubs to trigger new OAuth
+    loadClubs();
   }
 
   // Handle import completion
@@ -179,9 +242,44 @@
 
   // Count selected events
   let selectedCount = $derived(selectedEvents.size);
+
+  // Focus management: Move focus when step changes
+  $effect(() => {
+    // Small delay to ensure DOM is updated
+    setTimeout(() => {
+      if (step === "email") {
+        document.getElementById("organizer-email")?.focus();
+      } else if (step === "select") {
+        // Focus first accordion item or instructions
+        const firstAccordion = document.querySelector('[data-accordion-item]') as HTMLElement;
+        if (firstAccordion) {
+          firstAccordion.focus();
+        }
+      } else if (step === "importing") {
+        // Focus progress heading
+        document.getElementById("import-progress-heading")?.focus();
+      } else if (step === "complete") {
+        // Focus results heading
+        document.getElementById("results-heading")?.focus();
+      }
+    }, 100);
+  });
 </script>
 
 <div class="space-y-6">
+  <!-- Screen reader live region for step announcements -->
+  <div class="sr-only" aria-live="polite">
+    {#if step === "email"}
+      Step 1 of 4: Enter your email address
+    {:else if step === "select"}
+      Step 2 of 4: Select events to import
+    {:else if step === "importing"}
+      Step 3 of 4: Importing events
+    {:else if step === "complete"}
+      Step 4 of 4: Import complete
+    {/if}
+  </div>
+
   <!-- Header -->
   <div class="flex items-center justify-between">
     <div>
@@ -199,37 +297,48 @@
 
   <!-- Error display -->
   {#if error}
-    <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
-      <p>{error}</p>
+    <div class="rounded-lg border border-red-200 bg-red-50 p-4" role="alert">
+      <p class="text-red-700">{error}</p>
+      {#if sessionExpired}
+        <Button
+          variant="outline"
+          size="sm"
+          class="mt-3"
+          onclick={handleReconnect}
+          aria-label="Reconnect to Strava to continue"
+        >
+          Reconnect to Strava
+        </Button>
+      {:else if rateLimitRetryAfter}
+        <Button
+          variant="outline"
+          size="sm"
+          class="mt-3"
+          onclick={loadClubs}
+          aria-label="Try loading clubs again"
+        >
+          Try Again
+        </Button>
+      {/if}
     </div>
   {/if}
 
   <!-- Loading clubs state -->
   {#if isLoadingClubs}
-    <Card.Root class="p-8">
-      <div class="flex items-center justify-center">
-        <svg
-          class="text-muted-foreground h-8 w-8 animate-spin"
-          fill="none"
-          viewBox="0 0 24 24"
-        >
-          <circle
-            class="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
-            stroke="currentColor"
-            stroke-width="4"
-          />
-          <path
-            class="opacity-75"
-            fill="currentColor"
-            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-          />
-        </svg>
-        <span class="text-muted-foreground ml-3">Loading your clubs...</span>
-      </div>
-    </Card.Root>
+    <div class="space-y-4" aria-busy="true" role="status">
+      <span class="sr-only">Loading your clubs</span>
+      {#each Array(3) as _}
+        <Card.Root class="p-4">
+          <div class="flex items-center gap-3">
+            <Skeleton class="h-10 w-10 rounded-full" />
+            <div class="flex-1 space-y-2">
+              <Skeleton class="h-4 w-[200px]" />
+              <Skeleton class="h-3 w-[150px]" />
+            </div>
+          </div>
+        </Card.Root>
+      {/each}
+    </div>
   {:else if step === "email"}
     <!-- Email Input Step -->
     <EmailInput onSubmit={handleEmailSubmit} onBack={handleEmailBack} />
@@ -249,12 +358,13 @@
       <!-- Import button footer -->
       <div class="sticky bottom-0 border-t bg-white py-4">
         <div class="flex items-center justify-between">
-          <p class="text-muted-foreground text-sm">
+          <p class="text-muted-foreground text-sm" aria-live="polite">
             {selectedCount} event{selectedCount !== 1 ? "s" : ""} selected
           </p>
           <Button
             onclick={handleStartImport}
             disabled={selectedCount === 0}
+            aria-label="Start importing {selectedCount} selected event{selectedCount !== 1 ? 's' : ''}"
           >
             Import {selectedCount} Event{selectedCount !== 1 ? "s" : ""}
           </Button>

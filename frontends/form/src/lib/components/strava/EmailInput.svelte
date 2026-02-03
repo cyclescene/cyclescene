@@ -72,12 +72,14 @@
             bind:value={email}
             oninput={handleEmailInput}
             aria-invalid={!!error}
+            aria-describedby={error ? "email-error" : "email-help"}
             class={error ? "border-red-500" : ""}
+            autofocus
           />
           {#if error}
-            <p class="text-sm text-red-500">{error}</p>
+            <p id="email-error" class="text-sm text-red-500" role="alert">{error}</p>
           {/if}
-          <p class="text-muted-foreground text-xs">
+          <p id="email-help" class="text-muted-foreground text-xs">
             We'll send you edit links for your imported events.
           </p>
         </div>

@@ -399,6 +399,81 @@ func (s *Service) ProcessRouteWithToken(ctx context.Context, accessToken string,
 	return &routeIDStr, nil
 }
 
+// CheckAndRefreshSession validates a session and refreshes the access token if needed
+// Returns the session if valid, or an error if the session is invalid or refresh fails
+func (s *Service) CheckAndRefreshSession(ctx context.Context, sessionID string) (*Session, error) {
+	session, ok := s.sessionStore.GetSession(sessionID)
+	if !ok {
+		return nil, ErrUnauthorized
+	}
+
+	// Check if token is expiring soon (within 5 minutes)
+	expiryThreshold := time.Now().Add(5 * time.Minute)
+	if session.ExpiresAt.After(expiryThreshold) {
+		// Token still valid, no refresh needed
+		return session, nil
+	}
+
+	if s.debug {
+		slog.Debug("Access token expiring soon, attempting refresh",
+			"athlete_id", session.AthleteID,
+			"expires_at", session.ExpiresAt,
+		)
+	}
+
+	// Attempt to refresh the token
+	tokenResp, metrics, err := s.client.RefreshToken(ctx, session.RefreshToken)
+	if metrics != nil {
+		s.logAPICall(metrics, session.AthleteID)
+	}
+
+	if err != nil {
+		if s.debug {
+			slog.Error("Token refresh failed",
+				"error", err,
+				"athlete_id", session.AthleteID,
+			)
+		}
+
+		// Log refresh failure
+		slog.Info("strava_token_refresh_failed",
+			"event", "strava_token_refresh_failed",
+			"athlete_id", session.AthleteID,
+			"error", err.Error(),
+			"fallback", "manual_reauth",
+		)
+
+		// Delete invalid session
+		s.sessionStore.DeleteSession(sessionID)
+		return nil, ErrUnauthorized
+	}
+
+	// Update session with new tokens
+	session.AccessToken = tokenResp.AccessToken
+	session.RefreshToken = tokenResp.RefreshToken
+	session.ExpiresAt = time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second)
+
+	// Store updated session
+	s.sessionStore.sessions.Store(sessionID, session)
+
+	if s.debug {
+		slog.Debug("Token refreshed successfully",
+			"athlete_id", session.AthleteID,
+			"new_expires_at", session.ExpiresAt,
+		)
+	}
+
+	// Log successful refresh
+	slog.Info("strava_token_auto_refresh",
+		"event", "strava_token_auto_refresh",
+		"athlete_id", session.AthleteID,
+		"session_id", sessionID[:8]+"...",
+		"new_expires_at", session.ExpiresAt.Format(time.RFC3339),
+	)
+
+	return session, nil
+}
+
 // logAPICall logs API metrics to the monitoring database
 func (s *Service) logAPICall(metrics *APICallMetrics, athleteID int64) {
 	if metrics == nil {

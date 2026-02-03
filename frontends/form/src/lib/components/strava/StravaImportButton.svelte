@@ -42,12 +42,15 @@
     class="border-[#FC5200] text-[#FC5200] hover:bg-[#FC5200] hover:text-white"
     onclick={handleClick}
     disabled={isLoading || disabled}
+    aria-busy={isLoading}
+    aria-label="Import cycling events from your Strava clubs"
   >
     {#if isLoading}
       <svg
         class="mr-2 h-4 w-4 animate-spin"
         fill="none"
         viewBox="0 0 24 24"
+        aria-hidden="true"
       >
         <circle
           class="opacity-25"
@@ -63,6 +66,7 @@
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         />
       </svg>
+      <span class="sr-only">Connecting to Strava</span>
       Connecting...
     {:else}
       <!-- Strava wordmark logo -->

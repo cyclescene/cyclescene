@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SvelteSet, SvelteMap } from "svelte/reactivity";
   import * as Accordion from "$lib/components/ui/accordion";
+  import { Skeleton } from "$lib/components/ui/skeleton";
   import EventList from "./EventList.svelte";
   import { fetchClubEvents } from "$lib/api/strava";
   import { PUBLIC_STRAVA_DEBUG } from "$env/static/public";
@@ -102,6 +103,16 @@
     </p>
   </div>
 {:else}
+  <!-- Screen reader live region for loading events -->
+  <div class="sr-only" aria-live="polite">
+    {#each Array.from(loadingClubs) as clubId}
+      {@const club = clubs.find(c => c.id === clubId)}
+      {#if club}
+        Loading events for {club.name}
+      {/if}
+    {/each}
+  </div>
+
   <Accordion.Root type="multiple" bind:value={expandedClubs}>
     {#each clubs as club (club.id)}
       <Accordion.Item value={club.id.toString()} class="border-b">
@@ -134,34 +145,27 @@
         </Accordion.Trigger>
         <Accordion.Content class="pb-4">
           {#if loadingClubs.has(club.id)}
-            <div class="flex items-center justify-center py-8">
-              <svg
-                class="text-muted-foreground h-6 w-6 animate-spin"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                />
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              <span class="text-muted-foreground ml-2">Loading events...</span>
+            <div class="space-y-3 py-4" aria-busy="true" role="status">
+              <span class="sr-only">Loading events</span>
+              {#each Array(3) as _}
+                <div class="flex gap-3 rounded-lg border p-3">
+                  <Skeleton class="h-5 w-5 rounded" />
+                  <div class="flex-1 space-y-2">
+                    <Skeleton class="h-4 w-full" />
+                    <Skeleton class="h-3 w-3/4" />
+                    <Skeleton class="h-3 w-1/2" />
+                  </div>
+                </div>
+              {/each}
             </div>
           {:else if clubErrors.has(club.id)}
-            <div class="rounded-md bg-red-50 p-4 text-center text-red-600">
+            <div class="rounded-md bg-red-50 p-4 text-center text-red-600" role="alert">
               <p>{clubErrors.get(club.id)}</p>
               <button
-                class="mt-2 text-sm underline"
+                class="mt-2 text-sm underline disabled:opacity-50 disabled:cursor-not-allowed"
                 onclick={() => loadClubEvents(club.id)}
+                disabled={loadingClubs.has(club.id)}
+                aria-label="Retry loading events for {clubs.find(c => c.id === club.id)?.name || 'this club'}"
               >
                 Try again
               </button>

@@ -5,6 +5,7 @@ package config
 import (
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/go-chi/cors"
 )
@@ -49,6 +50,7 @@ var DevOrigins = []string{
 	"http://localhost:5178",
 	"http://localhost:5179",
 	"http://localhost:5180",
+	"https://dev.nadhatter.com",
 }
 
 // ProdOrigins are the allowed origins for production
@@ -63,14 +65,31 @@ var ProdOrigins = []string{
 // CORSConfig returns the CORS options for the current environment
 func CORSConfig() cors.Options {
 	var origins []string
+	var allowOriginFunc func(r *http.Request, origin string) bool
+
 	if IsDev() {
 		origins = DevOrigins
+		// In dev mode, also allow any *.nadhatter.com subdomain
+		allowOriginFunc = func(r *http.Request, origin string) bool {
+			// Check if it's in the explicit list
+			for _, allowed := range DevOrigins {
+				if origin == allowed {
+					return true
+				}
+			}
+			// Allow any *.nadhatter.com subdomain in dev
+			if strings.HasSuffix(origin, ".nadhatter.com") {
+				return true
+			}
+			return false
+		}
 	} else {
 		origins = ProdOrigins
 	}
 
 	return cors.Options{
 		AllowedOrigins:   origins,
+		AllowOriginFunc:  allowOriginFunc,
 		AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPost, http.MethodPatch, http.MethodOptions},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-BFF-Token", "X-Admin-Token"},
 		ExposedHeaders:   []string{"Link"},

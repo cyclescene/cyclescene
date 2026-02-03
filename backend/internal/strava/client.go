@@ -217,6 +217,37 @@ func (c *Client) GetAthleteClubs(ctx context.Context, accessToken string) ([]Clu
 	metrics.Message = "ok"
 	metrics.ClubsCount = len(clubs)
 
+	// Check rate limit threshold (75% of 100 requests)
+	// This gives us a 25-request buffer for event/route fetching
+	if metrics.ReadLimit15minLimit > 0 && metrics.ReadLimit15minUsage > 75 {
+		retryAfter := CalculateRetryAfterSeconds()
+		remaining := metrics.ReadLimit15minLimit - metrics.ReadLimit15minUsage
+
+		if c.debug {
+			slog.Warn("Rate limit threshold exceeded",
+				"usage", metrics.ReadLimit15minUsage,
+				"limit", metrics.ReadLimit15minLimit,
+				"remaining", remaining,
+				"retry_after_seconds", retryAfter,
+			)
+		}
+
+		// Log to monitoring
+		slog.Info("strava_rate_limit_warning",
+			"event", "strava_rate_limit_warning",
+			"read_usage", metrics.ReadLimit15minUsage,
+			"read_limit", metrics.ReadLimit15minLimit,
+			"remaining", remaining,
+			"retry_after_seconds", retryAfter,
+		)
+
+		return nil, metrics, &APIError{
+			StatusCode: http.StatusTooManyRequests,
+			Message:    fmt.Sprintf("Rate limit threshold exceeded (%d/%d used). Try again in %d seconds.", metrics.ReadLimit15minUsage, metrics.ReadLimit15minLimit, retryAfter),
+			Endpoint:   endpoint,
+		}
+	}
+
 	if c.debug {
 		slog.Debug("Fetched athlete clubs",
 			"endpoint", endpoint,
@@ -454,6 +485,17 @@ func parseRateLimitHeader(header string) (int, int) {
 	first, _ := strconv.Atoi(strings.TrimSpace(parts[0]))
 	second, _ := strconv.Atoi(strings.TrimSpace(parts[1]))
 	return first, second
+}
+
+// CalculateRetryAfterSeconds calculates seconds until next rate limit reset
+// Strava resets limits at fixed 15-minute intervals: :00, :15, :30, :45
+func CalculateRetryAfterSeconds() int {
+	now := time.Now()
+	minutesPastHour := now.Minute()
+	// Calculate minutes until next 15-minute interval
+	minutesUntilReset := 15 - (minutesPastHour % 15)
+	// Add 1 minute buffer to ensure reset has occurred
+	return (minutesUntilReset + 1) * 60
 }
 
 // handleErrorResponse processes an error response from the Strava API
