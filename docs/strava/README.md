@@ -20,7 +20,7 @@ This checklist tracks the implementation of the Strava OAuth integration feature
 | M2 | Backend - Service Layer | Complete | [MILESTONE_2_SERVICE_LAYER.md](./MILESTONE_2_SERVICE_LAYER.md) |
 | M3 | Backend - HTTP Handlers & WebSocket | Complete | [MILESTONE_3_HTTP_HANDLERS.md](./MILESTONE_3_HTTP_HANDLERS.md) |
 | M4 | Frontend - SvelteKit Integration | Complete | [MILESTONE_4_FRONTEND_INTEGRATION.md](./MILESTONE_4_FRONTEND_INTEGRATION.md) |
-| M5 | Frontend - Polish & Error Handling | Not Started | [MILESTONE_5_POLISH_ERRORS.md](./MILESTONE_5_POLISH_ERRORS.md) |
+| M5 | Frontend - Polish & Error Handling | Complete | [MILESTONE_5_POLISH_ERRORS.md](./MILESTONE_5_POLISH_ERRORS.md) |
 | M6 | Testing & Documentation | Not Started | [MILESTONE_6_TESTING_DOCS.md](./MILESTONE_6_TESTING_DOCS.md) |
 | M7 | Deployment Preparation | Not Started | [MILESTONE_7_DEPLOYMENT.md](./MILESTONE_7_DEPLOYMENT.md) |
 
@@ -75,4 +75,5 @@ This checklist tracks the implementation of the Strava OAuth integration feature
 
 **Branch:** `feature/stravaimport`
 **Created:** 2026-01-31
-**Status:** Ready to begin Milestone 3
+**Updated:** 2026-02-03
+**Status:** Milestone 5 complete - Ready to begin Milestone 6

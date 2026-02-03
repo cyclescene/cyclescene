@@ -83,18 +83,18 @@
 
 ### Success Criteria Checklist
 
-- [ ] `npm run check` passes (0 TypeScript errors)
-- [ ] `npm run build` succeeds
-- [ ] Rate limit shows accurate countdown timer
-- [ ] Token refresh happens transparently
-- [ ] Stop Import button cancels active import
-- [ ] Manual retry preserves completed events
-- [ ] Skeleton loaders show during all loading states
-- [ ] Screen reader announces progress updates
-- [ ] Focus moves logically between steps
-- [ ] Keyboard-only user can complete full flow
-- [ ] Mobile OAuth works on iOS Safari & Android Chrome
-- [ ] All errors logged to monitoring DB
+- [x] `npm run check` passes (0 TypeScript errors)
+- [x] `npm run build` succeeds
+- [x] Rate limit shows accurate countdown timer
+- [x] Token refresh happens transparently
+- [x] Stop Import button cancels active import
+- [x] Manual retry preserves completed events
+- [x] Skeleton loaders show during all loading states
+- [x] Screen reader announces progress updates
+- [x] Focus moves logically between steps
+- [x] Keyboard-only user can complete full flow
+- [x] Mobile OAuth works on iOS Safari & Android Chrome
+- [x] All errors logged to monitoring DB
 
 ---
 
@@ -847,17 +847,17 @@ npm run lint     # No lint errors
 
 ## Success Criteria
 
-- [ ] `npm run check` passes with zero errors
-- [ ] `npm run build` succeeds
-- [ ] All error scenarios show user-friendly messages
-- [ ] WebSocket has manual retry after failed reconnects
-- [ ] Screen reader users can track import progress
-- [ ] Mobile users can complete full import flow
-- [ ] Focus moves logically through steps
+- [x] `npm run check` passes with zero errors
+- [x] `npm run build` succeeds
+- [x] All error scenarios show user-friendly messages
+- [x] WebSocket has manual retry after failed reconnects
+- [x] Screen reader users can track import progress
+- [x] Mobile users can complete full import flow
+- [x] Focus moves logically through steps
 
 ---
 
 **Branch:** `feature/stravaimport`
 **Created:** 2026-01-31
 **Updated:** 2026-02-03
-**Status:** Ready for implementation (after fixing pre-existing TS errors)
+**Status:** ✅ COMPLETE - All features implemented, tested on desktop and mobile, production-ready
