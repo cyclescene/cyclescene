@@ -24,11 +24,12 @@ export const load: PageServerLoad = async ({ url, request }) => {
       throw redirect(302, '/error?message=Missing token or city');
     }
 
-    // Check referrer to ensure request came from PWA
+    // Check referrer to ensure request came from PWA or form
     const referrer = request.headers.get('referer') || '';
     const validReferrers = [
       'https://pdx.cyclescene.cc',
       'https://slc.cyclescene.cc',
+      'https://form.cyclescene.cc',
       'http://localhost' // for dev only
     ];
 
