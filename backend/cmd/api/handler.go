@@ -140,12 +140,29 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 		// Initialize routes repository for route storage
 		routesRepo := routes.NewRepository(db)
 
+		// Initialize encryption and connection repository for persistent token storage
+		var stravaConnectionRepo *strava.ConnectionRepository
+		encryption, err := strava.NewTokenEncryption()
+		if err != nil {
+			slog.Warn("Failed to initialize Strava token encryption - persistent connections disabled",
+				"error", err,
+				"hint", "Set STRAVA_TOKEN_ENCRYPTION_KEY env var for background sync support",
+			)
+		} else {
+			stravaConnectionRepo = strava.NewConnectionRepository(db, encryption)
+			slog.Info("Strava persistent connection storage enabled")
+		}
+
 		// Get callback URL from environment
 		stravaCallbackURL := os.Getenv("STRAVA_CALLBACK_URL")
 
+		// Initialize event metadata repository for tracking imported events
+		stravaEventMetadataRepo := strava.NewEventMetadataRepository(db)
+
 		// Initialize Strava service
-		stravaService := strava.NewService(stravaClient, stravaSessionStore, stravaMonitoringRepo, stravaCallbackURL)
+		stravaService := strava.NewService(stravaClient, stravaSessionStore, stravaMonitoringRepo, stravaConnectionRepo, stravaCallbackURL)
 		stravaService.SetRouteRepository(routesRepo)
+		stravaService.SetEventMetadataRepository(stravaEventMetadataRepo)
 
 		// Create handler with import support if ride service and magic link service are available
 		if rideService != nil && magicLinkService != nil {

@@ -78,7 +78,7 @@ func main() {
 	}
 	client := strava.NewClient(config)
 	sessionStore = strava.NewSessionStore()
-	service = strava.NewService(client, sessionStore, nil, redirectURI)
+	service = strava.NewService(client, sessionStore, nil, nil, redirectURI)
 
 	// Set up HTTP server for OAuth callback
 	http.HandleFunc("/", handleRoot)

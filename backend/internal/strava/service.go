@@ -15,12 +15,14 @@ import (
 
 // Service provides business logic for Strava OAuth and event import
 type Service struct {
-	client         *Client
-	sessionStore   *SessionStore
-	monitoringRepo *MonitoringRepository
-	routeRepo      *routes.Repository
-	callbackURL    string
-	debug          bool
+	client             *Client
+	sessionStore       *SessionStore
+	monitoringRepo     *MonitoringRepository
+	connectionRepo     *ConnectionRepository
+	eventMetadataRepo  *EventMetadataRepository
+	routeRepo          *routes.Repository
+	callbackURL        string
+	debug              bool
 }
 
 // NewService creates a new Strava service
@@ -28,12 +30,14 @@ func NewService(
 	client *Client,
 	sessionStore *SessionStore,
 	monitoringRepo *MonitoringRepository,
+	connectionRepo *ConnectionRepository,
 	callbackURL string,
 ) *Service {
 	return &Service{
 		client:         client,
 		sessionStore:   sessionStore,
 		monitoringRepo: monitoringRepo,
+		connectionRepo: connectionRepo,
 		callbackURL:    callbackURL,
 		debug:          os.Getenv("STRAVA_DEBUG") == "true",
 	}
@@ -116,6 +120,23 @@ func (s *Service) HandleOAuthCallback(ctx context.Context, code, state string) (
 			"error", err.Error(),
 		)
 		return "", fmt.Errorf("failed to create session: %w", err)
+	}
+
+	// Save refresh token to database for background sync (if connection repo configured)
+	if s.connectionRepo != nil {
+		if err := s.connectionRepo.SaveConnection(ctx, session.AthleteID, tokenResp.RefreshToken, cityCode); err != nil {
+			slog.Error("Failed to save Strava connection",
+				"error", err,
+				"athlete_id", session.AthleteID,
+			)
+			// Don't fail OAuth flow, but log the error
+			// Session still works for immediate import
+		} else if s.debug {
+			slog.Debug("Saved Strava connection to database",
+				"athlete_id", session.AthleteID,
+				"city_code", cityCode,
+			)
+		}
 	}
 
 	// Log successful OAuth completion
@@ -341,6 +362,16 @@ func (s *Service) DeleteSession(sessionID string) {
 // SetRouteRepository sets the route repository for route processing
 func (s *Service) SetRouteRepository(repo *routes.Repository) {
 	s.routeRepo = repo
+}
+
+// SetEventMetadataRepository sets the event metadata repository for tracking imported events
+func (s *Service) SetEventMetadataRepository(repo *EventMetadataRepository) {
+	s.eventMetadataRepo = repo
+}
+
+// GetEventMetadataRepository returns the event metadata repository
+func (s *Service) GetEventMetadataRepository() *EventMetadataRepository {
+	return s.eventMetadataRepo
 }
 
 // ProcessRoute fetches a Strava route and stores it in the database using session token

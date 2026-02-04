@@ -98,7 +98,7 @@ func setupTestHandler() (*Handler, *strava.Service, *strava.SessionStore) {
 	// Create client with mock server URL
 	client := strava.NewClientWithBaseURL(config, mockStravaServer.URL)
 	sessionStore := strava.NewSessionStore()
-	service := strava.NewService(client, sessionStore, nil, "http://localhost:3000/callback")
+	service := strava.NewService(client, sessionStore, nil, nil, "http://localhost:3000/callback")
 
 	handler := NewHandler(service)
 

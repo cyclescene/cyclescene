@@ -318,7 +318,7 @@ func TestWebSocketHandler_Integration(t *testing.T) {
 
 	client := strava.NewClientWithBaseURL(config, mockStravaServer.URL)
 	sessionStore := strava.NewSessionStore()
-	stravaService := strava.NewService(client, sessionStore, nil, "http://localhost:3000/callback")
+	stravaService := strava.NewService(client, sessionStore, nil, nil, "http://localhost:3000/callback")
 
 	// Create a test session
 	session := &strava.Session{

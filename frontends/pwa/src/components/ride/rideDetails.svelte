@@ -228,6 +228,16 @@
             Donate to Shift2Bikes
           </Button>
         {/if}
+
+        {#if ride && ride.ridesource === "strava"}
+          <div class="flex items-center justify-center my-4 py-4 bg-[#2D2D32] rounded-lg">
+            <img
+              src="/api_logo_pwrdBy_strava_horiz_white.png"
+              alt="Powered by Strava"
+              class="h-5"
+            />
+          </div>
+        {/if}
       </div>
     </ScrollArea>
   </div>

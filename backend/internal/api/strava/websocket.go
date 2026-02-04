@@ -404,6 +404,33 @@ func (h *ImportHandler) importSingleEvent(
 
 	h.sendProgress(ctx, conn, index, total, eventConfig.StravaEventID, targetEvent.Title, "database", "success", "Event saved successfully")
 
+	// Save Strava metadata for background sync (if repository is configured)
+	metadataRepo := h.stravaService.GetEventMetadataRepository()
+	if metadataRepo != nil {
+		err = metadataRepo.SaveEventMetadata(
+			ctx,
+			response.EventID,
+			eventConfig.StravaEventID,
+			eventConfig.ClubID,
+			session.AthleteID,
+		)
+		if err != nil {
+			// Don't fail the import, but log the error
+			slog.Error("Failed to save Strava event metadata",
+				"error", err,
+				"event_id", response.EventID,
+				"strava_event_id", eventConfig.StravaEventID,
+			)
+		} else if h.debug {
+			slog.Debug("Saved Strava event metadata",
+				"event_id", response.EventID,
+				"strava_event_id", eventConfig.StravaEventID,
+				"club_id", eventConfig.ClubID,
+				"athlete_id", session.AthleteID,
+			)
+		}
+	}
+
 	// Build result
 	result.CycleSceneEventID = response.EventID
 	result.EditToken = response.EditToken
