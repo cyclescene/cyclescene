@@ -262,7 +262,7 @@ func (e *GroupEvent) ToSubmission(cityCode, organizerEmail string, latitude, lon
 
 		// Location
 		Address:    e.Address,
-		VenueName:  "", // Strava doesn't provide venue name
+		VenueName:  e.Address, // Use address as venue name
 		IsLoopRide: false,
 
 		// Contact - organizer email required for magic link
