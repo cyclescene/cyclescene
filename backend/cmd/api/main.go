@@ -1,6 +1,6 @@
 package main
 
-// CycleScene API Gateway - v1.1.0 (Strava Integration)
+// CycleScene API Gateway - v1.1.1 (Strava Integration - WebSocket Fix)
 
 import (
 	"database/sql"
