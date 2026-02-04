@@ -10,9 +10,10 @@
     value: string;
     onchange: (value: string) => void;
     error?: string;
+    city: string;
   }
 
-  let { value = $bindable(), onchange, error }: Props = $props();
+  let { value = $bindable(), onchange, error, city }: Props = $props();
 
   let validationState = $state<"idle" | "validating" | "valid" | "invalid">(
     "idle",
@@ -34,13 +35,13 @@
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ city: "pdx" }),
+        body: JSON.stringify({ city }),
       });
 
       const { token } = await response.json();
 
       // Redirect to group registration form
-      window.location.href = `/group?token=${token}&city=pdx`;
+      window.location.href = `/group?token=${token}&city=${city}`;
     } catch (error) {
       console.error("Error:", error);
     }

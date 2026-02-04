@@ -8,9 +8,10 @@
   interface Props {
     onSubmit: (email: string, groupCode: string) => void;
     onBack: () => void;
+    city: string;
   }
 
-  let { onSubmit, onBack }: Props = $props();
+  let { onSubmit, onBack, city }: Props = $props();
 
   let email = $state("");
   let groupCode = $state("");
@@ -111,6 +112,7 @@
           <GroupSelector
             value={groupCode}
             onchange={handleGroupChange}
+            city={city}
           />
         </div>
 

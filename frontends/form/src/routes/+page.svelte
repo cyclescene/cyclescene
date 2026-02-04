@@ -509,6 +509,7 @@
           onchange={(val) => {
             $form.group_code = val;
           }}
+          city={data.city}
           error={Array.isArray($errors.group_code) ? $errors.group_code[0] : typeof $errors.group_code === 'object' && $errors.group_code?._errors ? $errors.group_code._errors[0] : typeof $errors.group_code === 'string' ? $errors.group_code : undefined}
         />
       </Card.Content>

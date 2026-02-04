@@ -367,7 +367,7 @@
     </div>
   {:else if step === "email"}
     <!-- Email Input Step -->
-    <EmailInput onSubmit={handleEmailSubmit} onBack={handleEmailBack} />
+    <EmailInput onSubmit={handleEmailSubmit} onBack={handleEmailBack} city={city} />
   {:else if step === "select"}
     <!-- Event Selection Step -->
     <div class="space-y-6">
