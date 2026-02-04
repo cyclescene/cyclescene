@@ -14,13 +14,19 @@
   let { value = $bindable("all"), onValueChange, variant = "desktop" }: Props = $props();
 
   let mobileSheetOpen = $state(false);
+  let previousValue = $state(value);
 
-  function handleCitySelect(city: CityCode) {
-    value = city;
-    onValueChange(city);
-    if (variant === "mobile") {
-      mobileSheetOpen = false;
+  // Watch for value changes and trigger callback
+  $effect(() => {
+    if (value !== previousValue) {
+      previousValue = value;
+      onValueChange(value);
     }
+  });
+
+  function handleMobileCitySelect(city: CityCode) {
+    value = city;
+    mobileSheetOpen = false;
   }
 
   const selectedCity = $derived(
@@ -67,7 +73,7 @@
       <div class="mt-4 space-y-2">
         {#each CITIES as city}
           <button
-            onclick={() => handleCitySelect(city.code)}
+            onclick={() => handleMobileCitySelect(city.code)}
             class="w-full text-left p-4 rounded-lg border transition-colors {value ===
             city.code
               ? 'bg-accent border-primary'
