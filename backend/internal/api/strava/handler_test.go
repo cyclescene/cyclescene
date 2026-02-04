@@ -6,6 +6,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spacesedan/cyclescene/backend/internal/strava"
@@ -25,6 +26,12 @@ func setupTestHandler() (*Handler, *strava.Service, *strava.SessionStore) {
 
 	// Create mock HTTP server for Strava API
 	mockStravaServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Add rate limit headers to all responses
+		w.Header().Set("X-Ratelimit-Limit", "200,2000")
+		w.Header().Set("X-Ratelimit-Usage", "1,1")
+		w.Header().Set("X-Readratelimit-Limit", "100,1000")
+		w.Header().Set("X-Readratelimit-Usage", "1,1")
+
 		switch r.URL.Path {
 		case "/oauth/token":
 			// Mock token exchange
@@ -43,8 +50,8 @@ func setupTestHandler() (*Handler, *strava.Service, *strava.SessionStore) {
 					"country":   "United States",
 				},
 			})
-		case "/api/v3/athlete/clubs":
-			// Mock clubs response
+		case "/athlete/clubs":
+			// Mock clubs response (without /api/v3 prefix since it's in baseURL)
 			json.NewEncoder(w).Encode([]map[string]interface{}{
 				{
 					"id":           123,
@@ -56,7 +63,7 @@ func setupTestHandler() (*Handler, *strava.Service, *strava.SessionStore) {
 					"sport_type":   "cycling",
 				},
 			})
-		case "/api/v3/clubs/123":
+		case "/clubs/123":
 			// Mock club details (admin)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"id":           123,
@@ -68,7 +75,7 @@ func setupTestHandler() (*Handler, *strava.Service, *strava.SessionStore) {
 				"member_count": 100,
 				"sport_type":   "cycling",
 			})
-		case "/api/v3/clubs/123/group_events":
+		case "/clubs/123/group_events":
 			// Mock events response
 			json.NewEncoder(w).Encode([]map[string]interface{}{
 				{
@@ -277,13 +284,14 @@ func TestGetAdminClubs_NoSession(t *testing.T) {
 func TestGetAdminClubs_WithSession(t *testing.T) {
 	handler, service, _ := setupTestHandler()
 
-	// Create a session
+	// Create a session with far-future expiry
 	session := &strava.Session{
 		AccessToken:  "test-token",
 		RefreshToken: "test-refresh",
 		AthleteID:    12345,
 		AthleteName:  "Test User",
 		CityCode:     "pdx",
+		ExpiresAt:    time.Now().Add(24 * time.Hour), // Far future
 	}
 	sessionID, _ := service.GetSessionStore().CreateSession(session)
 
@@ -296,13 +304,20 @@ func TestGetAdminClubs_WithSession(t *testing.T) {
 
 	handler.GetAdminClubs(w, req)
 
-	// Note: This will fail to actually fetch clubs because the mock server
-	// isn't properly wired up through the service. In a real test, you'd
-	// need to mock at the HTTP level or use dependency injection.
-	// For now, we're testing that the handler logic is correct.
+	// Should return 200 (mock server returns clubs)
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
 
-	// The handler should attempt to call the service
-	// In a full integration test, you'd verify the response body
+	// Verify response structure
+	var response map[string]interface{}
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if _, ok := response["clubs"]; !ok {
+		t.Error("Expected 'clubs' field in response")
+	}
 }
 
 func TestGetClubEvents_NoSession(t *testing.T) {
@@ -383,6 +398,168 @@ func TestRegisterRoutes(t *testing.T) {
 				t.Errorf("Route %s %s not found", route.method, route.path)
 			}
 		})
+	}
+}
+
+func TestCheckSession_Valid(t *testing.T) {
+	handler, service, _ := setupTestHandler()
+
+	// Create a session with far-future expiry
+	session := &strava.Session{
+		AccessToken:  "test-token",
+		RefreshToken: "test-refresh",
+		AthleteID:    12345,
+		AthleteName:  "Test User",
+		CityCode:     "pdx",
+		ExpiresAt:    time.Now().Add(24 * time.Hour), // Far future
+	}
+	sessionID, _ := service.GetSessionStore().CreateSession(session)
+
+	req := httptest.NewRequest("GET", "/v1/strava/check-session", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "strava_session_id",
+		Value: sessionID,
+	})
+	w := httptest.NewRecorder()
+
+	handler.CheckSession(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response map[string]bool
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	if !response["valid"] {
+		t.Error("Expected valid: true in response")
+	}
+}
+
+func TestCheckSession_NoSession(t *testing.T) {
+	handler, _, _ := setupTestHandler()
+
+	req := httptest.NewRequest("GET", "/v1/strava/check-session", nil)
+	w := httptest.NewRecorder()
+
+	handler.CheckSession(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+}
+
+func TestCheckSession_InvalidSession(t *testing.T) {
+	handler, _, _ := setupTestHandler()
+
+	req := httptest.NewRequest("GET", "/v1/strava/check-session", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "strava_session_id",
+		Value: "invalid-session-id",
+	})
+	w := httptest.NewRecorder()
+
+	handler.CheckSession(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("Expected status %d, got %d", http.StatusUnauthorized, w.Code)
+	}
+
+	// Should clear the invalid cookie
+	cookies := w.Result().Cookies()
+	var clearedCookie *http.Cookie
+	for _, cookie := range cookies {
+		if cookie.Name == "strava_session_id" {
+			clearedCookie = cookie
+			break
+		}
+	}
+	if clearedCookie != nil && clearedCookie.MaxAge >= 0 {
+		t.Error("Expected session cookie to be cleared (MaxAge < 0)")
+	}
+}
+
+func TestGetClubEvents_WithSession(t *testing.T) {
+	handler, service, _ := setupTestHandler()
+
+	// Create a session with far-future expiry
+	session := &strava.Session{
+		AccessToken:  "test-token",
+		RefreshToken: "test-refresh",
+		AthleteID:    12345,
+		AthleteName:  "Test User",
+		CityCode:     "pdx",
+		ExpiresAt:    time.Now().Add(24 * time.Hour), // Far future
+	}
+	sessionID, _ := service.GetSessionStore().CreateSession(session)
+
+	// Setup chi router
+	r := chi.NewRouter()
+	r.Get("/v1/strava/clubs/{clubId}/events", handler.GetClubEvents)
+
+	req := httptest.NewRequest("GET", "/v1/strava/clubs/123/events", nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "strava_session_id",
+		Value: sessionID,
+	})
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	var response map[string]interface{}
+	if err := json.NewDecoder(w.Body).Decode(&response); err != nil {
+		t.Fatalf("Failed to decode response: %v", err)
+	}
+
+	events, ok := response["events"].([]interface{})
+	if !ok {
+		t.Fatal("Expected 'events' array in response")
+	}
+
+	if len(events) == 0 {
+		t.Error("Expected at least one event in response")
+	}
+
+	// Verify event ID is a string (not a number) to avoid JavaScript precision loss
+	if len(events) > 0 {
+		firstEvent := events[0].(map[string]interface{})
+		eventID, ok := firstEvent["id"].(string)
+		if !ok {
+			t.Error("Expected event ID to be a string")
+		}
+		if eventID == "" {
+			t.Error("Expected event ID to be non-empty")
+		}
+	}
+}
+
+func TestToGroupEventResponse_IDConversion(t *testing.T) {
+	// Test that large int64 event IDs are converted to strings correctly
+	event := strava.GroupEvent{
+		ID:                  9007199254740992, // Large int64 that would lose precision in JS
+		Title:               "Test Event",
+		ActivityType:        "Ride",
+		UpcomingOccurrences: []string{"2026-03-01T18:00:00Z"},
+		Zone:                "America/Los_Angeles",
+		Address:             "123 Main St",
+		StartLatLng:         []float64{45.5, -122.6},
+		ClubID:              123,
+	}
+
+	response := toGroupEventResponse(event)
+
+	if response.ID != "9007199254740992" {
+		t.Errorf("Expected ID to be '9007199254740992', got '%s'", response.ID)
+	}
+
+	if response.Title != event.Title {
+		t.Errorf("Expected Title to be '%s', got '%s'", event.Title, response.Title)
 	}
 }
 

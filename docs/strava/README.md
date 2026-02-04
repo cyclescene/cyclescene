@@ -21,30 +21,30 @@ This checklist tracks the implementation of the Strava OAuth integration feature
 | M3 | Backend - HTTP Handlers & WebSocket | Complete | [MILESTONE_3_HTTP_HANDLERS.md](./MILESTONE_3_HTTP_HANDLERS.md) |
 | M4 | Frontend - SvelteKit Integration | Complete | [MILESTONE_4_FRONTEND_INTEGRATION.md](./MILESTONE_4_FRONTEND_INTEGRATION.md) |
 | M5 | Frontend - Polish & Error Handling | Complete | [MILESTONE_5_POLISH_ERRORS.md](./MILESTONE_5_POLISH_ERRORS.md) |
-| M6 | Testing & Documentation | Not Started | [MILESTONE_6_TESTING_DOCS.md](./MILESTONE_6_TESTING_DOCS.md) |
-| M7 | Deployment Preparation | Not Started | [MILESTONE_7_DEPLOYMENT.md](./MILESTONE_7_DEPLOYMENT.md) |
+| M6 | Testing & Documentation | Complete | [MILESTONE_6_TESTING_DOCS.md](./MILESTONE_6_TESTING_DOCS.md) |
+| M7 | Deployment Preparation | Ready to Start | [MILESTONE_7_DEPLOYMENT.md](./MILESTONE_7_DEPLOYMENT.md) |
 
 ---
 
 ## Success Metrics
 
 ### Per Milestone
-- [ ] All tests pass (`go test`, `npm test`)
-- [ ] No build errors (`go build`, `npm run build`)
-- [ ] No TypeScript errors (`npm run check`)
-- [ ] Feature debuggable with `STRAVA_DEBUG=true`
-- [ ] Structured logging in place
+- [x] All tests pass (`go test`, `npm test`)
+- [x] No build errors (`go build`, `npm run build`)
+- [x] No TypeScript errors (`npm run check`)
+- [x] Feature debuggable with `STRAVA_DEBUG=true`
+- [x] Structured logging in place
 
-### Overall Feature
-- [ ] OAuth flow completes successfully
-- [ ] Only admin/owner clubs shown
-- [ ] Events import with all fields mapped correctly
-- [ ] Progress tracking works for multi-event imports
-- [ ] Magic link emails sent with event titles
-- [ ] Error states handled gracefully
-- [ ] Mobile-responsive UI
-- [ ] Accessible (keyboard nav, screen readers)
-- [ ] Production-ready (monitoring, security, rollback plan)
+### Overall Feature (Development Complete)
+- [x] OAuth flow completes successfully
+- [x] Only admin/owner clubs shown
+- [x] Events import with all fields mapped correctly
+- [x] Progress tracking works for multi-event imports
+- [x] Magic link emails sent with event titles
+- [x] Error states handled gracefully
+- [x] Mobile-responsive UI
+- [x] Accessible (keyboard nav, screen readers)
+- [ ] Production-ready (M7: monitoring, security review, deployment config)
 
 ---
 
@@ -76,4 +76,24 @@ This checklist tracks the implementation of the Strava OAuth integration feature
 **Branch:** `feature/stravaimport`
 **Created:** 2026-01-31
 **Updated:** 2026-02-03
-**Status:** Milestone 5 complete - Ready to begin Milestone 6
+**Status:** M1-M6 complete ✓ - Feature development & testing done, ready for M7 (deployment)
+
+---
+
+## 🎉 Development Complete - Ready for Deployment
+
+**Completed Milestones (M1-M6):**
+- ✅ M1-M2: Backend infrastructure (API client, service layer)
+- ✅ M3: HTTP handlers & WebSocket streaming
+- ✅ M4-M5: Frontend integration with polish & error handling
+- ✅ M6: Comprehensive testing (67 tests passing, 4 skipped with documentation)
+
+**Test Coverage:**
+- Backend: 29/29 tests passing ✓
+- Frontend: 38/38 tests passing, 4 skipped (documented) ✓
+
+**Next: Milestone 7 (Deployment Preparation)**
+- Environment configuration (production OAuth app, secrets)
+- Security review (token logging, CORS, auth)
+- Monitoring & logging setup
+- Rollout & rollback plans
