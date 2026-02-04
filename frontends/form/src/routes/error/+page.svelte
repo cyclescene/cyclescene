@@ -6,7 +6,7 @@
 
   const message = page.url.searchParams.get("message") || "An error occurred";
 
-  const href = "http://localhost:5174";
+  const href = "https://cyclescene.cc";
 </script>
 
 <div class="container max-w-2xl mx-auto py-16 px-4">
