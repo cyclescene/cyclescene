@@ -1,6 +1,6 @@
 package main
 
-// CycleScene API Gateway - v1.1.1 (Strava Integration - WebSocket Fix)
+// CycleScene API Gateway - v1.1.2 (Strava venue_name fix)
 
 import (
 	"database/sql"
