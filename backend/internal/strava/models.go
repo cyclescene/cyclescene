@@ -255,6 +255,12 @@ func (e *GroupEvent) ToSubmission(cityCode, organizerEmail string, latitude, lon
 	// Build Strava event URL for web link
 	stravaURL := fmt.Sprintf("https://www.strava.com/clubs/%d/group_events/%d", e.ClubID, e.ID)
 
+	// Determine venue name - use address if available, otherwise use club name as fallback
+	venueName := e.Address
+	if venueName == "" && e.Club != nil {
+		venueName = e.Club.Name
+	}
+
 	submission := &ride.Submission{
 		Title:       e.Title,
 		Description: e.Description,
@@ -262,7 +268,7 @@ func (e *GroupEvent) ToSubmission(cityCode, organizerEmail string, latitude, lon
 
 		// Location
 		Address:    e.Address,
-		VenueName:  e.Address, // Use address as venue name
+		VenueName:  venueName, // Use address as venue name, fallback to club name
 		IsLoopRide: false,
 
 		// Contact - organizer email required for magic link
