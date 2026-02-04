@@ -155,12 +155,53 @@ func (r *ConnectionRepository) ListConnections(ctx context.Context) ([]*Connecti
 		ORDER BY last_synced_at ASC NULLS FIRST
 	`
 
+	return r.queryConnections(ctx, query)
+}
+
+// GetConnectionsForSync returns connections that need syncing
+// (last_synced_at is NULL or older than 3 days)
+func (r *ConnectionRepository) GetConnectionsForSync(ctx context.Context, limit int) ([]*Connection, error) {
+	query := `
+		SELECT
+			athlete_id,
+			refresh_token_encrypted,
+			encryption_nonce,
+			city_code,
+			last_synced_at,
+			created_at
+		FROM strava_connections
+		WHERE last_synced_at IS NULL OR last_synced_at < datetime('now', '-3 days')
+		ORDER BY last_synced_at ASC NULLS FIRST
+		LIMIT ?
+	`
+
+	return r.queryConnectionsWithArgs(ctx, query, limit)
+}
+
+// queryConnections executes a query and returns connections (no args)
+func (r *ConnectionRepository) queryConnections(ctx context.Context, query string) ([]*Connection, error) {
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query connections: %w", err)
 	}
 	defer rows.Close()
 
+	return r.scanConnections(rows)
+}
+
+// queryConnectionsWithArgs executes a query with args and returns connections
+func (r *ConnectionRepository) queryConnectionsWithArgs(ctx context.Context, query string, args ...interface{}) ([]*Connection, error) {
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query connections: %w", err)
+	}
+	defer rows.Close()
+
+	return r.scanConnections(rows)
+}
+
+// scanConnections scans rows into Connection structs
+func (r *ConnectionRepository) scanConnections(rows *sql.Rows) ([]*Connection, error) {
 	var connections []*Connection
 	for rows.Next() {
 		var conn Connection
@@ -204,3 +245,4 @@ func (r *ConnectionRepository) ListConnections(ctx context.Context) ([]*Connecti
 
 	return connections, nil
 }
+

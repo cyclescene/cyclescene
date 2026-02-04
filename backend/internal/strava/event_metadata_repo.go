@@ -180,6 +180,64 @@ func (r *EventMetadataRepository) DeleteEventMetadata(ctx context.Context, cycle
 	return nil
 }
 
+// GetUpcomingStravaEventsByAthlete returns upcoming Strava events imported by an athlete
+// CRITICAL: Only returns events with source='strava' (not detached events)
+func (r *EventMetadataRepository) GetUpcomingStravaEventsByAthlete(ctx context.Context, athleteID int64) ([]*EventMetadata, error) {
+	query := `
+		SELECT
+			sem.event_id,
+			sem.strava_event_id,
+			sem.strava_club_id,
+			sem.imported_by_athlete_id,
+			sem.imported_at,
+			sem.last_refreshed_at,
+			sem.refresh_count
+		FROM strava_event_metadata sem
+		INNER JOIN events e ON e.id = sem.event_id
+		WHERE sem.imported_by_athlete_id = ?
+		  AND e.source = 'strava'          -- CRITICAL: Skip detached events
+		  AND e.date >= date('now')        -- Only upcoming events
+		ORDER BY e.date ASC
+	`
+
+	rows, err := r.db.QueryContext(ctx, query, athleteID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query upcoming events for athlete: %w", err)
+	}
+	defer rows.Close()
+
+	var metadataList []*EventMetadata
+	for rows.Next() {
+		var meta EventMetadata
+		var importedAtStr, lastRefreshedAtStr string
+
+		err := rows.Scan(
+			&meta.EventID,
+			&meta.StravaEventID,
+			&meta.StravaClubID,
+			&meta.ImportedByAthleteID,
+			&importedAtStr,
+			&lastRefreshedAtStr,
+			&meta.RefreshCount,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan event metadata: %w", err)
+		}
+
+		// Parse timestamps
+		meta.ImportedAt, _ = time.Parse("2006-01-02 15:04:05.000", importedAtStr)
+		meta.LastRefreshedAt, _ = time.Parse("2006-01-02 15:04:05.000", lastRefreshedAtStr)
+
+		metadataList = append(metadataList, &meta)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating event metadata: %w", err)
+	}
+
+	return metadataList, nil
+}
+
 // ListStaleEvents returns events that haven't been refreshed in over 7 days
 func (r *EventMetadataRepository) ListStaleEvents(ctx context.Context) ([]*EventMetadata, error) {
 	query := `
