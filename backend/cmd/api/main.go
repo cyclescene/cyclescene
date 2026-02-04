@@ -1,5 +1,7 @@
 package main
 
+// CycleScene API Gateway - v1.1.0 (Strava Integration)
+
 import (
 	"database/sql"
 	"fmt"
