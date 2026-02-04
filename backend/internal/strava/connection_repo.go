@@ -77,7 +77,7 @@ func (r *ConnectionRepository) GetConnection(ctx context.Context, athleteID int6
 
 	var conn Connection
 	var encryptedToken, nonce []byte
-	var lastSyncedStr sql.NullString
+	var lastSyncedStr, createdAtStr sql.NullString
 
 	err := r.db.QueryRowContext(ctx, query, athleteID).Scan(
 		&conn.AthleteID,
@@ -85,7 +85,7 @@ func (r *ConnectionRepository) GetConnection(ctx context.Context, athleteID int6
 		&nonce,
 		&conn.CityCode,
 		&lastSyncedStr,
-		&conn.CreatedAt,
+		&createdAtStr,
 	)
 
 	if err == sql.ErrNoRows {
@@ -107,6 +107,14 @@ func (r *ConnectionRepository) GetConnection(ctx context.Context, athleteID int6
 		t, err := time.Parse("2006-01-02 15:04:05.000", lastSyncedStr.String)
 		if err == nil {
 			conn.LastSyncedAt = &t
+		}
+	}
+
+	// Parse created_at
+	if createdAtStr.Valid && createdAtStr.String != "" {
+		t, err := time.Parse("2006-01-02 15:04:05.000", createdAtStr.String)
+		if err == nil {
+			conn.CreatedAt = t
 		}
 	}
 
@@ -160,20 +168,39 @@ func (r *ConnectionRepository) ListConnections(ctx context.Context) ([]*Connecti
 
 // GetConnectionsForSync returns connections that need syncing
 // (last_synced_at is NULL or older than 3 days)
-func (r *ConnectionRepository) GetConnectionsForSync(ctx context.Context, limit int) ([]*Connection, error) {
-	query := `
-		SELECT
-			athlete_id,
-			refresh_token_encrypted,
-			encryption_nonce,
-			city_code,
-			last_synced_at,
-			created_at
-		FROM strava_connections
-		WHERE last_synced_at IS NULL OR last_synced_at < datetime('now', '-3 days')
-		ORDER BY last_synced_at ASC NULLS FIRST
-		LIMIT ?
-	`
+// If force is true, returns all connections regardless of last_synced_at
+func (r *ConnectionRepository) GetConnectionsForSync(ctx context.Context, limit int, force bool) ([]*Connection, error) {
+	var query string
+	if force {
+		// Force mode: sync all connections regardless of last_synced_at
+		query = `
+			SELECT
+				athlete_id,
+				refresh_token_encrypted,
+				encryption_nonce,
+				city_code,
+				last_synced_at,
+				created_at
+			FROM strava_connections
+			ORDER BY last_synced_at ASC NULLS FIRST
+			LIMIT ?
+		`
+	} else {
+		// Normal mode: only sync connections that haven't been synced in 3+ days
+		query = `
+			SELECT
+				athlete_id,
+				refresh_token_encrypted,
+				encryption_nonce,
+				city_code,
+				last_synced_at,
+				created_at
+			FROM strava_connections
+			WHERE last_synced_at IS NULL OR last_synced_at < datetime('now', '-3 days')
+			ORDER BY last_synced_at ASC NULLS FIRST
+			LIMIT ?
+		`
+	}
 
 	return r.queryConnectionsWithArgs(ctx, query, limit)
 }
@@ -206,7 +233,7 @@ func (r *ConnectionRepository) scanConnections(rows *sql.Rows) ([]*Connection, e
 	for rows.Next() {
 		var conn Connection
 		var encryptedToken, nonce []byte
-		var lastSyncedStr sql.NullString
+		var lastSyncedStr, createdAtStr sql.NullString
 
 		err := rows.Scan(
 			&conn.AthleteID,
@@ -214,7 +241,7 @@ func (r *ConnectionRepository) scanConnections(rows *sql.Rows) ([]*Connection, e
 			&nonce,
 			&conn.CityCode,
 			&lastSyncedStr,
-			&conn.CreatedAt,
+			&createdAtStr,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan connection: %w", err)
@@ -233,6 +260,14 @@ func (r *ConnectionRepository) scanConnections(rows *sql.Rows) ([]*Connection, e
 			t, err := time.Parse("2006-01-02 15:04:05.000", lastSyncedStr.String)
 			if err == nil {
 				conn.LastSyncedAt = &t
+			}
+		}
+
+		// Parse created_at
+		if createdAtStr.Valid && createdAtStr.String != "" {
+			t, err := time.Parse("2006-01-02 15:04:05.000", createdAtStr.String)
+			if err == nil {
+				conn.CreatedAt = t
 			}
 		}
 

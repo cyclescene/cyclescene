@@ -184,7 +184,7 @@ func (r *EventMetadataRepository) DeleteEventMetadata(ctx context.Context, cycle
 // CRITICAL: Only returns events with source='strava' (not detached events)
 func (r *EventMetadataRepository) GetUpcomingStravaEventsByAthlete(ctx context.Context, athleteID int64) ([]*EventMetadata, error) {
 	query := `
-		SELECT
+		SELECT DISTINCT
 			sem.event_id,
 			sem.strava_event_id,
 			sem.strava_club_id,
@@ -194,10 +194,11 @@ func (r *EventMetadataRepository) GetUpcomingStravaEventsByAthlete(ctx context.C
 			sem.refresh_count
 		FROM strava_event_metadata sem
 		INNER JOIN events e ON e.id = sem.event_id
+		INNER JOIN event_occurrences eo ON eo.event_id = sem.event_id
 		WHERE sem.imported_by_athlete_id = ?
 		  AND e.source = 'strava'          -- CRITICAL: Skip detached events
-		  AND e.date >= date('now')        -- Only upcoming events
-		ORDER BY e.date ASC
+		  AND eo.start_date >= date('now') -- Only upcoming occurrences
+		ORDER BY eo.start_date ASC
 	`
 
 	rows, err := r.db.QueryContext(ctx, query, athleteID)

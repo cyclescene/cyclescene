@@ -17,6 +17,7 @@ type SyncConfig struct {
 	// Behavior
 	ContinueOnError bool // Continue processing other athletes if one fails (default: true)
 	Debug           bool // Enable debug logging
+	Force           bool // Force sync all connections, ignoring last_synced_at (default: false, for testing)
 }
 
 // DefaultSyncConfig returns a SyncConfig with sensible defaults
@@ -59,6 +60,10 @@ func NewSyncConfigFromEnv() *SyncConfig {
 
 	if os.Getenv("STRAVA_DEBUG") == "true" {
 		config.Debug = true
+	}
+
+	if os.Getenv("SYNC_FORCE") == "true" {
+		config.Force = true
 	}
 
 	return config

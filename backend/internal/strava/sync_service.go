@@ -46,10 +46,11 @@ func (s *SyncService) Run(ctx context.Context) (*SyncResult, error) {
 		"max_connections", s.config.MaxConnectionsPerRun,
 		"max_requests_15min", s.config.MaxRequestsPer15Min,
 		"continue_on_error", s.config.ContinueOnError,
+		"force", s.config.Force,
 	)
 
-	// Fetch connections that need syncing (filtered by last_synced_at)
-	connections, err := s.connRepo.GetConnectionsForSync(ctx, s.config.MaxConnectionsPerRun)
+	// Fetch connections that need syncing (filtered by last_synced_at unless force mode)
+	connections, err := s.connRepo.GetConnectionsForSync(ctx, s.config.MaxConnectionsPerRun, s.config.Force)
 	if err != nil {
 		slog.Error("failed_to_get_connections_for_sync", "error", err)
 		return nil, err

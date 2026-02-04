@@ -21,6 +21,10 @@ import (
 const (
 	// Default timeout for the entire sync run
 	DefaultSyncTimeout = 25 * time.Minute
+
+	// TestEncryptionKey is a 32-byte key for testing (DO NOT use in production!)
+	// Base64 encoded: 32 bytes of zeros
+	TestEncryptionKey = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 )
 
 func main() {
