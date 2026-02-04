@@ -78,6 +78,10 @@ func (s *Service) HandleOAuthCallback(ctx context.Context, code, state string) (
 	// Validate state and get city code
 	cityCode, valid := s.sessionStore.ValidateStateAndGetCity(state)
 	if !valid {
+		slog.Error("strava_oauth_failed",
+			"event", "strava_oauth_failed",
+			"reason", "invalid_state_token",
+		)
 		return "", fmt.Errorf("invalid or expired state token")
 	}
 
@@ -85,6 +89,11 @@ func (s *Service) HandleOAuthCallback(ctx context.Context, code, state string) (
 	tokenResp, metrics, err := s.client.ExchangeToken(ctx, code)
 	s.logAPICall(metrics, 0)
 	if err != nil {
+		slog.Error("strava_oauth_failed",
+			"event", "strava_oauth_failed",
+			"reason", "token_exchange_failed",
+			"error", err.Error(),
+		)
 		return "", fmt.Errorf("token exchange failed: %w", err)
 	}
 
@@ -100,8 +109,21 @@ func (s *Service) HandleOAuthCallback(ctx context.Context, code, state string) (
 
 	sessionID, err := s.sessionStore.CreateSession(session)
 	if err != nil {
+		slog.Error("strava_oauth_failed",
+			"event", "strava_oauth_failed",
+			"reason", "session_creation_failed",
+			"athlete_id", session.AthleteID,
+			"error", err.Error(),
+		)
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
+
+	// Log successful OAuth completion
+	slog.Info("strava_oauth_success",
+		"event", "strava_oauth_success",
+		"athlete_id", session.AthleteID,
+		"city_code", cityCode,
+	)
 
 	if s.debug {
 		slog.Debug("OAuth callback processed",

@@ -150,54 +150,82 @@
   });
 </script>
 
-<Card.Root class="p-4">
-  <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
-    <Checkbox
-      checked={selected}
-      onCheckedChange={handleCheckChange}
-      class="mt-1 h-5 w-5 min-h-[44px] min-w-[44px] sm:h-auto sm:w-auto sm:min-h-0 sm:min-w-0"
-      aria-label="Select {event.title} for import"
-    />
-    <div class="min-w-0 flex-1">
-      <h4 class="font-medium leading-tight">{event.title}</h4>
-      <p class="text-muted-foreground mt-1 text-sm">
-        <span title="Location">📍 {event.address || "Location TBD"}</span>
-        <span class="mx-2">•</span>
-        <span title="Date">📅 {getNextOccurrence()}</span>
-        {#if event.route?.distance}
-          <span class="mx-2">•</span>
-          <span title="Distance">🚴 {formatDistance(event.route.distance)}</span>
+<Card.Root class="group relative overflow-hidden border-2 transition-all duration-200 {selected ? 'border-[#FC5200] bg-[#FC5200]/5 shadow-md' : 'hover:border-[#FC5200]/40 hover:shadow-sm'}">
+  <!-- Selection indicator bar -->
+  {#if selected}
+    <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#FC5200]" aria-hidden="true"></div>
+  {/if}
+
+  <div class="p-4 pl-5">
+    <div class="flex gap-4 items-start">
+      <!-- Enhanced checkbox with better visibility and click target -->
+      <label class="flex-shrink-0 pt-0.5 cursor-pointer">
+        <Checkbox
+          checked={selected}
+          onCheckedChange={handleCheckChange}
+          class="h-6 w-6 border-2 border-muted-foreground/50 hover:border-[#FC5200] hover:bg-[#FC5200]/5 transition-colors data-[state=checked]:bg-[#FC5200] data-[state=checked]:border-[#FC5200] data-[state=checked]:text-white cursor-pointer"
+          aria-label="Select {event.title} for import"
+        />
+      </label>
+      <div class="min-w-0 flex-1">
+        <h4 class="font-semibold text-base leading-tight mb-2 {selected ? 'text-[#FC5200]' : ''}">{event.title}</h4>
+
+        <!-- Event metadata badges -->
+        <div class="flex flex-wrap gap-2 mb-3">
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-background border text-xs font-medium min-h-[32px]" title="Location">
+            <svg class="h-3.5 w-3.5 flex-shrink-0 text-[#FC5200]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+            <span class="break-words">{event.address || "Location TBD"}</span>
+          </span>
+          <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-background border text-xs font-medium min-h-[32px] whitespace-nowrap" title="Date">
+            <svg class="h-3.5 w-3.5 flex-shrink-0 text-[#FC5200]" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            {getNextOccurrence()}
+          </span>
+          {#if event.route?.distance}
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#FC5200]/10 border border-[#FC5200]/20 text-xs font-semibold text-[#FC5200] min-h-[32px] whitespace-nowrap" title="Distance">
+              <svg class="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              {formatDistance(event.route.distance)}
+            </span>
+          {/if}
+        </div>
+
+        {#if event.description}
+          <p class="text-muted-foreground text-sm line-clamp-2 leading-relaxed">
+            {event.description}
+          </p>
         {/if}
-      </p>
 
-      {#if event.description}
-        <p class="text-muted-foreground mt-2 line-clamp-2 text-sm">
-          {event.description}
-        </p>
-      {/if}
-
-      <Collapsible.Root bind:open={customizeOpen} class="mt-3">
-        <Collapsible.Trigger
-          class="inline-flex min-h-[44px] items-center gap-1 rounded-md px-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-          aria-label="{customizeOpen ? 'Hide' : 'Show'} customization options for {event.title}"
-        >
-          {customizeOpen ? "Hide Options" : "Customize"}
-          <svg
-            class="h-4 w-4 transition-transform {customizeOpen ? 'rotate-180' : ''}"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+        <Collapsible.Root bind:open={customizeOpen} class="mt-4">
+          <Collapsible.Trigger
+            class="inline-flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-200 hover:bg-[#FC5200]/10 hover:text-[#FC5200] {customizeOpen ? 'bg-[#FC5200]/10 text-[#FC5200]' : 'text-muted-foreground'}"
+            aria-label="{customizeOpen ? 'Hide' : 'Show'} customization options for {event.title}"
           >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </Collapsible.Trigger>
-        <Collapsible.Content class="mt-3 space-y-4 rounded-md border p-4">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            {customizeOpen ? "Hide Options" : "Customize Import"}
+            <svg
+              class="h-4 w-4 transition-transform duration-200 {customizeOpen ? 'rotate-180' : ''}"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </Collapsible.Trigger>
+          <Collapsible.Content class="mt-3 space-y-4 rounded-lg border-2 bg-muted/30 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
           <!-- Audience Selection -->
           <div class="space-y-2">
             <Label>Audience</Label>
@@ -247,7 +275,8 @@
             {/if}
           </div>
         </Collapsible.Content>
-      </Collapsible.Root>
+        </Collapsible.Root>
+      </div>
     </div>
   </div>
 </Card.Root>

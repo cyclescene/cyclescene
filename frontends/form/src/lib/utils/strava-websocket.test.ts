@@ -59,7 +59,7 @@ function simulateMessage(message: ProgressMessage) {
 
 describe('StravaImportWebSocket', () => {
 	beforeEach(() => {
-		global.WebSocket = MockWebSocket as any;
+		globalThis.WebSocket = MockWebSocket as any;
 		MockWebSocket.currentInstance = null;
 		MockWebSocket.lastSentData = null;
 		vi.useFakeTimers();
@@ -78,7 +78,7 @@ describe('StravaImportWebSocket', () => {
 				onError: vi.fn()
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			expect(MockWebSocket.lastSentData).toBeTruthy();
@@ -95,7 +95,7 @@ describe('StravaImportWebSocket', () => {
 				onStateChange: (state) => states.push(state)
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			expect(states).toContain('connecting');
@@ -112,7 +112,7 @@ describe('StravaImportWebSocket', () => {
 				onError: vi.fn()
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			// Clear any calls from connection setup
@@ -130,14 +130,14 @@ describe('StravaImportWebSocket', () => {
 				onError: vi.fn()
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			const msg: ProgressMessage = {
 				type: 'progress',
 				event_index: 0,
 				total_events: 1,
-				strava_event_id: 123,
+				strava_event_id: '123',
 				step: 'fetching',
 				status: 'in_progress',
 				message: 'Fetching...'
@@ -154,13 +154,13 @@ describe('StravaImportWebSocket', () => {
 				onError: vi.fn()
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			simulateMessage({
 				type: 'complete',
 				event_index: 0,
-				strava_event_id: 123,
+				strava_event_id: '123',
 				event_title: 'Test Ride',
 				success: true,
 				cyclescene_event_id: 999,
@@ -181,12 +181,12 @@ describe('StravaImportWebSocket', () => {
 				onError: vi.fn()
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			const results: ImportResult[] = [
 				{
-					strava_event_id: 123,
+					strava_event_id: '123',
 					title: 'Test',
 					success: true,
 					cyclescene_event_id: 999,
@@ -208,7 +208,7 @@ describe('StravaImportWebSocket', () => {
 				onError
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			simulateMessage({ type: 'error', message: 'Session expired' });
@@ -253,7 +253,7 @@ describe('StravaImportWebSocket', () => {
 				onError: vi.fn()
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			const before = ws.getReconnectAttempts().current;
@@ -271,7 +271,7 @@ describe('StravaImportWebSocket', () => {
 				onError: vi.fn()
 			});
 
-			ws.connect('test@example.com', [{ strava_event_id: 123, club_id: 456, overrides: {} }]);
+			ws.connect('test@example.com', [{ strava_event_id: '123', club_id: 456, overrides: {} }]);
 			await vi.runAllTimersAsync();
 
 			ws.stop();

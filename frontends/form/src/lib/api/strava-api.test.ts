@@ -21,7 +21,7 @@ describe('Strava API Client', () => {
 	beforeEach(() => {
 		// Mock fetch globally
 		fetchMock = vi.fn();
-		global.fetch = fetchMock;
+		globalThis.fetch = fetchMock as any;
 	});
 
 	afterEach(() => {

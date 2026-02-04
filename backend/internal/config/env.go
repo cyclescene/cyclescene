@@ -106,6 +106,24 @@ func GetAllowedOrigins() []string {
 	return ProdOrigins
 }
 
+// GetWebSocketOrigins returns the allowed origin patterns for WebSocket connections
+func GetWebSocketOrigins() []string {
+	if IsDev() {
+		return []string{
+			"localhost:*",
+			"*.nadhatter.com",
+			"http://localhost:*",
+			"https://*.nadhatter.com",
+		}
+	}
+	return []string{
+		"https://pdx.cyclescene.cc",
+		"https://slc.cyclescene.cc",
+		"https://dashboard.cyclescene.cc",
+		"https://*.cyclescene.cc",
+	}
+}
+
 // =============================================================================
 // Cookie Configuration
 // =============================================================================

@@ -214,7 +214,7 @@
         <div class="mt-3">
           <img
             src={previewURL}
-            alt="Uploaded image preview"
+            alt="Upload preview"
             class="max-h-40 rounded object-cover"
           />
         </div>

@@ -266,7 +266,7 @@
   });
 </script>
 
-<div class="space-y-6">
+<div class="space-y-6 animate-in fade-in duration-500">
   <!-- Screen reader live region for step announcements -->
   <div class="sr-only" aria-live="polite">
     {#if step === "email"}
@@ -281,45 +281,70 @@
   </div>
 
   <!-- Header -->
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-2xl font-semibold">Import from Strava</h2>
-      <p class="text-muted-foreground text-sm">
-        Import group events from clubs you manage
-      </p>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border-2 bg-gradient-to-br from-background to-muted/30 p-4 sm:p-6 shadow-sm">
+    <div class="flex items-center gap-3 sm:gap-4">
+      <div class="flex h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 items-center justify-center rounded-xl bg-[#FC5200] shadow-md">
+        <svg class="h-6 w-6 sm:h-7 sm:w-7 text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+        </svg>
+      </div>
+      <div class="min-w-0">
+        <h2 class="text-xl sm:text-2xl font-bold truncate">Import from Strava</h2>
+        <p class="text-muted-foreground text-xs sm:text-sm font-medium">
+          Import group events from clubs you manage
+        </p>
+      </div>
     </div>
     {#if step !== "importing"}
-      <Button variant="outline" onclick={handleDone}>
-        ← Back to Form
+      <Button variant="outline" size="lg" onclick={handleDone} class="border-2 w-full sm:w-auto flex-shrink-0">
+        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Form
       </Button>
     {/if}
   </div>
 
   <!-- Error display -->
   {#if error}
-    <div class="rounded-lg border border-red-200 bg-red-50 p-4" role="alert">
-      <p class="text-red-700">{error}</p>
-      {#if sessionExpired}
-        <Button
-          variant="outline"
-          size="sm"
-          class="mt-3"
-          onclick={handleReconnect}
-          aria-label="Reconnect to Strava to continue"
-        >
-          Reconnect to Strava
-        </Button>
-      {:else if rateLimitRetryAfter}
-        <Button
-          variant="outline"
-          size="sm"
-          class="mt-3"
-          onclick={loadClubs}
-          aria-label="Try loading clubs again"
-        >
-          Try Again
-        </Button>
-      {/if}
+    <div class="rounded-xl border-2 border-red-300 bg-red-50 p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300" role="alert">
+      <div class="flex items-start gap-3">
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-red-500">
+          <svg class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="font-medium text-red-800 mb-3">{error}</p>
+          {#if sessionExpired}
+            <Button
+              variant="outline"
+              size="sm"
+              class="border-2 border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400"
+              onclick={handleReconnect}
+              aria-label="Reconnect to Strava to continue"
+            >
+              <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Reconnect to Strava
+            </Button>
+          {:else if rateLimitRetryAfter}
+            <Button
+              variant="outline"
+              size="sm"
+              class="border-2 border-red-300 text-red-700 hover:bg-red-100 hover:border-red-400"
+              onclick={loadClubs}
+              aria-label="Try loading clubs again"
+            >
+              <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Try Again
+            </Button>
+          {/if}
+        </div>
+      </div>
     </div>
   {/if}
 
@@ -327,14 +352,15 @@
   {#if isLoadingClubs}
     <div class="space-y-4" aria-busy="true" role="status">
       <span class="sr-only">Loading your clubs</span>
-      {#each Array(3) as _}
-        <Card.Root class="p-4">
-          <div class="flex items-center gap-3">
-            <Skeleton class="h-10 w-10 rounded-full" />
+      {#each Array(3) as _, i}
+        <Card.Root class="border-2 p-4 animate-in fade-in duration-300" style="animation-delay: {i * 100}ms">
+          <div class="flex items-center gap-4">
+            <Skeleton class="h-12 w-12 rounded-full" />
             <div class="flex-1 space-y-2">
-              <Skeleton class="h-4 w-[200px]" />
-              <Skeleton class="h-3 w-[150px]" />
+              <Skeleton class="h-5 w-[200px]" />
+              <Skeleton class="h-4 w-[150px]" />
             </div>
+            <Skeleton class="h-5 w-5 rounded" />
           </div>
         </Card.Root>
       {/each}
@@ -356,17 +382,29 @@
       />
 
       <!-- Import button footer -->
-      <div class="sticky bottom-0 border-t bg-white py-4">
-        <div class="flex items-center justify-between">
-          <p class="text-muted-foreground text-sm" aria-live="polite">
-            {selectedCount} event{selectedCount !== 1 ? "s" : ""} selected
-          </p>
+      <div class="sticky bottom-0 rounded-xl border-2 bg-gradient-to-br from-background to-muted/30 p-4 sm:p-5 shadow-lg backdrop-blur-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-muted-foreground" aria-live="polite">
+              {selectedCount} event{selectedCount !== 1 ? "s" : ""} selected
+            </p>
+            {#if selectedCount > 0}
+              <p class="text-xs text-muted-foreground mt-0.5">
+                Ready to import to CycleScene
+              </p>
+            {/if}
+          </div>
           <Button
+            size="lg"
             onclick={handleStartImport}
             disabled={selectedCount === 0}
             aria-label="Start importing {selectedCount} selected event{selectedCount !== 1 ? 's' : ''}"
+            class="bg-[#FC5200] hover:bg-[#E04A00] text-white shadow-sm hover:shadow-md transition-all duration-200 group disabled:opacity-50 w-full sm:w-auto flex-shrink-0"
           >
-            Import {selectedCount} Event{selectedCount !== 1 ? "s" : ""}
+            <svg class="h-5 w-5 mr-2 group-hover:scale-110 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+            </svg>
+            <span class="truncate">Import {selectedCount} Event{selectedCount !== 1 ? "s" : ""}</span>
           </Button>
         </div>
       </div>
@@ -392,7 +430,11 @@
   {/if}
 
   <!-- Strava Attribution (per Strava Brand Guidelines) -->
-  <p class="text-muted-foreground mt-6 text-center text-xs">
-    Powered by Strava
-  </p>
+  <div class="flex items-center justify-center mt-8 -mx-6 -mb-6 py-6 bg-[#2D2D32] rounded-b-xl">
+    <img
+      src="/api_logo_pwrdBy_strava_horiz_white.png"
+      alt="Powered by Strava"
+      class="h-5"
+    />
+  </div>
 </div>

@@ -120,6 +120,11 @@ module "api_service" {
       EVENTARC_CHANNEL_NAME    = var.eventarc_channel_name
       RESEND_API_KEY           = var.resend_api_key
       EDIT_LINK_BASE_URL       = var.edit_link_base_url
+      STRAVA_CLIENT_ID         = var.strava_client_id
+      STRAVA_CLIENT_SECRET     = var.strava_client_secret
+      STRAVA_DEBUG             = var.strava_debug
+      STRAVA_CALLBACK_URL      = var.strava_callback_url
+      FORM_URL                 = var.form_url
     }
   )
 

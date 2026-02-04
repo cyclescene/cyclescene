@@ -118,4 +118,32 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom animations for Strava import components */
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  /* Utility classes for animations */
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  .animate-gradient {
+    animation: gradient 2s ease-in-out infinite;
+  }
 }

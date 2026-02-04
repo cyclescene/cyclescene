@@ -62,7 +62,7 @@ export interface EventImportConfig {
 }
 
 export interface EventOverrides {
-  audience?: string; // "G", "F", "A", "E"
+  audience?: string; // "G", "F", "A"
   image_url?: string;
   event_duration_minutes?: number;
 }
@@ -190,10 +190,9 @@ export class SessionExpiredError extends Error {
 // ============================================================================
 
 export const AUDIENCE_OPTIONS = [
-  { value: "G", label: "G - All Ages" },
-  { value: "F", label: "F - Family Friendly" },
-  { value: "A", label: "A - Adult (21+)" },
-  { value: "E", label: "E - Explicit/Adult Content" },
+  { value: "G", label: "G - General" },
+  { value: "F", label: "F - Family" },
+  { value: "A", label: "A - Adult 21+" },
 ] as const;
 
 export const DURATION_OPTIONS = [

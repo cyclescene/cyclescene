@@ -41,3 +41,10 @@ optimizer_cpu_limit             = "2"
 optimizer_memory_limit          = "2Gi"
 optimizer_max_instances         = 5
 image_optimizer_url             = "https://cyclescene-image-optimizer-556687167657.us-west1.run.app"
+
+# Strava OAuth Integration
+# strava_client_id is passed via TF_VAR_strava_client_id environment variable from GitHub secrets
+# strava_client_secret is passed via TF_VAR_strava_client_secret environment variable from GitHub secrets
+strava_debug        = "false"  # Set to "true" only for debugging in non-production environments
+strava_callback_url = "https://api.cyclescene.cc/v1/strava/auth/callback"
+form_url            = "https://form.cyclescene.cc"

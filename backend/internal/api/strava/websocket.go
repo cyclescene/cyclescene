@@ -13,6 +13,7 @@ import (
 	"github.com/coder/websocket/wsjson"
 	"github.com/spacesedan/cyclescene/backend/internal/api/magiclink"
 	"github.com/spacesedan/cyclescene/backend/internal/api/ride"
+	"github.com/spacesedan/cyclescene/backend/internal/config"
 	"github.com/spacesedan/cyclescene/backend/internal/strava"
 )
 
@@ -109,10 +110,9 @@ func (h *ImportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 		cookieSessionID = cookie.Value
 	}
 
-	// Accept WebSocket connection
-	// Always allow any origin since this is an internal API
+	// Accept WebSocket connection with origin validation
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
-		InsecureSkipVerify: true,
+		OriginPatterns: config.GetWebSocketOrigins(),
 	})
 	if err != nil {
 		slog.Error("Failed to accept WebSocket connection", "error", err)
@@ -241,6 +241,17 @@ func (h *ImportHandler) HandleImport(w http.ResponseWriter, r *http.Request) {
 		Results:          results,
 	}
 	wsjson.Write(ctx, conn, doneMsg)
+
+	// Log import metrics (always log at Info level for monitoring)
+	slog.Info("strava_import_completed",
+		"event", "strava_import_completed",
+		"athlete_id", session.AthleteID,
+		"total_imported", totalImported,
+		"total_failed", totalFailed,
+		"total_requested", len(req.Events),
+		"summary_email_sent", summaryEmailSent,
+		"organizer_email", req.OrganizerEmail,
+	)
 
 	if h.debug {
 		slog.Debug("Import completed",
