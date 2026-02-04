@@ -103,8 +103,8 @@ jobs:
           TF_VAR_turso_monitoring_db_rw_token: ${{ secrets.TURSO_MONITORING_DB_RW_TOKEN }}
           TF_VAR_edit_link_base_url: ${{ secrets.EDIT_LINK_BASE_URL }}
           TF_VAR_resend_api_key: ${{ secrets.RESEND_API_KEY }}
-          TF_VAR_strava_client_id: ${{ secrets.TF_VAR_STRAVA_CLIENT_ID }}
-          TF_VAR_strava_client_secret: ${{ secrets.TF_VAR_STRAVA_CLIENT_SECRET }}
+          TF_VAR_strava_client_id: ${{ secrets.STRAVA_CLIENT_ID }}
+          TF_VAR_strava_client_secret: ${{ secrets.STRAVA_CLIENT_SECRET }}
         run: |
           tofu init \
             -backend-config="bucket=${{ env.PROJECT_ID }}-terraform-state" \
