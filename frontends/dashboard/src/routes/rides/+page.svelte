@@ -3,6 +3,9 @@
   import * as Card from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
+  import { Skeleton } from "$lib/components/ui/skeleton";
+  import RideCard from "$lib/components/RideCard.svelte";
+  import { CITIES, type CityCode } from "$lib/config/cities";
 
   const API_URL = import.meta.env.PUBLIC_API_URL || "https://api.cyclescene.cc";
 
@@ -21,24 +24,57 @@
     created_at: string;
   }
 
-  let rides: Ride[] = [];
-  let loading = true;
-  let error = "";
-  let selectedRideId: number | null = null;
-  let publishingId: number | null = null;
-  let adminToken = "";
-  let showApiKeyForm = false;
-  let apiKeyInput = "";
+  let rides = $state<Ride[]>([]);
+  let loading = $state(true);
+  let error = $state("");
+  let publishingId = $state<number | null>(null);
+  let adminToken = $state("");
+  let showApiKeyForm = $state(false);
+  let apiKeyInput = $state("");
+  let selectedCity = $state<CityCode>("all");
 
-  onMount(async () => {
+  // Derived state for filtered rides
+  let filteredRides = $derived(
+    selectedCity === "all"
+      ? rides
+      : rides.filter((r) => r.city === selectedCity)
+  );
+
+  // Derived state for city info
+  let selectedCityInfo = $derived(
+    CITIES.find((c) => c.code === selectedCity) || CITIES[0]
+  );
+
+  onMount(() => {
     adminToken = localStorage.getItem("adminToken") || "";
     if (!adminToken) {
       showApiKeyForm = true;
       loading = false;
       return;
     }
-    await loadRides();
+
+    // Load selected city from localStorage
+    const savedCity = localStorage.getItem("selectedCity") as CityCode | null;
+    if (savedCity) {
+      selectedCity = savedCity;
+    }
+
+    // Listen for city changes from header
+    window.addEventListener("citychange", handleCityChange);
+    window.addEventListener("changeapikey", clearApiKey);
+
+    loadRides();
+
+    return () => {
+      window.removeEventListener("citychange", handleCityChange);
+      window.removeEventListener("changeapikey", clearApiKey);
+    };
   });
+
+  function handleCityChange(event: Event) {
+    const customEvent = event as CustomEvent<CityCode>;
+    selectedCity = customEvent.detail;
+  }
 
   function setApiKey() {
     if (!apiKeyInput.trim()) {
@@ -58,6 +94,8 @@
     adminToken = "";
     showApiKeyForm = true;
     rides = [];
+    // Force page reload to update header
+    window.location.reload();
   }
 
   async function loadRides() {
@@ -108,7 +146,6 @@
 
       // Remove published ride from list
       rides = rides.filter((r) => r.id !== rideId);
-      selectedRideId = null;
     } catch (err) {
       error = err instanceof Error ? err.message : "Failed to publish ride";
     } finally {
@@ -117,17 +154,20 @@
   }
 </script>
 
-<div class="container max-w-6xl mx-auto py-8 px-4">
-  <div class="mb-8 flex items-center justify-between">
-    <div>
-      <h1 class="text-4xl font-bold tracking-tight">Rides</h1>
-      <p class="text-muted-foreground mt-2">Publish pending rides</p>
-    </div>
-    {#if adminToken && !showApiKeyForm}
-      <Button variant="outline" onclick={clearApiKey} size="sm">
-        Change API Key
-      </Button>
-    {/if}
+<div class="container max-w-6xl mx-auto py-4 md:py-8 px-4">
+  <div class="mb-6 md:mb-8">
+    <h1 class="text-3xl md:text-4xl font-bold tracking-tight">Rides</h1>
+    <p class="text-sm md:text-base text-muted-foreground mt-2">
+      {#if selectedCity === "all"}
+        Showing {filteredRides.length} {filteredRides.length === 1
+          ? "ride"
+          : "rides"} across all cities
+      {:else}
+        Showing {filteredRides.length} {filteredRides.length === 1
+          ? "ride"
+          : "rides"} in {selectedCityInfo.name}
+      {/if}
+    </p>
   </div>
 
   {#if error}
@@ -166,112 +206,70 @@
       </Card.Root>
     </div>
   {:else if loading}
-    <div class="flex items-center justify-center py-12">
-      <p class="text-muted-foreground">Loading...</p>
+    <div class="space-y-4">
+      {#each Array(3) as _}
+        <div class="p-4 border rounded-lg">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex-1 space-y-2">
+              <Skeleton class="h-5 w-3/4" />
+              <Skeleton class="h-4 w-1/2" />
+            </div>
+            <Skeleton class="h-9 w-20" />
+          </div>
+        </div>
+      {/each}
     </div>
   {:else if rides.length === 0}
     <div class="flex items-center justify-center py-12">
-      <Card.Root class="min-w-sm">
+      <Card.Root class="max-w-xl w-full">
         <Card.Header class="text-center">
           <Card.Title>No Pending Rides</Card.Title>
           <Card.Description>
             All submitted rides have been reviewed and published. Check back
             later for new submissions.
           </Card.Description>
-          <Card.CardContent>
-            <Button variant="outline" onclick={loadRides}>Refresh</Button>
-          </Card.CardContent>
         </Card.Header>
+        <Card.Content class="flex justify-center">
+          <Button variant="outline" onclick={loadRides}>Refresh</Button>
+        </Card.Content>
+      </Card.Root>
+    </div>
+  {:else if filteredRides.length === 0}
+    <div class="flex items-center justify-center py-12">
+      <Card.Root class="max-w-xl w-full">
+        <Card.Header class="text-center">
+          <Card.Title>No Rides in {selectedCityInfo.name}</Card.Title>
+          <Card.Description>
+            There are no pending rides for this city. Try selecting a different
+            city or view all cities.
+          </Card.Description>
+        </Card.Header>
+        <Card.Content class="flex justify-center gap-2">
+          <Button
+            variant="outline"
+            onclick={() => {
+              selectedCity = "all";
+              localStorage.setItem("selectedCity", "all");
+              window.dispatchEvent(
+                new CustomEvent("citychange", { detail: "all" })
+              );
+            }}
+          >
+            View All Cities
+          </Button>
+          <Button variant="outline" onclick={loadRides}>Refresh</Button>
+        </Card.Content>
       </Card.Root>
     </div>
   {:else}
-    <div class="space-y-4">
-      {#each rides as ride}
-        <button
-          onclick={() =>
-            (selectedRideId = selectedRideId === ride.id ? null : ride.id)}
-          class="w-full text-left p-4 border rounded-lg hover:bg-accent/50 transition-colors"
-        >
-          <div class="flex items-center justify-between">
-            <div class="flex-1">
-              <p class="font-medium">{ride.title}</p>
-              <p class="text-sm text-muted-foreground">
-                {ride.city} • {ride.venue_name} • {ride.organizer_name}
-              </p>
-            </div>
-            <Button
-              onclick={(e) => {
-                e.stopPropagation();
-                publishRide(ride.id);
-              }}
-              disabled={publishingId === ride.id}
-              size="sm"
-              class="ml-4"
-            >
-              {publishingId === ride.id ? "Publishing..." : "Publish"}
-            </Button>
-          </div>
-        </button>
-
-        <!-- Ride Details (expand on click) -->
-        {#if selectedRideId === ride.id}
-          <Card.Root class="ml-4 mb-4">
-            <Card.Content class="pt-6 space-y-4">
-              {#if ride.image_url}
-                <div>
-                  <img
-                    src={ride.image_url}
-                    alt={ride.title}
-                    class="w-full h-48 object-cover rounded-lg border"
-                  />
-                </div>
-              {/if}
-
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-xs font-medium text-muted-foreground">Venue</p>
-                  <p class="text-sm mt-1">{ride.venue_name}</p>
-                </div>
-                <div>
-                  <p class="text-xs font-medium text-muted-foreground">Type</p>
-                  <p class="text-sm mt-1">
-                    {ride.is_loop_ride ? "Loop Ride" : "Point-to-Point"}
-                  </p>
-                </div>
-                <div>
-                  <p class="text-xs font-medium text-muted-foreground">
-                    Organizer
-                  </p>
-                  <p class="text-sm mt-1">{ride.organizer_name}</p>
-                </div>
-                <div>
-                  <p class="text-xs font-medium text-muted-foreground">Email</p>
-                  <p class="text-sm mt-1 break-all">{ride.organizer_email}</p>
-                </div>
-              </div>
-
-              <div>
-                <p class="text-xs font-medium text-muted-foreground">
-                  Description
-                </p>
-                <p class="text-sm mt-2 whitespace-pre-wrap">
-                  {ride.description}
-                </p>
-              </div>
-
-              {#if ride.image_uuid}
-                <div class="pt-2 border-t">
-                  <p class="text-xs font-medium text-muted-foreground">
-                    Image UUID
-                  </p>
-                  <p class="text-xs mt-1 break-all text-muted-foreground">
-                    {ride.image_uuid}
-                  </p>
-                </div>
-              {/if}
-            </Card.Content>
-          </Card.Root>
-        {/if}
+    <div class="grid grid-cols-1 gap-4">
+      {#each filteredRides as ride (ride.id)}
+        <RideCard
+          {ride}
+          onPublish={publishRide}
+          isPublishing={publishingId === ride.id}
+          showCityBadge={selectedCity === "all"}
+        />
       {/each}
     </div>
   {/if}
