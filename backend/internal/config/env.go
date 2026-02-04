@@ -120,7 +120,10 @@ func GetWebSocketOrigins() []string {
 		"https://pdx.cyclescene.cc",
 		"https://slc.cyclescene.cc",
 		"https://dashboard.cyclescene.cc",
+		"https://form.cyclescene.cc",
 		"https://*.cyclescene.cc",
+		"*.cyclescene.cc",
+		"form.cyclescene.cc",
 	}
 }
 
