@@ -18,6 +18,7 @@ import (
 // Strava Background Sync Service
 // Runs every 3 days at 2am PST to refresh Strava event data
 // See docs/strava/BACKGROUND_SYNC.md for details
+// v1.0.0
 
 const (
 	// Default timeout for the entire sync run
