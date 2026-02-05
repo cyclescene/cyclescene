@@ -1,6 +1,5 @@
 <script lang="ts">
   import "../app.css";
-  import favicon from "$lib/assets/favicon.svg";
   import DashboardHeader from "$lib/components/DashboardHeader.svelte";
   import * as Card from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
@@ -111,10 +110,6 @@
     clearApiKey();
   }
 </script>
-
-<svelte:head>
-  <link rel="icon" href={favicon} />
-</svelte:head>
 
 {#if isValidating}
   <!-- Loading state while validating token -->
