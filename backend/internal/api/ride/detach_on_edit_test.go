@@ -2,148 +2,385 @@ package ride
 
 import (
 	"database/sql"
+	"os"
 	"testing"
+
+	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
 
-// TestRepository_DetachStravaEvent tests the detach logic
-// Phase 2, Milestone 2.3: Detach-on-Edit Implementation
-func TestRepository_DetachStravaEvent(t *testing.T) {
-	// This test verifies that detachStravaEvent:
-	// 1. Sets source to NULL
-	// 2. Deletes from strava_event_metadata
-	// 3. Uses a transaction (all-or-nothing)
+// Detach-on-Edit Tests
+//
+// These tests verify the critical detach-on-edit functionality for Strava compliance.
+// When an organizer edits a Strava-imported event, the system must:
+// 1. Set source to NULL (detach from Strava)
+// 2. Delete from strava_event_metadata (stop background sync)
+// 3. All within a transaction (atomic operation)
+//
+// This complies with Strava's "no modification" rule - we cannot modify Strava data,
+// so editing converts the event to a native CycleScene event.
+//
+// Run with: RUN_INTEGRATION_TESTS=true CGO_ENABLED=1 go test -v ./internal/api/ride/... -run TestDetach
 
-	// Note: This is a unit test for the detach logic
-	// Integration tests should be run manually as documented in
-	// BACKGROUND_SYNC_MILESTONES.md lines 1623-1649
+// setupDetachTestDB creates an in-memory SQLite database with the required schema
+func setupDetachTestDB(t *testing.T) *sql.DB {
+	t.Helper()
 
-	// The implementation is in repo.go:233-250
-	// - Line 240: Sets source=NULL, source_id=NULL
-	// - Line 248: Deletes from strava_event_metadata
-	// - Both within the same transaction (passed as parameter)
+	db, err := sql.Open("libsql", "file::memory:?cache=shared")
+	if err != nil {
+		t.Fatalf("Failed to open test database: %v", err)
+	}
 
-	t.Skip("Integration test - requires database setup")
+	// Create schema matching the actual database
+	schema := `
+		CREATE TABLE IF NOT EXISTS events (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			tinytitle TEXT,
+			description TEXT,
+			image_url TEXT,
+			source TEXT,
+			source_id TEXT,
+			edit_token TEXT UNIQUE,
+			audience TEXT DEFAULT 'all',
+			ride_length TEXT,
+			area TEXT,
+			date_type TEXT DEFAULT 'recurring',
+			venue_name TEXT,
+			address TEXT,
+			location_details TEXT,
+			ending_location TEXT,
+			is_loop_ride INTEGER DEFAULT 0,
+			organizer_name TEXT,
+			organizer_email TEXT,
+			organizer_phone TEXT,
+			web_url TEXT,
+			web_name TEXT,
+			newsflash TEXT,
+			hide_email INTEGER DEFAULT 0,
+			hide_phone INTEGER DEFAULT 0,
+			hide_contact_name INTEGER DEFAULT 0,
+			group_code TEXT,
+			latitude REAL DEFAULT 0,
+			longitude REAL DEFAULT 0,
+			created_at TEXT DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')),
+			updated_at TEXT DEFAULT (STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'))
+		);
+
+		CREATE TABLE IF NOT EXISTS event_occurrences (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			event_id INTEGER NOT NULL,
+			start_date TEXT NOT NULL,
+			start_time TEXT,
+			start_datetime TEXT,
+			event_duration_minutes INTEGER,
+			event_time_details TEXT,
+			newsflash TEXT,
+			is_cancelled INTEGER DEFAULT 0,
+			FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS strava_event_metadata (
+			event_id INTEGER PRIMARY KEY,
+			strava_event_id INTEGER NOT NULL,
+			strava_club_id INTEGER NOT NULL,
+			imported_by_athlete_id INTEGER NOT NULL,
+			imported_at TEXT NOT NULL,
+			last_refreshed_at TEXT NOT NULL,
+			refresh_count INTEGER DEFAULT 0,
+			FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+		);
+	`
+
+	_, err = db.Exec(schema)
+	if err != nil {
+		t.Fatalf("Failed to create schema: %v", err)
+	}
+
+	t.Cleanup(func() {
+		db.Close()
+	})
+
+	return db
 }
 
-// TestRepository_UpdateRide_DetachesStravaEvent tests the full UpdateRide flow
-func TestRepository_UpdateRide_DetachesStravaEvent(t *testing.T) {
-	// This test verifies the complete detach-on-edit flow:
-	//
-	// Setup:
-	// 1. Create a Strava event with source='strava'
-	// 2. Add strava_event_metadata row
-	// 3. Get edit token
-	//
-	// Action:
-	// 4. Call UpdateRide with the edit token
-	//
-	// Verify:
-	// 5. source field is now NULL
-	// 6. strava_event_metadata row is deleted
-	// 7. Event fields are updated correctly
-	// 8. All within a single transaction
+// insertStravaEvent creates a Strava event with metadata and returns its ID and edit token
+func insertStravaEvent(t *testing.T, db *sql.DB, title string) (int64, string) {
+	t.Helper()
 
-	t.Skip("Integration test - requires database setup")
+	editToken := "test_edit_token_" + title
+
+	result, err := db.Exec(`
+		INSERT INTO events (title, description, source, source_id, edit_token, audience, area)
+		VALUES (?, 'Test description', 'strava', '12345', ?, 'all', 'downtown')
+	`, title, editToken)
+	if err != nil {
+		t.Fatalf("Failed to insert event: %v", err)
+	}
+
+	eventID, _ := result.LastInsertId()
+
+	// Add an occurrence
+	_, err = db.Exec(`
+		INSERT INTO event_occurrences (event_id, start_date, start_time, start_datetime)
+		VALUES (?, '2026-03-15', '18:00', '2026-03-15 18:00')
+	`, eventID)
+	if err != nil {
+		t.Fatalf("Failed to insert occurrence: %v", err)
+	}
+
+	// Add Strava metadata
+	_, err = db.Exec(`
+		INSERT INTO strava_event_metadata (
+			event_id, strava_event_id, strava_club_id, imported_by_athlete_id,
+			imported_at, last_refreshed_at, refresh_count
+		) VALUES (?, 100, 1, 12345, STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'), STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW'), 0)
+	`, eventID)
+	if err != nil {
+		t.Fatalf("Failed to insert metadata: %v", err)
+	}
+
+	return eventID, editToken
 }
 
-// TestRepository_UpdateRide_SkipsDetachForNativeEvents tests that native events are not affected
-func TestRepository_UpdateRide_SkipsDetachForNativeEvents(t *testing.T) {
-	// This test verifies that UpdateRide does NOT detach native events:
-	//
-	// Setup:
-	// 1. Create a native event (source=NULL or source='cyclescene')
-	// 2. Get edit token
-	//
-	// Action:
-	// 3. Call UpdateRide with the edit token
-	//
-	// Verify:
-	// 4. source field remains unchanged (NULL or 'cyclescene')
-	// 5. Event is updated normally
-	// 6. No errors occur
+// insertNativeEvent creates a native (non-Strava) event and returns its ID and edit token
+func insertNativeEvent(t *testing.T, db *sql.DB, title string) (int64, string) {
+	t.Helper()
 
-	t.Skip("Integration test - requires database setup")
+	editToken := "test_edit_token_" + title
+
+	result, err := db.Exec(`
+		INSERT INTO events (title, description, source, edit_token, audience, area)
+		VALUES (?, 'Test description', NULL, ?, 'all', 'downtown')
+	`, title, editToken)
+	if err != nil {
+		t.Fatalf("Failed to insert event: %v", err)
+	}
+
+	eventID, _ := result.LastInsertId()
+
+	// Add an occurrence
+	_, err = db.Exec(`
+		INSERT INTO event_occurrences (event_id, start_date, start_time, start_datetime)
+		VALUES (?, '2026-03-15', '18:00', '2026-03-15 18:00')
+	`, eventID)
+	if err != nil {
+		t.Fatalf("Failed to insert occurrence: %v", err)
+	}
+
+	return eventID, editToken
 }
 
-// TestRepository_DetachStravaEvent_TransactionRollback tests transaction safety
-func TestRepository_DetachStravaEvent_TransactionRollback(t *testing.T) {
-	// This test verifies that detachment uses transactions correctly:
-	//
-	// Setup:
-	// 1. Create a Strava event
-	// 2. Begin a transaction
-	// 3. Call detachStravaEvent
-	// 4. Deliberately ROLLBACK the transaction
-	//
-	// Verify:
-	// 5. source is still 'strava' (not detached)
-	// 6. strava_event_metadata row still exists
-	//
-	// This proves that detachment is transactional and won't
-	// partially succeed if the outer transaction fails
+func TestDetachStravaEvent_SetsSourceToNull(t *testing.T) {
+	if os.Getenv("RUN_INTEGRATION_TESTS") != "true" {
+		t.Skip("Skipping integration test - set RUN_INTEGRATION_TESTS=true and CGO_ENABLED=1 to run")
+	}
 
-	t.Skip("Integration test - requires database setup")
+	db := setupDetachTestDB(t)
+	repo := NewRepository(db)
+
+	eventID, editToken := insertStravaEvent(t, db, "Test Strava Event")
+
+	// Verify source is 'strava' before
+	var source sql.NullString
+	err := db.QueryRow(`SELECT source FROM events WHERE id = ?`, eventID).Scan(&source)
+	assertNoError(t, err)
+	assertTrue(t, source.Valid && source.String == "strava", "Source should be 'strava' before detach")
+
+	// Update the ride (which triggers detach for Strava events)
+	submission := &Submission{
+		Title:       "Updated Title",
+		Description: "Updated Description",
+		Audience:    "all",
+		Area:        "downtown",
+		Occurrences: []Occurrence{{StartDate: "2026-03-15", StartTime: "18:00"}},
+	}
+
+	err = repo.UpdateRide(editToken, submission, 0, 0)
+	assertNoError(t, err)
+
+	// Verify source is now NULL
+	err = db.QueryRow(`SELECT source FROM events WHERE id = ?`, eventID).Scan(&source)
+	assertNoError(t, err)
+	assertTrue(t, !source.Valid, "Source should be NULL after detach")
 }
 
-// TestGetRideByEditToken_IncludesSourceField tests that source is returned
-func TestGetRideByEditToken_IncludesSourceField(t *testing.T) {
-	// This test verifies that GetRideByEditToken returns the source field:
-	//
-	// Setup:
-	// 1. Create a Strava event (source='strava')
-	// 2. Create a native event (source=NULL)
-	//
-	// Verify:
-	// 3. GetRideByEditToken for Strava event returns Source='strava'
-	// 4. GetRideByEditToken for native event returns Source='' (empty)
-	//
-	// This is required for the frontend to detect Strava events
-	// and show the warning dialog (Milestone 2.3)
+func TestDetachStravaEvent_DeletesMetadata(t *testing.T) {
+	if os.Getenv("RUN_INTEGRATION_TESTS") != "true" {
+		t.Skip("Skipping integration test - set RUN_INTEGRATION_TESTS=true and CGO_ENABLED=1 to run")
+	}
 
-	t.Skip("Integration test - requires database setup")
+	db := setupDetachTestDB(t)
+	repo := NewRepository(db)
+
+	eventID, editToken := insertStravaEvent(t, db, "Test Strava Event")
+
+	// Verify metadata exists before
+	var count int
+	err := db.QueryRow(`SELECT COUNT(*) FROM strava_event_metadata WHERE event_id = ?`, eventID).Scan(&count)
+	assertNoError(t, err)
+	assertEqual(t, 1, count)
+
+	// Update the ride (which triggers detach)
+	submission := &Submission{
+		Title:       "Updated Title",
+		Description: "Updated Description",
+		Audience:    "all",
+		Area:        "downtown",
+		Occurrences: []Occurrence{{StartDate: "2026-03-15", StartTime: "18:00"}},
+	}
+
+	err = repo.UpdateRide(editToken, submission, 0, 0)
+	assertNoError(t, err)
+
+	// Verify metadata is deleted
+	err = db.QueryRow(`SELECT COUNT(*) FROM strava_event_metadata WHERE event_id = ?`, eventID).Scan(&count)
+	assertNoError(t, err)
+	assertEqual(t, 0, count)
 }
 
-// Manual Integration Test Steps (from BACKGROUND_SYNC_MILESTONES.md)
-//
-// 1. Import event from Strava via UI
-//    - Verify event has source='strava'
-//    - Verify strava_event_metadata row exists
-//
-// 2. Get edit token:
-//    sqlite3 cyclescene.db "SELECT token FROM event_tokens WHERE event_id = X AND token_type = 'edit'"
-//
-// 3. Edit via API:
-//    curl -X PUT "http://localhost:8080/api/rides/edit/[TOKEN]" \
-//      -H "Content-Type: application/json" \
-//      -d '{"title": "Updated", "description": "Updated", "city": "san-francisco", "occurrences": [{"start_date": "2026-03-01", "start_time": "10:00", "end_time": "12:00"}]}'
-//
-// 4. Verify detached:
-//    sqlite3 cyclescene.db "SELECT id, source FROM events WHERE id = X"
-//    # Expected: source=NULL
-//
-// 5. Verify metadata deleted:
-//    sqlite3 cyclescene.db "SELECT COUNT(*) FROM strava_event_metadata WHERE event_id = X"
-//    # Expected: 0
-//
-// 6. Verify sync skips detached event:
-//    ./cmd/strava-sync/test_sync.sh --use-real-key --force
-//    # Event should NOT appear in sync logs (filtered by source='strava')
+func TestUpdateRide_SkipsDetachForNativeEvents(t *testing.T) {
+	if os.Getenv("RUN_INTEGRATION_TESTS") != "true" {
+		t.Skip("Skipping integration test - set RUN_INTEGRATION_TESTS=true and CGO_ENABLED=1 to run")
+	}
 
-// Documentation: Detach-on-Edit Design
-//
-// From BACKGROUND_SYNC_MILESTONES.md lines 28-35:
-//
-// Decision: When an organizer edits an event via CycleScene's magic link:
-// - Change `source` from "strava" to NULL (detach)
-// - Delete row from `strava_event_metadata` (stops sync)
-// - Remove Strava branding (handled by frontend)
-// - Event becomes a native CycleScene event with full edit control
-//
-// Rationale: Complies with Strava's "no modification" rule.
-// Organizers get import convenience + full control when needed.
-//
-// Implementation: repo.go:148-250
-// - Lines 156-162: Check source field
-// - Lines 164-169: Call detachStravaEvent if source='strava'
-// - Lines 233-250: detachStravaEvent implementation
-// - All within a single transaction for atomicity
+	db := setupDetachTestDB(t)
+	repo := NewRepository(db)
+
+	_, editToken := insertNativeEvent(t, db, "Test Native Event")
+
+	// Update the ride
+	submission := &Submission{
+		Title:       "Updated Native Title",
+		Description: "Updated Description",
+		Audience:    "all",
+		Area:        "downtown",
+		Occurrences: []Occurrence{{StartDate: "2026-03-15", StartTime: "18:00"}},
+	}
+
+	// Should not error - native events don't need detaching
+	err := repo.UpdateRide(editToken, submission, 0, 0)
+	assertNoError(t, err)
+
+	// Verify the title was updated
+	var title string
+	err = db.QueryRow(`SELECT title FROM events WHERE edit_token = ?`, editToken).Scan(&title)
+	assertNoError(t, err)
+	assertEqual(t, "Updated Native Title", title)
+}
+
+func TestDetachStravaEvent_TransactionRollbackOnError(t *testing.T) {
+	if os.Getenv("RUN_INTEGRATION_TESTS") != "true" {
+		t.Skip("Skipping integration test - set RUN_INTEGRATION_TESTS=true and CGO_ENABLED=1 to run")
+	}
+
+	db := setupDetachTestDB(t)
+	repo := NewRepository(db)
+
+	eventID, _ := insertStravaEvent(t, db, "Test Strava Event")
+
+	// Use an invalid edit token to cause the update to fail
+	submission := &Submission{
+		Title:       "Should Not Update",
+		Description: "Test",
+		Audience:    "all",
+		Area:        "downtown",
+		Occurrences: []Occurrence{{StartDate: "2026-03-15", StartTime: "18:00"}},
+	}
+
+	// This should fail because the edit token doesn't exist
+	err := repo.UpdateRide("nonexistent_token", submission, 0, 0)
+	assertError(t, err)
+
+	// Verify the original event is unchanged
+	var source sql.NullString
+	err = db.QueryRow(`SELECT source FROM events WHERE id = ?`, eventID).Scan(&source)
+	assertNoError(t, err)
+	assertTrue(t, source.Valid && source.String == "strava", "Source should still be 'strava' after failed update")
+
+	// Verify metadata still exists
+	var count int
+	err = db.QueryRow(`SELECT COUNT(*) FROM strava_event_metadata WHERE event_id = ?`, eventID).Scan(&count)
+	assertNoError(t, err)
+	assertEqual(t, 1, count)
+}
+
+func TestUpdateEventDetails_DetachesStravaEvent(t *testing.T) {
+	if os.Getenv("RUN_INTEGRATION_TESTS") != "true" {
+		t.Skip("Skipping integration test - set RUN_INTEGRATION_TESTS=true and CGO_ENABLED=1 to run")
+	}
+
+	db := setupDetachTestDB(t)
+	repo := NewRepository(db)
+
+	eventID, editToken := insertStravaEvent(t, db, "Test Strava Event")
+
+	// Update event details (which should also trigger detach)
+	err := repo.UpdateEventDetails(editToken, "New description", "beginners", "10-15 miles")
+	assertNoError(t, err)
+
+	// Verify source is now NULL
+	var source sql.NullString
+	err = db.QueryRow(`SELECT source FROM events WHERE id = ?`, eventID).Scan(&source)
+	assertNoError(t, err)
+	assertTrue(t, !source.Valid, "Source should be NULL after detach via UpdateEventDetails")
+
+	// Verify metadata is deleted
+	var count int
+	err = db.QueryRow(`SELECT COUNT(*) FROM strava_event_metadata WHERE event_id = ?`, eventID).Scan(&count)
+	assertNoError(t, err)
+	assertEqual(t, 0, count)
+}
+
+func TestGetRideByEditToken_ReturnsSourceField(t *testing.T) {
+	if os.Getenv("RUN_INTEGRATION_TESTS") != "true" {
+		t.Skip("Skipping integration test - set RUN_INTEGRATION_TESTS=true and CGO_ENABLED=1 to run")
+	}
+
+	db := setupDetachTestDB(t)
+	repo := NewRepository(db)
+
+	// Create a Strava event
+	_, stravaToken := insertStravaEvent(t, db, "Strava Event")
+
+	// Create a native event
+	_, nativeToken := insertNativeEvent(t, db, "Native Event")
+
+	// Get Strava event - should have source='strava'
+	submission, _, err := repo.GetRideByEditToken(stravaToken)
+	assertNoError(t, err)
+	assertEqual(t, "strava", submission.Source)
+
+	// Get native event - should have empty source
+	submission, _, err = repo.GetRideByEditToken(nativeToken)
+	assertNoError(t, err)
+	assertEqual(t, "", submission.Source)
+}
+
+// Test helper functions
+func assertNoError(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+}
+
+func assertError(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("Expected error, got nil")
+	}
+}
+
+func assertEqual(t *testing.T, expected, actual interface{}) {
+	t.Helper()
+	if expected != actual {
+		t.Errorf("Expected %v, got %v", expected, actual)
+	}
+}
+
+func assertTrue(t *testing.T, condition bool, msg string) {
+	t.Helper()
+	if !condition {
+		t.Errorf("Expected true: %s", msg)
+	}
+}

@@ -292,9 +292,9 @@ func (r *Repository) detachStravaEvent(tx *sql.Tx, eventID int64) error {
 
 ---
 
-## Design Decisions (from Phase 2 Documentation)
+## Design Decisions
 
-From `docs/strava/BACKGROUND_SYNC_MILESTONES.md` lines 28-35:
+From `docs/strava/BACKGROUND_SYNC.md`:
 
 **Decision:** When an organizer edits an event via CycleScene's magic link:
 - Change `source` from "strava" to NULL (detach)
@@ -319,6 +319,6 @@ From `docs/strava/BACKGROUND_SYNC_MILESTONES.md` lines 28-35:
 ## Questions?
 
 See:
-- Backend implementation: `backend/internal/api/ride/repo.go:148-250`
-- Current frontend warning: `frontends/form/src/routes/rides/edit/+page.svelte:160-174`
-- Design documentation: `docs/strava/BACKGROUND_SYNC_MILESTONES.md` (Phase 2, Milestone 2.3)
+- Backend implementation: `backend/internal/api/ride/repo.go`
+- Current frontend warning: `frontends/form/src/routes/rides/edit/+page.svelte`
+- Design documentation: `docs/strava/BACKGROUND_SYNC.md`

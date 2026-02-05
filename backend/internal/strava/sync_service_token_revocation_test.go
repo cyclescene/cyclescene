@@ -78,8 +78,8 @@ func TestSyncService_TokenRevocation_EventsPersist(t *testing.T) {
 
 // TestSyncService_TokenRevocation_NoCleanup verifies no database cleanup
 func TestSyncService_TokenRevocation_NoCleanup(t *testing.T) {
-	// Design decision from BACKGROUND_SYNC_MILESTONES.md lines 37-44:
-	// Decision: When 401 error occurs (token revoked):
+	// Design decision (see docs/strava/BACKGROUND_SYNC.md):
+	// When 401 error occurs (token revoked):
 	// - Skip that athlete's sync, continue to next
 	// - Log to monitoring DB
 	// - No email to organizer, no cleanup needed
@@ -128,5 +128,5 @@ func TestSyncService_TokenRevocation_Integration(t *testing.T) {
 	// - Events remain in database
 	// - No emails sent
 
-	t.Skip("Manual integration test - see BACKGROUND_SYNC_MILESTONES.md lines 1416-1426")
+	t.Skip("Manual integration test - see docs/strava/BACKGROUND_SYNC.md")
 }

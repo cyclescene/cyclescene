@@ -489,7 +489,7 @@ func TestSessionStore_GenerateState_BackwardsCompatibility(t *testing.T) {
 func TestService_InitiateOAuth(t *testing.T) {
 	store := NewSessionStore()
 	client := NewClient(TestConfig())
-	service := NewService(client, store, nil, "https://example.com/callback")
+	service := NewService(client, store, nil, nil, "https://example.com/callback")
 
 	authURL, err := service.InitiateOAuth(context.Background(), "pdx")
 	AssertNoError(t, err)
@@ -505,7 +505,7 @@ func TestService_InitiateOAuth(t *testing.T) {
 func TestService_InitiateOAuth_InvalidCity(t *testing.T) {
 	store := NewSessionStore()
 	client := NewClient(TestConfig())
-	service := NewService(client, store, nil, "https://example.com/callback")
+	service := NewService(client, store, nil, nil, "https://example.com/callback")
 
 	_, err := service.InitiateOAuth(context.Background(), "invalid_city")
 	AssertError(t, err)
@@ -514,7 +514,7 @@ func TestService_InitiateOAuth_InvalidCity(t *testing.T) {
 func TestService_HandleOAuthCallback_InvalidState(t *testing.T) {
 	store := NewSessionStore()
 	client := NewClient(TestConfig())
-	service := NewService(client, store, nil, "https://example.com/callback")
+	service := NewService(client, store, nil, nil, "https://example.com/callback")
 
 	_, err := service.HandleOAuthCallback(context.Background(), "test_code", "invalid_state")
 	AssertError(t, err)
@@ -523,7 +523,7 @@ func TestService_HandleOAuthCallback_InvalidState(t *testing.T) {
 func TestService_GetAdminClubs_NoSession(t *testing.T) {
 	store := NewSessionStore()
 	client := NewClient(TestConfig())
-	service := NewService(client, store, nil, "https://example.com/callback")
+	service := NewService(client, store, nil, nil, "https://example.com/callback")
 
 	_, err := service.GetAdminClubs(context.Background(), "invalid_session")
 	AssertError(t, err)
@@ -532,7 +532,7 @@ func TestService_GetAdminClubs_NoSession(t *testing.T) {
 func TestService_GetClubEvents_NoSession(t *testing.T) {
 	store := NewSessionStore()
 	client := NewClient(TestConfig())
-	service := NewService(client, store, nil, "https://example.com/callback")
+	service := NewService(client, store, nil, nil, "https://example.com/callback")
 
 	_, err := service.GetClubEvents(context.Background(), "invalid_session", 123)
 	AssertError(t, err)
@@ -585,7 +585,7 @@ func TestService_GetAdminClubs_FiltersCorrectly(t *testing.T) {
 
 	// Create service
 	client := TestClient(t, server.URL)
-	service := NewService(client, store, NewMonitoringRepository(nil, true), "https://example.com/callback")
+	service := NewService(client, store, NewMonitoringRepository(nil, true), nil, "https://example.com/callback")
 
 	// Get admin clubs
 	adminClubs, err := service.GetAdminClubs(context.Background(), sessionID)
@@ -600,7 +600,7 @@ func TestService_GetAdminClubs_FiltersCorrectly(t *testing.T) {
 func TestService_ProcessRoute_NoSession(t *testing.T) {
 	store := NewSessionStore()
 	client := NewClient(TestConfig())
-	service := NewService(client, store, nil, "https://example.com/callback")
+	service := NewService(client, store, nil, nil, "https://example.com/callback")
 
 	_, err := service.ProcessRoute(context.Background(), "invalid_session", 123, "pdx")
 	AssertError(t, err)
@@ -617,7 +617,7 @@ func TestService_ProcessRoute_NoRepoConfigured(t *testing.T) {
 	sessionID, _ := store.CreateSession(session)
 
 	client := NewClient(TestConfig())
-	service := NewService(client, store, nil, "https://example.com/callback")
+	service := NewService(client, store, nil, nil, "https://example.com/callback")
 	// Note: not calling SetRouteRepository
 
 	_, err := service.ProcessRoute(context.Background(), sessionID, 123, "pdx")
