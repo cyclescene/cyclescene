@@ -96,6 +96,7 @@ jobs:
       - name: Deploy with OpenTofu
         working-directory: backend/cmd/strava-sync/infra
         env:
+          TF_VAR_project_id: ${{ env.PROJECT_ID }}
           TF_VAR_turso_url: ${{ secrets.TURSO_DB_URL }}
           TF_VAR_turso_auth_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
           TF_VAR_turso_monitoring_url: ${{ secrets.TURSO_MONITORING_DB_URL }}
