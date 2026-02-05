@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
   try {
     // Fetch existing ride data using the edit token
-    const response = await fetch(`${API_URL}/v1/rides/edit/${token}`, {
+    const response = await fetch(`${API_URL}/v1/rides/edit/${encodeURIComponent(token)}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -74,13 +74,33 @@ export const load: PageServerLoad = async ({ url }) => {
 };
 
 export const actions = {
-  default: async ({ request, url }) => {
+  updateRide: async ({ request, url }) => {
     const formData = await request.formData();
+
+    // Parse occurrences if they were sent as JSON string
+    const occurrencesJson = formData.get('occurrences');
+    if (occurrencesJson && typeof occurrencesJson === 'string') {
+      try {
+        const occurrences = JSON.parse(occurrencesJson);
+        formData.delete('occurrences');
+        // Re-add as individual FormData entries for superValidate
+        occurrences.forEach((occ: any, idx: number) => {
+          Object.entries(occ).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              formData.append(`occurrences[${idx}].${key}`, String(value));
+            }
+          });
+        });
+      } catch (e) {
+        return fail(400, { error: 'Invalid occurrences data' });
+      }
+    }
 
     // Validate form data with schema
     const form = await superValidate(formData, zod(rideSubmissionSchema));
 
     if (!form.valid) {
+      console.error('Validation errors:', form.errors);
       return fail(400, { form });
     }
 
@@ -93,7 +113,7 @@ export const actions = {
     }
 
     try {
-      const response = await fetch(`${API_URL}/v1/rides/edit/${token}`, {
+      const response = await fetch(`${API_URL}/v1/rides/edit/${encodeURIComponent(token)}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -126,6 +146,91 @@ export const actions = {
       return fail(500, {
         form,
         error: err instanceof Error ? err.message : 'An error occurred'
+      });
+    }
+  },
+
+  updateEventDetails: async ({ request, url }) => {
+    const formData = await request.formData();
+    const token = url.searchParams.get('token');
+    const description = formData.get('description');
+    const audience = formData.get('audience');
+    const rideLength = formData.get('ride_length');
+
+    if (!token || !description) {
+      return fail(400, { error: 'Missing required fields' });
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/v1/rides/edit/${encodeURIComponent(token)}/details`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            description: description,
+            audience: audience || '',
+            ride_length: rideLength || '',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        console.error('Failed to update event details:', text);
+        return fail(response.status, { error: 'Failed to update event details' });
+      }
+
+      return { success: true };
+    } catch (err) {
+      return fail(500, {
+        error: err instanceof Error ? err.message : 'Failed to save changes'
+      });
+    }
+  },
+
+  updateOccurrence: async ({ request, url }) => {
+    const formData = await request.formData();
+    const token = url.searchParams.get('token');
+    const occurrenceId = formData.get('occurrence_id');
+    const startTime = formData.get('start_time');
+    const eventDurationMinutes = formData.get('event_duration_minutes');
+    const eventTimeDetails = formData.get('event_time_details');
+    const newsflash = formData.get('newsflash');
+    const isCancelled = formData.get('is_cancelled') === 'true';
+
+    if (!token || !occurrenceId) {
+      return fail(400, { error: 'Missing required fields' });
+    }
+
+    try {
+      const response = await fetch(
+        `${API_URL}/v1/rides/edit/${encodeURIComponent(token)}/occurrences/${occurrenceId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            start_time: startTime,
+            event_duration_minutes: parseInt(eventDurationMinutes as string, 10),
+            event_time_details: eventTimeDetails || '',
+            newsflash: newsflash || '',
+            is_cancelled: isCancelled,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        return fail(response.status, { error: 'Failed to update occurrence' });
+      }
+
+      return { success: true };
+    } catch (err) {
+      return fail(500, {
+        error: err instanceof Error ? err.message : 'Failed to save changes'
       });
     }
   }

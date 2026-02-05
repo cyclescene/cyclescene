@@ -173,6 +173,10 @@ func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionR
 	}, nil
 }
 
+func (s *Service) UpdateEventDetails(token, description, audience, rideLength string) error {
+	return s.repo.UpdateEventDetails(token, description, audience, rideLength)
+}
+
 // processRoute fetches, converts, and deduplicates a route
 func (s *Service) processRoute(ctx context.Context, routeURL string, city string) (*string, error) {
 	// Fetch and convert route

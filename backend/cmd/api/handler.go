@@ -210,6 +210,7 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 			// Register other routes without rate limiting
 			r.Get("/edit/{token}", rideHandler.GetRideByEditToken)
 			r.Put("/edit/{token}", rideHandler.UpdateRide)
+			r.Patch("/edit/{token}/details", rideHandler.UpdateEventDetails)
 			r.Patch("/edit/{token}/occurrences/{occurrenceId}", rideHandler.UpdateOccurrence)
 			r.Get("/admin/pending", rideHandler.GetPendingRides)
 			r.Patch("/admin/{id}/publish", rideHandler.PublishRide)

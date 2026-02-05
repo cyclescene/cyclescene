@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { superForm } from "sveltekit-superforms";
   import { zod4Client as zodClient } from "sveltekit-superforms/adapters";
   import {
@@ -25,7 +26,7 @@
   import * as Select from "$lib/components/ui/select";
   import * as Card from "$lib/components/ui/card";
   import { Separator } from "$lib/components/ui/separator";
-  import { CircleX } from "@lucide/svelte";
+  import { CircleX, MapPin, Bike, AlertTriangle } from "lucide-svelte";
 
   interface Props {
     data: {
@@ -54,6 +55,7 @@
   }
 
   const { form, errors, enhance, delayed, message } = superForm(data.form, {
+    id: 'ride-submission-form',
     validators: zodClient(rideSubmissionSchema),
     dataType: "json",
     resetForm: false,
@@ -63,17 +65,42 @@
   });
 </script>
 
-<div class="container max-w-4xl mx-auto py-4 sm:py-8 px-4">
+<style>
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+</style>
+
+<div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
   {#if stravaMode}
     <!-- Strava Import Mode -->
     <StravaImport city={data.city} onClose={handleStravaClose} />
   {:else}
     <!-- Manual Form Mode -->
-    <div class="mb-6 sm:mb-8">
-      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+    <header class="mb-10">
+      <div class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 mb-3">
+        <MapPin class="h-4 w-4" />
+        <span class="uppercase tracking-wide">{data.city.toUpperCase()}</span>
+      </div>
+
+      <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">Host a Ride</h1>
-          <p class="text-sm sm:text-base text-muted-foreground mt-1 sm:mt-2">
+          <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4 leading-tight">
+            Host a Ride
+          </h1>
+          <p class="text-lg text-slate-600 dark:text-slate-400">
             Share your ride with the {data.city.toUpperCase()} cycling community
           </p>
         </div>
@@ -84,49 +111,57 @@
           />
         {/if}
       </div>
-    </div>
+    </header>
 
   {#if $message}
-    <div
-      class="mb-4 sm:mb-6 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg"
-    >
-      <p class="text-xs sm:text-sm text-destructive">{$message}</p>
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-950 border-l-4 border-red-500 rounded-lg shadow-sm animate-slide-in">
+      <div class="flex items-center gap-3">
+        <CircleX class="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+        <p class="text-sm font-medium text-red-900 dark:text-red-100">{$message}</p>
+      </div>
     </div>
   {/if}
 
   {#if Object.keys($errors).length > 0}
-    <div
-      class="mb-4 sm:mb-6 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg"
-    >
-      <p class="text-xs sm:text-sm font-semibold text-destructive mb-2">
-        Please fix the following errors:
-      </p>
-      <ul class="list-disc list-inside space-y-1">
-        {#each Object.entries($errors) as [field, message]}
-          {#if message}
-            <li class="text-xs sm:text-sm text-destructive">
-              {typeof message === 'string' ? message : message[0]}
-            </li>
-          {/if}
-        {/each}
-      </ul>
+    <div class="mb-6 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl shadow-sm animate-slide-in">
+      <div class="flex gap-4">
+        <div class="flex-shrink-0">
+          <div class="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+            <AlertTriangle class="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-base font-semibold text-amber-900 dark:text-amber-100 mb-2">
+            Please fix the following errors:
+          </h3>
+          <ul class="list-disc list-inside space-y-1">
+            {#each Object.entries($errors) as [field, message]}
+              {#if message}
+                <li class="text-sm text-amber-800 dark:text-amber-200/90">
+                  {typeof message === 'string' ? message : message[0]}
+                </li>
+              {/if}
+            {/each}
+          </ul>
+        </div>
+      </div>
     </div>
   {/if}
 
-  <form method="POST" use:enhance class="space-y-6 sm:space-y-8">
+  <form method="POST" use:enhance class="space-y-6">
     <!-- Hidden input to include image_uuid in form submission -->
     <input type="hidden" name="image_uuid" bind:value={$form.image_uuid} />
     <input type="hidden" name="city" bind:value={$form.city} />
 
     <!-- Basic Information -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Basic Information</Card.Title>
-        <Card.Description class="text-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Basic Information</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           Tell riders what your ride is about
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4 sm:space-y-4">
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-4 sm:space-y-4">
         <div class="space-y-2">
           <Label for="title" class="text-sm sm:text-base">Ride Title *</Label>
           <Input
@@ -135,10 +170,10 @@
             bind:value={$form.title}
             placeholder="Sunday Morning Coffee Cruise"
             aria-invalid={!!$errors.title}
-            class={`text-base transition-colors ${$errors.title ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
+            class={`text-base transition-colors ${$errors.title ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
           {#if $errors.title}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.title}</p>
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.title}</p>
           {/if}
         </div>
 
@@ -171,10 +206,10 @@
             placeholder="Join us for a casual morning ride through the city. We'll stop at local coffee shops along the way..."
             rows={5}
             aria-invalid={!!$errors.description}
-            class={`text-base transition-colors ${$errors.description ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
+            class={`text-base transition-colors ${$errors.description ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
           {#if $errors.description}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.description}</p>
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.description}</p>
           {/if}
         </div>
 
@@ -244,16 +279,16 @@
             {/if}
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </div>
 
     <!-- Location Information -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Location</Card.Title>
-        <Card.Description>Where does the ride start and end?</Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Location</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Where does the ride start and end?</p>
+      </div>
+      <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
           <Label for="venue_name">Starting Location Name *</Label>
           <Input
@@ -262,10 +297,10 @@
             bind:value={$form.venue_name}
             placeholder="Pioneer Courthouse Square"
             aria-invalid={!!$errors.venue_name}
-            class={`text-base transition-colors ${$errors.venue_name ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
+            class={`text-base transition-colors ${$errors.venue_name ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
           {#if $errors.venue_name}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.venue_name}</p>
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.venue_name}</p>
           {/if}
         </div>
 
@@ -277,10 +312,10 @@
             bind:value={$form.address}
             placeholder="701 SW 6th Ave, Portland, OR 97204"
             aria-invalid={!!$errors.address}
-            class={`text-base transition-colors ${$errors.address ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
+            class={`text-base transition-colors ${$errors.address ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
           {#if $errors.address}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.address}</p>
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.address}</p>
           {/if}
         </div>
 
@@ -328,18 +363,18 @@
             placeholder="Downtown, Southeast, North Portland"
           />
         </div>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </div>
 
     <!-- Date & Time Section -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Date & Time</Card.Title>
-        <Card.Description class="text-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Date & Time</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           When does your ride happen?
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4 sm:space-y-4">
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-4 sm:space-y-4">
         <div class="space-y-2">
           <Label class="text-sm sm:text-base">Date Type *</Label>
           <Select.Root bind:value={$form.date_type} type="single">
@@ -361,24 +396,26 @@
           {/if}
         </div>
 
-        <DateTimePicker
-          bind:occurrences={$form.occurrences}
-          dateType={$form.date_type}
-          onupdate={(occs) => {
-            $form.occurrences = occs;
-          }}
-          error={Array.isArray($errors.occurrences) ? $errors.occurrences[0] : typeof $errors.occurrences === 'object' && $errors.occurrences?._errors ? $errors.occurrences._errors[0] : typeof $errors.occurrences === 'string' ? $errors.occurrences : undefined}
-        />
-      </Card.Content>
-    </Card.Root>
+        {#if browser}
+          <DateTimePicker
+            bind:occurrences={$form.occurrences}
+            dateType={$form.date_type}
+            onupdate={(occs) => {
+              $form.occurrences = occs;
+            }}
+            error={Array.isArray($errors.occurrences) ? $errors.occurrences[0] : typeof $errors.occurrences === 'object' && $errors.occurrences?._errors ? $errors.occurrences._errors[0] : typeof $errors.occurrences === 'string' ? $errors.occurrences : undefined}
+          />
+        {/if}
+      </div>
+    </div>
 
     <!-- Contact Information -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Contact Information</Card.Title>
-        <Card.Description>How can riders reach you?</Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Contact Information</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">How can riders reach you?</p>
+      </div>
+      <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
           <Label for="organizer_name">Your Name *</Label>
           <Input
@@ -387,10 +424,10 @@
             bind:value={$form.organizer_name}
             placeholder="Jane Doe"
             aria-invalid={!!$errors.organizer_name}
-            class={`text-base transition-colors ${$errors.organizer_name ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
+            class={`text-base transition-colors ${$errors.organizer_name ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
           {#if $errors.organizer_name}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.organizer_name}</p>
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.organizer_name}</p>
           {/if}
 
           <div class="flex items-center space-x-2 mt-2">
@@ -418,10 +455,10 @@
             bind:value={$form.organizer_email}
             placeholder="jane@example.com"
             aria-invalid={!!$errors.organizer_email}
-            class={`text-base transition-colors ${$errors.organizer_email ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
+            class={`text-base transition-colors ${$errors.organizer_email ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
           {#if $errors.organizer_email}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.organizer_email}</p>
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.organizer_email}</p>
           {/if}
 
           <div class="flex items-center space-x-2 mt-2">
@@ -477,10 +514,10 @@
               bind:value={$form.web_url}
               placeholder="https://example.com"
               aria-invalid={!!$errors.web_url}
-              class={`text-base transition-colors ${$errors.web_url ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20" : ""}`}
+              class={`text-base transition-colors ${$errors.web_url ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
             />
             {#if $errors.web_url}
-              <p class="text-xs sm:text-sm text-destructive flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.web_url}</p>
+              <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.web_url}</p>
             {/if}
           </div>
 
@@ -494,16 +531,16 @@
             />
           </div>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </div>
 
     <!-- Group Association -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Group Association</Card.Title>
-        <Card.Description>Link this ride to a cycling group</Card.Description>
-      </Card.Header>
-      <Card.Content>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Association</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Link this ride to a cycling group</p>
+      </div>
+      <div class="px-6 py-6">
         <GroupSelector
           bind:value={$form.group_code}
           onchange={(val) => {
@@ -512,18 +549,18 @@
           city={data.city}
           error={Array.isArray($errors.group_code) ? $errors.group_code[0] : typeof $errors.group_code === 'object' && $errors.group_code?._errors ? $errors.group_code._errors[0] : typeof $errors.group_code === 'string' ? $errors.group_code : undefined}
         />
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </div>
 
     <!-- Additional Details -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title>Additional Details</Card.Title>
-        <Card.Description>
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Additional Details</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           Any extra information riders should know
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
           <Label for="newsflash">
             Newsflash (Optional)
@@ -542,43 +579,37 @@
             {$form.newsflash?.length || 0}/500 characters
           </p>
         </div>
-      </Card.Content>
-    </Card.Root>
-
-    <!-- Submit Button -->
-    <div
-      class="sticky bottom-0 bg-background border-t pt-4 pb-4 sm:pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:static"
-    >
-      <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-      >
-        <p
-          class="text-xs sm:text-sm text-muted-foreground text-center sm:text-left"
-        >
-          * Required fields
-        </p>
-        <Button
-          type="submit"
-          disabled={$delayed}
-          size="lg"
-          class="w-full sm:w-auto touch-manipulation"
-        >
-          {#if $delayed}
-            Submitting...
-          {:else}
-            Submit Ride for Review
-          {/if}
-        </Button>
       </div>
     </div>
 
-    <div class="text-center text-xs sm:text-sm text-muted-foreground pb-4">
+    <!-- Submit Button -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
+      <p class="text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left">
+        * Required fields
+      </p>
+      <Button
+        type="submit"
+        disabled={$delayed}
+        size="lg"
+        class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 dark:bg-slate-50 dark:hover:bg-slate-200 gap-2"
+      >
+        {#if $delayed}
+          <div class="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <span>Submitting...</span>
+        {:else}
+          <span>Submit Ride for Review</span>
+        {/if}
+      </Button>
+    </div>
+
+    <div class="text-center text-sm text-slate-500 dark:text-slate-400 pb-4 pt-6">
       Your ride will be reviewed before appearing on CycleScene.
       <br class="hidden sm:block" />
-      <span class="block sm:inline mt-1 sm:mt-0"
-        >You'll receive a magic link via email to edit your ride.</span
-      >
+      <span class="block sm:inline mt-1 sm:mt-0">
+        You'll receive a magic link via email to edit your ride.
+      </span>
     </div>
   </form>
   {/if}
+  </div>
 </div>

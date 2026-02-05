@@ -84,14 +84,14 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 		SELECT id, title, tinytitle, description, image_url, audience, ride_length, area, date_type,
 			   venue_name, address, location_details, ending_location, is_loop_ride,
 			   organizer_name, organizer_email, organizer_phone, web_url, web_name, newsflash,
-			   hide_email, hide_phone, hide_contact_name, group_code, city, is_published
+			   hide_email, hide_phone, hide_contact_name, group_code, city, is_published, source
 		FROM events WHERE edit_token = ?
 	`, token)
 
 	var submission Submission
 	var id int64
 	var isLoopRide, hideEmail, hidePhone, hideContactName, isPublished int
-	var groupCode sql.NullString
+	var groupCode, source sql.NullString
 
 	err := row.Scan(
 		&id, &submission.Title, &submission.TinyTitle, &submission.Description, &submission.ImageURL,
@@ -99,7 +99,7 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 		&submission.VenueName, &submission.Address, &submission.LocationDetails, &submission.EndingLocation, &isLoopRide,
 		&submission.OrganizerName, &submission.OrganizerEmail, &submission.OrganizerPhone,
 		&submission.WebURL, &submission.WebName, &submission.Newsflash,
-		&hideEmail, &hidePhone, &hideContactName, &groupCode, &submission.City, &isPublished,
+		&hideEmail, &hidePhone, &hideContactName, &groupCode, &submission.City, &isPublished, &source,
 	)
 
 	if err != nil {
@@ -112,6 +112,9 @@ func (r *Repository) GetRideByEditToken(token string) (*Submission, bool, error)
 	submission.HideContactName = hideContactName == 1
 	if groupCode.Valid {
 		submission.GroupCode = groupCode.String
+	}
+	if source.Valid {
+		submission.Source = source.String
 	}
 
 	// Get occurrences
@@ -154,6 +157,27 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 		_ = tx.Rollback()
 	}()
 
+	// Get event ID and source - CRITICAL for detach-on-edit
+	var eventID int64
+	var source sql.NullString
+	err = tx.QueryRow(`SELECT id, source FROM events WHERE edit_token = ?`, token).Scan(&eventID, &source)
+	if err != nil {
+		return err
+	}
+
+	// DETACH ON EDIT: If this is a Strava event, detach it before updating
+	// This complies with Strava's "no modification" rule (Phase 2, Milestone 2.3)
+	if source.Valid && source.String == "strava" {
+		if err := r.detachStravaEvent(tx, eventID); err != nil {
+			return fmt.Errorf("failed to detach strava event: %w", err)
+		}
+		slog.Info("detached_strava_event_on_edit",
+			"event_id", eventID,
+			"reason", "organizer_edit",
+		)
+	}
+
+	// Update event fields
 	result, err := tx.Exec(`
 		UPDATE events SET
 			title = ?, tinytitle = ?, description = ?, image_url = ?,
@@ -163,7 +187,7 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 			web_url = ?, web_name = ?, newsflash = ?,
 			hide_email = ?, hide_phone = ?, hide_contact_name = ?,
 			group_code = ?, latitude = ?, longitude = ?, updated_at = STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')
-		WHERE edit_token = ?
+		WHERE id = ?
 	`,
 		submission.Title, submission.TinyTitle, submission.Description, submission.ImageURL,
 		submission.Audience, submission.RideLength, submission.Area, submission.DateType,
@@ -171,7 +195,7 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 		boolToInt(submission.IsLoopRide), submission.OrganizerName, submission.OrganizerEmail,
 		submission.OrganizerPhone, submission.WebURL, submission.WebName, submission.Newsflash,
 		boolToInt(submission.HideEmail), boolToInt(submission.HidePhone), boolToInt(submission.HideContactName),
-		nilIfEmpty(submission.GroupCode), latitude, longitude, token,
+		nilIfEmpty(submission.GroupCode), latitude, longitude, eventID,
 	)
 
 	if err != nil {
@@ -181,13 +205,6 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
 		return sql.ErrNoRows
-	}
-
-	// Get event ID
-	var eventID int64
-	err = tx.QueryRow(`SELECT id FROM events WHERE edit_token = ?`, token).Scan(&eventID)
-	if err != nil {
-		return err
 	}
 
 	// Delete existing occurrences
@@ -214,14 +231,128 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 	return tx.Commit()
 }
 
+// UpdateEventDetails updates only the description, audience, and ride_length fields
+// This is used when editing event details via the edit form (Phase 2, Milestone 2.3)
+// If the event is from Strava, it will be detached before updating
+func (r *Repository) UpdateEventDetails(token, description, audience, rideLength string) error {
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	// Get event ID and source - CRITICAL for detach-on-edit
+	var eventID int64
+	var source sql.NullString
+	err = tx.QueryRow(`SELECT id, source FROM events WHERE edit_token = ?`, token).Scan(&eventID, &source)
+	if err != nil {
+		return err
+	}
+
+	// DETACH ON EDIT: If this is a Strava event, detach it before updating
+	// This complies with Strava's "no modification" rule (Phase 2, Milestone 2.3)
+	if source.Valid && source.String == "strava" {
+		if err := r.detachStravaEvent(tx, eventID); err != nil {
+			return fmt.Errorf("failed to detach strava event: %w", err)
+		}
+		slog.Info("detached_strava_event_on_edit",
+			"event_id", eventID,
+			"reason", "event_details_edit",
+		)
+	}
+
+	// Update only the event detail fields
+	result, err := tx.Exec(`
+		UPDATE events SET
+			description = ?,
+			audience = ?,
+			ride_length = ?,
+			updated_at = STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')
+		WHERE id = ?
+	`, description, audience, rideLength, eventID)
+
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return tx.Commit()
+}
+
+// detachStravaEvent detaches a Strava event from background sync
+// This is called when an organizer edits the event via the edit link
+// Phase 2, Milestone 2.3: Detach-on-Edit Implementation
+func (r *Repository) detachStravaEvent(tx *sql.Tx, eventID int64) error {
+	// 1. Set source to NULL (detach from Strava)
+	// This stops the event from being synced in future runs
+	_, err := tx.Exec(`
+		UPDATE events
+		SET source = NULL, source_id = NULL, updated_at = STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')
+		WHERE id = ? AND source = 'strava'
+	`, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to update event source: %w", err)
+	}
+
+	// 2. Delete from strava_event_metadata (stops sync)
+	// This ensures the event won't be included in GetUpcomingStravaEventsByAthlete()
+	_, err = tx.Exec(`DELETE FROM strava_event_metadata WHERE event_id = ?`, eventID)
+	if err != nil {
+		return fmt.Errorf("failed to delete strava metadata: %w", err)
+	}
+
+	return nil
+}
+
 // UpdateOccurrence updates a single occurrence's time, details, and newsflash
+// IMPORTANT: Detaches Strava events before updating since times come from Strava API
 func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, newsflash string, isCancelled bool) error {
-	_, err := r.db.Exec(`
+	tx, err := r.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+
+	// Get event ID and source - CRITICAL for detach-on-edit
+	var eventID int64
+	var source sql.NullString
+	err = tx.QueryRow(`SELECT id, source FROM events WHERE edit_token = ?`, token).Scan(&eventID, &source)
+	if err != nil {
+		return err
+	}
+
+	// DETACH ON EDIT: If this is a Strava event, detach it before updating
+	// Occurrence times come directly from Strava API, so modifying them requires detach
+	if source.Valid && source.String == "strava" {
+		if err := r.detachStravaEvent(tx, eventID); err != nil {
+			return fmt.Errorf("failed to detach strava event: %w", err)
+		}
+		slog.Info("detached_strava_event_on_edit",
+			"event_id", eventID,
+			"reason", "occurrence_edit",
+		)
+	}
+
+	// Update the occurrence
+	_, err = tx.Exec(`
 		UPDATE event_occurrences
 		SET start_time = ?, event_duration_minutes = ?, event_time_details = ?, newsflash = ?, is_cancelled = ?
-		WHERE id = ? AND event_id = (SELECT id FROM events WHERE edit_token = ?)
-	`, startTime, eventDurationMinutes, eventTimeDetails, newsflash, boolToInt(isCancelled), occurrenceID, token)
-	return err
+		WHERE id = ? AND event_id = ?
+	`, startTime, eventDurationMinutes, eventTimeDetails, newsflash, boolToInt(isCancelled), occurrenceID, eventID)
+
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // Scraped rides from Shift2Bikes (PDX only) + Published user-submitted rides

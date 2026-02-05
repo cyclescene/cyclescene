@@ -47,9 +47,13 @@
 	},
 	"dependencies": {
 		"@internationalized/date": "^3.10.0",
+		"add": "^2.0.6",
 		"formsnap": "^2.0.1",
+		"lucide-svelte": "^0.563.0",
 		"mode-watcher": "^1.1.0",
+		"shadcn-svelte": "^1.1.1",
 		"sveltekit-superforms": "^2.27.2",
+		"textarea": "^0.3.0",
 		"zod": "^4.1.12"
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
@@ -116,7 +117,14 @@ func (h *Handler) SubmitRide(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetRideByEditToken(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 
-	response, err := h.service.GetRideByEditToken(token)
+	// URL-decode the token (Chi doesn't decode path parameters automatically)
+	decodedToken, err := url.QueryUnescape(token)
+	if err != nil {
+		http.Error(w, "Invalid token encoding", http.StatusBadRequest)
+		return
+	}
+
+	response, err := h.service.GetRideByEditToken(decodedToken)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Ride not found", http.StatusNotFound)
 		return
@@ -134,13 +142,30 @@ func (h *Handler) GetRideByEditToken(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UpdateRide(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 
+	// URL-decode the token (Chi doesn't decode path parameters automatically)
+	decodedToken, err := url.QueryUnescape(token)
+	if err != nil {
+		http.Error(w, "Invalid token encoding", http.StatusBadRequest)
+		return
+	}
+
 	var submission Submission
 	if err := json.NewDecoder(r.Body).Decode(&submission); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	response, err := h.service.UpdateRide(token, &submission)
+	// Validate required fields (Phase 2, Milestone 2.3)
+	if submission.Title == "" || submission.Description == "" || submission.City == "" {
+		http.Error(w, "Missing required fields (title, description, city)", http.StatusBadRequest)
+		return
+	}
+	if len(submission.Occurrences) == 0 {
+		http.Error(w, "At least one occurrence is required", http.StatusBadRequest)
+		return
+	}
+
+	response, err := h.service.UpdateRide(decodedToken, &submission)
 	if err == sql.ErrNoRows {
 		http.Error(w, "Ride not found", http.StatusNotFound)
 		return
@@ -151,10 +176,58 @@ func (h *Handler) UpdateRide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("Ride updated successfully", "token", token)
+	slog.Info("Ride updated successfully", "token", decodedToken)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+type UpdateEventDetailsRequest struct {
+	Description string `json:"description"`
+	Audience    string `json:"audience"`
+	RideLength  string `json:"ride_length"`
+}
+
+func (h *Handler) UpdateEventDetails(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+
+	// URL-decode the token (Chi doesn't decode path parameters automatically)
+	decodedToken, err := url.QueryUnescape(token)
+	if err != nil {
+		http.Error(w, "Invalid token encoding", http.StatusBadRequest)
+		return
+	}
+
+	var req UpdateEventDetailsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.Description == "" {
+		http.Error(w, "Description is required", http.StatusBadRequest)
+		return
+	}
+	if len(req.Description) < 10 {
+		http.Error(w, "Description must be at least 10 characters", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.UpdateEventDetails(decodedToken, req.Description, req.Audience, req.RideLength); err != nil {
+		if err == sql.ErrNoRows {
+			http.Error(w, "Event not found", http.StatusNotFound)
+			return
+		}
+		slog.Error("Failed to update event details", "error", err, "token", decodedToken)
+		http.Error(w, "Failed to update event details", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Event details updated successfully", "token", decodedToken)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]bool{"success": true})
 }
 
 type UpdateOccurrenceRequest struct {
@@ -169,6 +242,13 @@ func (h *Handler) UpdateOccurrence(w http.ResponseWriter, r *http.Request) {
 	token := chi.URLParam(r, "token")
 	occurrenceIdStr := chi.URLParam(r, "occurrenceId")
 
+	// URL-decode the token (Chi doesn't decode path parameters automatically)
+	decodedToken, err := url.QueryUnescape(token)
+	if err != nil {
+		http.Error(w, "Invalid token encoding", http.StatusBadRequest)
+		return
+	}
+
 	occurrenceId, err := strconv.ParseInt(occurrenceIdStr, 10, 64)
 	if err != nil {
 		http.Error(w, "Invalid occurrence ID", http.StatusBadRequest)
@@ -181,13 +261,13 @@ func (h *Handler) UpdateOccurrence(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.UpdateOccurrence(token, occurrenceId, req.StartTime, req.EventDurationMinutes, req.EventTimeDetails, req.Newsflash, req.IsCancelled); err != nil {
-		slog.Error("Failed to update occurrence", "error", err, "token", token, "occurrence_id", occurrenceId)
+	if err := h.service.UpdateOccurrence(decodedToken, occurrenceId, req.StartTime, req.EventDurationMinutes, req.EventTimeDetails, req.Newsflash, req.IsCancelled); err != nil {
+		slog.Error("Failed to update occurrence", "error", err, "token", decodedToken, "occurrence_id", occurrenceId)
 		http.Error(w, "Failed to update occurrence", http.StatusInternalServerError)
 		return
 	}
 
-	slog.Info("Occurrence updated successfully", "token", token, "occurrence_id", occurrenceId)
+	slog.Info("Occurrence updated successfully", "token", decodedToken, "occurrence_id", occurrenceId)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]bool{"success": true})

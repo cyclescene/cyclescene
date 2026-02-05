@@ -12,7 +12,7 @@
   import { Label } from "$lib/components/ui/label";
   import { Textarea } from "$lib/components/ui/textarea";
   import * as Card from "$lib/components/ui/card";
-  import { CircleCheck, CircleX, Loader, Users } from "@lucide/svelte";
+  import { CircleCheck, CircleX, Loader, Users, MapPin, AlertTriangle } from "@lucide/svelte";
 
   interface Props {
     data: {
@@ -102,60 +102,85 @@
   }
 </script>
 
-<div class="container max-w-3xl mx-auto py-4 sm:py-8 px-4">
-  <div class="mb-6 sm:mb-8">
-    <div class="flex items-start sm:items-center gap-3 mb-4">
-      <div class="p-2 bg-primary/10 rounded-lg flex-shrink-0">
-        <Users class="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+<style>
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+</style>
+
+<div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+
+    <header class="mb-10">
+      <div class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 mb-3">
+        <MapPin class="h-4 w-4" />
+        <span class="uppercase tracking-wide">{data.city.toUpperCase()}</span>
       </div>
-      <div class="min-w-0">
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
-          Register Your Group
-        </h1>
-        <p class="text-sm sm:text-base text-muted-foreground mt-1">
-          Create a group for your cycling community in {data.city.toUpperCase()}
-        </p>
-      </div>
-    </div>
-  </div>
+
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4 leading-tight">
+        Register Your Group
+      </h1>
+      <p class="text-lg text-slate-600 dark:text-slate-400">
+        Create a group for your cycling community in {data.city.toUpperCase()}
+      </p>
+    </header>
 
   {#if $message}
-    <div
-      class="mb-4 sm:mb-6 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg"
-    >
-      <p class="text-xs sm:text-sm text-destructive">{$message}</p>
+    <div class="mb-6 p-4 bg-red-50 dark:bg-red-950 border-l-4 border-red-500 rounded-lg shadow-sm animate-slide-in">
+      <div class="flex items-center gap-3">
+        <CircleX class="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0" />
+        <p class="text-sm font-medium text-red-900 dark:text-red-100">{$message}</p>
+      </div>
     </div>
   {/if}
 
   {#if Object.keys($errors).length > 0}
-    <div
-      class="mb-4 sm:mb-6 p-3 sm:p-4 border border-destructive bg-destructive/10 rounded-lg"
-    >
-      <p class="text-xs sm:text-sm font-semibold text-destructive mb-2">
-        Please fix the following errors:
-      </p>
-      <ul class="list-disc list-inside space-y-1">
-        {#each Object.entries($errors) as [field, message]}
-          {#if message}
-            <li class="text-xs sm:text-sm text-destructive">
-              {typeof message === 'string' ? message : message[0]}
-            </li>
-          {/if}
-        {/each}
-      </ul>
+    <div class="mb-6 p-5 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border border-amber-200/60 dark:border-amber-800/60 rounded-2xl shadow-sm animate-slide-in">
+      <div class="flex gap-4">
+        <div class="flex-shrink-0">
+          <div class="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+            <AlertTriangle class="h-5 w-5 text-amber-600 dark:text-amber-400" />
+          </div>
+        </div>
+        <div class="flex-1">
+          <h3 class="text-base font-semibold text-amber-900 dark:text-amber-100 mb-2">
+            Please fix the following errors:
+          </h3>
+          <ul class="list-disc list-inside space-y-1">
+            {#each Object.entries($errors) as [field, message]}
+              {#if message}
+                <li class="text-sm text-amber-800 dark:text-amber-200/90">
+                  {typeof message === 'string' ? message : message[0]}
+                </li>
+              {/if}
+            {/each}
+          </ul>
+        </div>
+      </div>
     </div>
   {/if}
 
   <form method="POST" use:enhance class="space-y-6">
     <!-- Group Code & Name -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Group Identity</Card.Title>
-        <Card.Description class="text-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Identity</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           Choose a unique 4-character code and name for your group
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
           <Label for="code" class="text-sm sm:text-base">
             Group Code *
@@ -176,7 +201,7 @@
               aria-invalid={!!$errors.code}
               class={`uppercase pr-10 text-base transition-colors ${
                 $errors.code
-                  ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                  ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
                   : ""
               }`}
             />
@@ -194,14 +219,14 @@
 
           {#if codeCheckState === "available"}
             <p
-              class="text-xs sm:text-sm text-green-600 flex items-center gap-1"
+              class="text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-1"
             >
               <CircleCheck class="h-3 w-3 flex-shrink-0" />
               Code is available!
             </p>
           {:else if codeCheckState === "unavailable"}
             <p
-              class="text-xs sm:text-sm text-destructive flex items-center gap-1"
+              class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"
             >
               <CircleX class="h-3 w-3 flex-shrink-0" />
               Code is already taken
@@ -209,7 +234,7 @@
           {/if}
 
           {#if $errors.code}
-            <p class="text-xs sm:text-sm text-destructive">{$errors.code}</p>
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400">{$errors.code}</p>
           {/if}
 
           <p class="text-xs text-muted-foreground">
@@ -228,29 +253,29 @@
             aria-invalid={!!$errors.name}
             class={`text-base transition-colors ${
               $errors.name
-                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
                 : ""
             }`}
           />
           {#if $errors.name}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1">
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
               <CircleX class="h-3 w-3 flex-shrink-0" />
               {$errors.name}
             </p>
           {/if}
         </div>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </div>
 
     <!-- Description & Details -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">About Your Group</Card.Title>
-        <Card.Description class="text-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">About Your Group</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           Tell the community what your group is about
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
           <Label for="description" class="text-sm sm:text-base"
             >Description (Optional)</Label
@@ -280,29 +305,29 @@
             aria-invalid={!!$errors.web_url}
             class={`text-base transition-colors ${
               $errors.web_url
-                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
                 : ""
             }`}
           />
           {#if $errors.web_url}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1">
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
               <CircleX class="h-3 w-3 flex-shrink-0" />
               {$errors.web_url}
             </p>
           {/if}
         </div>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </div>
 
     <!-- Contact Information -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Contact Information</Card.Title>
-        <Card.Description class="text-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Contact Information</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           We'll use this to send you a magic link to edit your group
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
           <Label for="email" class="text-sm sm:text-base">
             Contact Email *
@@ -315,12 +340,12 @@
             aria-invalid={!!$errors.email}
             class={`text-base transition-colors ${
               $errors.email
-                ? "border-destructive bg-destructive/5 focus:border-destructive focus:ring-1 focus:ring-destructive/20"
+                ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
                 : ""
             }`}
           />
           {#if $errors.email}
-            <p class="text-xs sm:text-sm text-destructive flex items-center gap-1">
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
               <CircleX class="h-3 w-3 flex-shrink-0" />
               {$errors.email}
             </p>
@@ -330,18 +355,18 @@
             information anytime
           </p>
         </div>
-      </Card.Content>
-    </Card.Root>
+      </div>
+    </div>
 
     <!-- Group Marker -->
-    <Card.Root>
-      <Card.Header>
-        <Card.Title class="text-lg sm:text-xl">Group Marker</Card.Title>
-        <Card.Description class="text-sm">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Marker</h2>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
           Add a custom marker for your group's rides on the map
-        </Card.Description>
-      </Card.Header>
-      <Card.Content class="space-y-4">
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-4">
         <CustomMarkerBuilder
           bind:this={customMarkerBuilderRef}
           cityCode={data.city}
@@ -358,44 +383,38 @@
           Your marker image will be automatically resized to 64x64px and added
           to your city's marker spritesheet for display on the map.
         </p>
-      </Card.Content>
-    </Card.Root>
-
-    <!-- Submit Button -->
-    <div
-      class="sticky bottom-0 bg-background border-t pt-4 pb-4 sm:pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 sm:static"
-    >
-      <div
-        class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-      >
-        <p
-          class="text-xs sm:text-sm text-muted-foreground text-center sm:text-left"
-        >
-          * Required fields
-        </p>
-        <Button
-          type="submit"
-          disabled={$delayed ||
-            codeCheckState === "checking" ||
-            codeCheckState === "unavailable"}
-          size="lg"
-          class="w-full sm:w-auto touch-manipulation"
-        >
-          {#if $delayed}
-            {#if !markerImageUUID}
-              Generating marker...
-            {:else}
-              Registering...
-            {/if}
-          {:else}
-            Register Group
-          {/if}
-        </Button>
       </div>
     </div>
 
-    <div class="text-center text-xs sm:text-sm text-muted-foreground pb-4">
+    <!-- Submit Button -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
+      <p class="text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left">
+        * Required fields
+      </p>
+      <Button
+        type="submit"
+        disabled={$delayed ||
+          codeCheckState === "checking" ||
+          codeCheckState === "unavailable"}
+        size="lg"
+        class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 dark:bg-slate-50 dark:hover:bg-slate-200 gap-2"
+      >
+        {#if $delayed}
+          <div class="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          {#if !markerImageUUID}
+            <span>Generating marker...</span>
+          {:else}
+            <span>Registering...</span>
+          {/if}
+        {:else}
+          <span>Register Group</span>
+        {/if}
+      </Button>
+    </div>
+
+    <div class="text-center text-sm text-slate-500 dark:text-slate-400 pb-4 pt-6">
       You'll receive a magic link via email to edit your group information.
     </div>
   </form>
+  </div>
 </div>
