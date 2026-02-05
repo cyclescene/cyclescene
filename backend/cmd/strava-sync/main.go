@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/spacesedan/cyclescene/backend/internal/alerts"
 	"github.com/spacesedan/cyclescene/backend/internal/strava"
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 )
@@ -43,22 +44,46 @@ func main() {
 		"app_env", os.Getenv("APP_ENV"),
 	)
 
+	// Initialize alerting
+	notifier := alerts.NewNotifier()
+	if notifier.IsConfigured() {
+		slog.Info("alerting_configured")
+	} else {
+		slog.Debug("alerting_not_configured")
+	}
+
 	// Run sync with timeout
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultSyncTimeout)
 	defer cancel()
 
 	result, err := runSync(ctx)
-	if err != nil {
-		slog.Error("sync_failed", "error", err)
-		os.Exit(1)
-	}
 
-	// Exit with error if all connections failed
-	if result.ProcessedConnections > 0 && result.SuccessfulConnections == 0 {
+	// Check for critical failures and send alerts
+	var shouldAlert bool
+	var alertTitle, alertMessage string
+
+	if err != nil {
+		shouldAlert = true
+		alertTitle = "Strava Sync Job Failed"
+		alertMessage = fmt.Sprintf("Sync job encountered critical error: %v", err)
+		slog.Error("sync_failed", "error", err)
+	} else if result.ProcessedConnections > 0 && result.SuccessfulConnections == 0 {
+		shouldAlert = true
+		alertTitle = "Zero Athletes Synced"
+		alertMessage = fmt.Sprintf("Job ran but synced 0/%d connections successfully. All connections failed.", result.ProcessedConnections)
 		slog.Error("all_connections_failed",
 			"processed", result.ProcessedConnections,
 			"failed", result.FailedConnections,
 		)
+	}
+
+	// Send alert if needed (don't let alerting failure affect exit code)
+	if shouldAlert {
+		alertCtx, alertCancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer alertCancel()
+		if alertErr := notifier.SendCriticalAlert(alertCtx, alertTitle, alertMessage); alertErr != nil {
+			slog.Error("failed_to_send_alert", "error", alertErr)
+		}
 		os.Exit(1)
 	}
 

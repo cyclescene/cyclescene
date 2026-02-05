@@ -176,3 +176,10 @@ variable "form_url" {
   type        = string
   default     = ""
 }
+
+variable "strava_token_encryption_key" {
+  description = "Encryption key for Strava refresh tokens (base64-encoded 32 bytes)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

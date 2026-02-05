@@ -10,6 +10,7 @@ import (
 	chi "github.com/go-chi/chi/v5"
 	chimi "github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	adminapi "github.com/spacesedan/cyclescene/backend/internal/api/admin"
 	"github.com/spacesedan/cyclescene/backend/internal/api/auth"
 	"github.com/spacesedan/cyclescene/backend/internal/api/clienterror"
 	"github.com/spacesedan/cyclescene/backend/internal/api/events"
@@ -226,6 +227,13 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 		if stravaHandler != nil {
 			stravaHandler.RegisterRoutes(r)
 		}
+
+		// Admin sync handler (for triggering and monitoring strava-sync job)
+		adminSyncHandler := adminapi.NewSyncHandler(monitoringDB)
+		r.Route("/admin/sync", func(r chi.Router) {
+			r.Post("/trigger", adminSyncHandler.TriggerSync)
+			r.Get("/status", adminSyncHandler.GetStatus)
+		})
 	})
 
 	return r

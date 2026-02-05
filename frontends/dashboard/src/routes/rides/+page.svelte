@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
   import * as Card from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
-  import { Input } from "$lib/components/ui/input";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import RideCard from "$lib/components/RideCard.svelte";
   import { CITIES, type CityCode } from "$lib/config/cities";
@@ -29,8 +28,6 @@
   let error = $state("");
   let publishingId = $state<number | null>(null);
   let adminToken = $state("");
-  let showApiKeyForm = $state(false);
-  let apiKeyInput = $state("");
   let selectedCity = $state<CityCode>("all");
 
   // Derived state for filtered rides
@@ -46,12 +43,8 @@
   );
 
   onMount(() => {
+    // Auth is now handled at layout level, token is guaranteed to exist
     adminToken = localStorage.getItem("adminToken") || "";
-    if (!adminToken) {
-      showApiKeyForm = true;
-      loading = false;
-      return;
-    }
 
     // Load selected city from localStorage
     const savedCity = localStorage.getItem("selectedCity") as CityCode | null;
@@ -61,41 +54,17 @@
 
     // Listen for city changes from header
     window.addEventListener("citychange", handleCityChange);
-    window.addEventListener("changeapikey", clearApiKey);
 
     loadRides();
 
     return () => {
       window.removeEventListener("citychange", handleCityChange);
-      window.removeEventListener("changeapikey", clearApiKey);
     };
   });
 
   function handleCityChange(event: Event) {
     const customEvent = event as CustomEvent<CityCode>;
     selectedCity = customEvent.detail;
-  }
-
-  function setApiKey() {
-    if (!apiKeyInput.trim()) {
-      error = "Please enter an API key";
-      return;
-    }
-    adminToken = apiKeyInput.trim();
-    localStorage.setItem("adminToken", adminToken);
-    showApiKeyForm = false;
-    apiKeyInput = "";
-    error = "";
-    loadRides();
-  }
-
-  function clearApiKey() {
-    localStorage.removeItem("adminToken");
-    adminToken = "";
-    showApiKeyForm = true;
-    rides = [];
-    // Force page reload to update header
-    window.location.reload();
   }
 
   async function loadRides() {
@@ -178,34 +147,7 @@
     </div>
   {/if}
 
-  {#if showApiKeyForm}
-    <div class="max-w-md mx-auto py-12">
-      <Card.Root>
-        <Card.Header>
-          <Card.Title>Enter API Key</Card.Title>
-          <Card.Description>
-            Your API key provides access to the admin dashboard
-          </Card.Description>
-        </Card.Header>
-        <Card.Content class="space-y-4">
-          <Input
-            type="password"
-            placeholder="Paste your API key..."
-            bind:value={apiKeyInput}
-            onkeydown={(e) => {
-              if (e.key === "Enter") setApiKey();
-            }}
-          />
-          <div class="flex gap-2">
-            <Button onclick={setApiKey} class="flex-1">Continue</Button>
-            <Button variant="outline" onclick={() => (apiKeyInput = "")}>
-              Clear
-            </Button>
-          </div>
-        </Card.Content>
-      </Card.Root>
-    </div>
-  {:else if loading}
+  {#if loading}
     <div class="space-y-4">
       {#each Array(3) as _}
         <div class="p-4 border rounded-lg">
