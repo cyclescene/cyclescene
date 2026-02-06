@@ -33,7 +33,7 @@
         setTimeout(() => {
           if (map) {
             console.log("[RideRouteMap] Executing fitBounds");
-            map.fitBounds(bounds, { padding: 40, duration: 800 });
+            map.fitBounds(bounds, { padding: 55, duration: 800 });
           }
         }, 100);
       } else {
@@ -70,11 +70,42 @@
       features,
     };
   });
+
+  let endpointsGeoJSON = $derived.by(() => {
+    if (!route || !route.geojson.geometry.coordinates) {
+      return {
+        type: "FeatureCollection" as const,
+        features: [],
+      };
+    }
+
+    const coordinates = route.geojson.geometry.coordinates;
+    if (coordinates.length < 2) return { type: "FeatureCollection" as const, features: [] };
+
+    const start = coordinates[0];
+    const end = coordinates[coordinates.length - 1];
+
+    return {
+      type: "FeatureCollection" as const,
+      features: [
+        {
+          type: "Feature" as const,
+          geometry: { type: "Point" as const, coordinates: [start[0], start[1]] },
+          properties: { type: "start" },
+        },
+        {
+          type: "Feature" as const,
+          geometry: { type: "Point" as const, coordinates: [end[0], end[1]] },
+          properties: { type: "end" },
+        },
+      ],
+    };
+  });
 </script>
 
 <MapLibre
   bind:map
-  class="h-[55vh] min-h-[300px]"
+  class="h-[35vh] min-h-[250px]"
   style={source}
   attributionControl={false}
   dragPan={false}
@@ -102,4 +133,42 @@
       }}
     />
   </GeoJSONSource>
+
+  <GeoJSONSource data={endpointsGeoJSON} id="route-endpoints">
+    <RawLayer
+      id="route-start"
+      source="route-endpoints"
+      type="circle"
+      filter={["==", ["get", "type"], "start"]}
+      paint={{
+        "circle-radius": 7,
+        "circle-color": "#22c55e",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 2,
+      }}
+    />
+    <RawLayer
+      id="route-end"
+      source="route-endpoints"
+      type="circle"
+      filter={["==", ["get", "type"], "end"]}
+      paint={{
+        "circle-radius": 7,
+        "circle-color": "#ef4444",
+        "circle-stroke-color": "#ffffff",
+        "circle-stroke-width": 2,
+      }}
+    />
+  </GeoJSONSource>
 </MapLibre>
+
+<div class="flex items-center justify-center gap-4 py-1.5 text-xs text-muted-foreground">
+  <span class="flex items-center gap-1.5">
+    <span class="inline-block h-2.5 w-2.5 rounded-full bg-green-500"></span>
+    Start
+  </span>
+  <span class="flex items-center gap-1.5">
+    <span class="inline-block h-2.5 w-2.5 rounded-full bg-red-500"></span>
+    End
+  </span>
+</div>
