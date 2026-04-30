@@ -848,7 +848,7 @@ function offsetDuplicateCoordinate(lat: number, duplicateIndex: number) {
   const metersPerDegree = 111_320
   const angle = duplicateIndex * 2.399963229728653 // golden angle in radians
   const ring = Math.floor((duplicateIndex - 1) / 8)
-  const radiusMeters = 18 + ring * 10
+  const radiusMeters = 8 + ring * 6
   const latOffset = (Math.sin(angle) * radiusMeters) / metersPerDegree
   const lngMetersPerDegree = metersPerDegree * Math.max(Math.cos(lat * Math.PI / 180), 0.01)
   const lngOffset = (Math.cos(angle) * radiusMeters) / lngMetersPerDegree
