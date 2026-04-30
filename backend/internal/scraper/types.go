@@ -55,12 +55,21 @@ type Shift2BikeEvent struct {
 	RouteID string `json:"-"`
 }
 
-// GetID returns the unique identifier for the event (caldaily_id)
+// GetID returns the source identifier for the event.
 func (e *Shift2BikeEvent) GetID() string {
 	if e.CaldailyID != "" {
 		return e.CaldailyID
 	}
 	return e.ID
+}
+
+// CompositeID returns the database key used for a Shift2Bikes occurrence.
+func (e *Shift2BikeEvent) CompositeID() string {
+	id := e.GetID()
+	if id == "" || e.Date == "" {
+		return id
+	}
+	return id + "_" + e.Date
 }
 
 type Shift2BikeEvents struct {

@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const shift2BikesRideSource = "Shift2Bikes"
+
 func GetGeocodeCache(db *sql.DB) (map[string]GeoCodeCached, error) {
 	rows, err := db.Query("SELECT location_key, lat, lng FROM geocode_cache")
 	if err != nil {
@@ -108,6 +110,157 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 		}
 	}()
 
+	if err = bulkUpsertRideDataTx(tx, rideData); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit bulk transaction: %w", err)
+	}
+
+	return nil
+}
+
+func SyncShift2BikesRideData(db *sql.DB, cityCode string, rideData []Shift2BikeEvent) error {
+	today, err := todayForCity(cityCode)
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to begin sync transaction: %v", err)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			_ = tx.Rollback()
+			panic(r)
+		} else if err != nil {
+			_ = tx.Rollback()
+		}
+	}()
+
+	storedUpcomingIDs, err := getStoredUpcomingShift2BikesEventIDs(tx, cityCode, today)
+	if err != nil {
+		return err
+	}
+
+	scrapedUpcomingIDs := make(map[string]struct{}, len(rideData))
+	for i := range rideData {
+		if rideData[i].Date < today {
+			continue
+		}
+		id := rideData[i].CompositeID()
+		if id == "" {
+			slog.Warn("scraped Shift2Bikes event has no stable ID; skipping diff tracking", "title", rideData[i].Title, "date", rideData[i].Date)
+			continue
+		}
+		scrapedUpcomingIDs[id] = struct{}{}
+	}
+	if len(scrapedUpcomingIDs) == 0 && len(storedUpcomingIDs) > 0 {
+		return fmt.Errorf("current Shift2Bikes scrape returned no upcoming event IDs; refusing to delete %d stored upcoming events", len(storedUpcomingIDs))
+	}
+
+	var idsToDelete []string
+	for id := range storedUpcomingIDs {
+		if _, found := scrapedUpcomingIDs[id]; !found {
+			idsToDelete = append(idsToDelete, id)
+		}
+	}
+
+	if len(idsToDelete) > 0 {
+		var deletedCount int64
+		deletedCount, err = deleteShift2BikesEvents(tx, cityCode, idsToDelete)
+		if err != nil {
+			return err
+		}
+		slog.Info("deleted stored Shift2Bikes events missing from current scrape", "city", cityCode, "count", deletedCount)
+	}
+
+	if err = bulkUpsertRideDataTx(tx, rideData); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit sync transaction: %w", err)
+	}
+
+	newCount := 0
+	for id := range scrapedUpcomingIDs {
+		if _, found := storedUpcomingIDs[id]; !found {
+			newCount++
+		}
+	}
+
+	slog.Info("synced Shift2Bikes ride data",
+		"city", cityCode,
+		"scraped_upcoming_count", len(scrapedUpcomingIDs),
+		"stored_upcoming_count", len(storedUpcomingIDs),
+		"new_count", newCount,
+		"deleted_count", len(idsToDelete),
+	)
+
+	return nil
+}
+
+func getStoredUpcomingShift2BikesEventIDs(tx *sql.Tx, cityCode string, today string) (map[string]struct{}, error) {
+	rows, err := tx.Query(`
+		SELECT composite_event_id
+		FROM shift2bikes_events
+		WHERE citycode = ?
+			AND ridesource = ?
+			AND date >= ?
+	`, cityCode, shift2BikesRideSource, today)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query stored upcoming Shift2Bikes events: %w", err)
+	}
+	defer rows.Close()
+
+	ids := make(map[string]struct{})
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan stored Shift2Bikes event ID: %w", err)
+		}
+		ids[id] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate stored Shift2Bikes event IDs: %w", err)
+	}
+
+	return ids, nil
+}
+
+func deleteShift2BikesEvents(tx *sql.Tx, cityCode string, eventIDs []string) (int64, error) {
+	stmt, err := tx.Prepare(`
+		DELETE FROM shift2bikes_events
+		WHERE citycode = ?
+			AND ridesource = ?
+			AND composite_event_id = ?
+	`)
+	if err != nil {
+		return 0, fmt.Errorf("failed to prepare Shift2Bikes delete statement: %w", err)
+	}
+	defer stmt.Close()
+
+	var deletedCount int64
+	for _, id := range eventIDs {
+		result, err := stmt.Exec(cityCode, shift2BikesRideSource, id)
+		if err != nil {
+			return deletedCount, fmt.Errorf("failed to delete Shift2Bikes event %s: %w", id, err)
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return deletedCount, fmt.Errorf("failed to read delete result for Shift2Bikes event %s: %w", id, err)
+		}
+		deletedCount += rowsAffected
+	}
+
+	return deletedCount, nil
+}
+
+func bulkUpsertRideDataTx(tx *sql.Tx, rideData []Shift2BikeEvent) error {
 	stmt, err := tx.Prepare(`
         INSERT INTO shift2bikes_events (
             composite_event_id,
@@ -181,7 +334,11 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 	for i := range rideData {
 		ride := rideData[i]
 
-		compositeKey := ride.CaldailyID
+		compositeKey := ride.CompositeID()
+		if compositeKey == "" {
+			slog.Warn("skipping Shift2Bikes event with no stable ID", "title", ride.Title, "date", ride.Date)
+			continue
+		}
 
 		sourceData, marshalErr := json.Marshal(ride)
 		if marshalErr != nil {
@@ -203,7 +360,6 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 			isSafetyPlan = 1
 		}
 
-		// Handle route_id - use NULL if empty string
 		var routeID interface{}
 		if ride.RouteID != "" {
 			routeID = ride.RouteID
@@ -242,14 +398,24 @@ func BulkUpsertRideData(db *sql.DB, rideData []Shift2BikeEvent) error {
 			routeID,
 		)
 		if err != nil {
-			slog.Error("Failed to upsert single location in batch", "key", compositeKey, "error", err.Error())
+			slog.Error("Failed to upsert single ride in batch", "key", compositeKey, "error", err.Error())
 			return fmt.Errorf("failed to execute batch upsert for key %s: %w", compositeKey, err)
 		}
 	}
 
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("failed to commit bulk transaction: %w", err)
+	return nil
+}
+
+func todayForCity(cityCode string) (string, error) {
+	tzName := "America/Los_Angeles"
+	if cityCode == "slc" {
+		tzName = "America/Denver"
 	}
 
-	return nil
+	tz, err := time.LoadLocation(tzName)
+	if err != nil {
+		return "", fmt.Errorf("failed to load timezone for city %s: %w", cityCode, err)
+	}
+
+	return time.Now().In(tz).Format("2006-01-02"), nil
 }
