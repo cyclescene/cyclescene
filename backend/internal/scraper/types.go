@@ -1,5 +1,7 @@
 package scraper
 
+import "strings"
+
 type Shift2BikeEvent struct {
 	ID            string `json:"id"`
 	Title         string `json:"title"`
@@ -67,6 +69,9 @@ func (e *Shift2BikeEvent) GetID() string {
 func (e *Shift2BikeEvent) CompositeID() string {
 	id := e.GetID()
 	if id == "" || e.Date == "" {
+		return id
+	}
+	if strings.HasSuffix(id, "_"+e.Date) {
 		return id
 	}
 	return id + "_" + e.Date

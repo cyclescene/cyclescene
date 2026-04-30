@@ -83,7 +83,7 @@ func (n *Notifier) sendEmail(ctx context.Context, title, message string) error {
 			<h2>%s</h2>
 			<p>%s</p>
 			<hr>
-			<small>Automated alert from Strava Sync Service</small>
+			<small>Automated alert from CycleScene</small>
 		`, title, message),
 	}
 

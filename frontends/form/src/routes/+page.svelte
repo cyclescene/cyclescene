@@ -11,12 +11,6 @@
   import DateTimePicker from "$lib/components/ride-form/DateTimePicker.svelte";
   import ImageUploader from "$lib/components/ride-form/ImageUploader.svelte";
 
-  // Strava import components
-  import { StravaImportButton, StravaImport } from "$lib/components/strava";
-
-  // Environment variables (SvelteKit way)
-  import { PUBLIC_STRAVA_ENABLED } from "$env/static/public";
-
   // shadcn imports
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
@@ -37,22 +31,6 @@
   }
 
   let { data }: Props = $props();
-
-  // Strava import mode state
-  let stravaMode = $state(false);
-
-  // Check if Strava integration is enabled
-  const stravaEnabled = PUBLIC_STRAVA_ENABLED === "true";
-
-  // Handle OAuth completion from popup
-  function handleStravaAuthComplete() {
-    stravaMode = true;
-  }
-
-  // Handle closing Strava import (back to manual form)
-  function handleStravaClose() {
-    stravaMode = false;
-  }
 
   const { form, errors, enhance, delayed, message } = superForm(data.form, {
     id: 'ride-submission-form',
@@ -84,10 +62,6 @@
 
 <div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-  {#if stravaMode}
-    <!-- Strava Import Mode -->
-    <StravaImport city={data.city} onClose={handleStravaClose} />
-  {:else}
     <!-- Manual Form Mode -->
     <header class="mb-10">
       <div class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 mb-3">
@@ -104,12 +78,6 @@
             Share your ride with the {data.city.toUpperCase()} cycling community
           </p>
         </div>
-        {#if stravaEnabled}
-          <StravaImportButton
-            city={data.city}
-            onAuthComplete={handleStravaAuthComplete}
-          />
-        {/if}
       </div>
     </header>
 
@@ -610,6 +578,5 @@
       </span>
     </div>
   </form>
-  {/if}
   </div>
 </div>

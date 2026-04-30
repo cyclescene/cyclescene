@@ -144,42 +144,8 @@ variable "image_tag" {
   default     = "latest"
 }
 
-# Strava OAuth Configuration
-variable "strava_client_id" {
-  description = "Strava OAuth Client ID"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "strava_client_secret" {
-  description = "Strava OAuth Client Secret"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "strava_debug" {
-  description = "Enable Strava debug logging (should be false in production)"
-  type        = string
-  default     = "false"
-}
-
-variable "strava_callback_url" {
-  description = "Strava OAuth callback URL (full URL including domain and path)"
-  type        = string
-  default     = ""
-}
-
 variable "form_url" {
   description = "Frontend form app URL for OAuth redirects"
   type        = string
   default     = ""
-}
-
-variable "strava_token_encryption_key" {
-  description = "Encryption key for Strava refresh tokens (base64-encoded 32 bytes)"
-  type        = string
-  default     = ""
-  sensitive   = true
 }

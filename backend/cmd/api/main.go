@@ -1,7 +1,5 @@
 package main
 
-// CycleScene API Gateway - v1.1.2 (Strava venue_name fix)
-
 import (
 	"database/sql"
 	"fmt"
@@ -28,16 +26,6 @@ func init() {
 		if err != nil {
 			log.Fatalf("failed to read environment variables: %v", err)
 		}
-	}
-
-	// Configure slog for DEBUG level if STRAVA_DEBUG is enabled
-	if os.Getenv("STRAVA_DEBUG") == "true" {
-		opts := &slog.HandlerOptions{
-			Level: slog.LevelDebug,
-		}
-		handler := slog.NewTextHandler(os.Stdout, opts)
-		slog.SetDefault(slog.New(handler))
-		slog.Debug("Debug logging enabled for Strava service")
 	}
 
 	// Connect to main database

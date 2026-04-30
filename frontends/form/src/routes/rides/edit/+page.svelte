@@ -114,15 +114,6 @@
       return;
     }
 
-    if (rideData.event.source === 'strava') {
-      const confirmed = confirm(
-        "⚠️ This event is from Strava.\n\n" +
-        "Editing will convert it to a CycleScene event and stop syncing with Strava.\n\n" +
-        "Continue?"
-      );
-      if (!confirmed) return;
-    }
-
     isSavingEvent = true;
     errorMessage = "";
 
@@ -154,9 +145,6 @@
         rideData.event.description = editedDescription;
         rideData.event.audience = editedAudience;
         rideData.event.ride_length = editedRideLength;
-        if (rideData.event.source === 'strava') {
-          rideData.event.source = undefined;
-        }
       }
 
       isEditingEvent = false;
@@ -320,28 +308,7 @@
           </div>
         {/if}
 
-        {#if rideData?.event.source === 'strava'}
-          <div class="inline-flex items-center gap-2.5 px-4 py-2.5 bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-full shadow-sm">
-            <svg class="h-4 w-4 text-orange-600 dark:text-orange-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/>
-            </svg>
-            <span class="text-sm font-bold text-orange-700 dark:text-orange-300">Strava Synced</span>
-          </div>
-        {/if}
       </div>
-
-      <!-- Strava Warning (Expanded) -->
-      {#if rideData?.event.source === 'strava'}
-        <Alert.Root class="border-2 border-amber-300 dark:border-amber-700 bg-gradient-to-br from-amber-50 via-amber-50 to-orange-50 dark:from-amber-950/50 dark:via-amber-950/40 dark:to-orange-950/50 animate-slide-in shadow-md">
-          <AlertTriangle class="h-5 w-5 text-amber-600 dark:text-amber-400" />
-          <Alert.Title class="text-amber-900 dark:text-amber-100 font-bold">Imported from Strava</Alert.Title>
-          <Alert.Description class="text-amber-800 dark:text-amber-200/90">
-            <p class="leading-relaxed font-medium">
-              Any edits will convert this to a CycleScene event and stop syncing with Strava.
-            </p>
-          </Alert.Description>
-        </Alert.Root>
-      {/if}
     </header>
 
     <!-- Messages -->

@@ -228,21 +228,6 @@
             Donate to Shift2Bikes
           </Button>
         {/if}
-
-        {#if ride && ride.ridesource === "strava"}
-          <a
-            href={webUrl || "https://www.strava.com"}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="strava-attribution"
-          >
-            <img
-              src="/api_logo_pwrdBy_strava_horiz_white.png"
-              alt="Powered by Strava"
-              class="h-4 opacity-90"
-            />
-          </a>
-        {/if}
       </div>
     </ScrollArea>
   </div>
@@ -260,26 +245,5 @@
   :global(.scroll-wrapper) {
     height: 100%;
     width: 100%;
-  }
-
-  .strava-attribution {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0.75rem 1rem;
-    margin-top: 1rem;
-    background: linear-gradient(135deg, #1a1a1d 0%, #232326 100%);
-    border: 1px solid rgba(252, 76, 2, 0.2);
-    border-radius: 0.5rem;
-    transition: all 0.2s ease;
-  }
-
-  .strava-attribution:hover {
-    border-color: rgba(252, 76, 2, 0.5);
-    background: linear-gradient(135deg, #1f1f22 0%, #28282c 100%);
-  }
-
-  .strava-attribution:active {
-    transform: scale(0.98);
   }
 </style>

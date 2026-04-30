@@ -118,8 +118,6 @@
   body {
     @apply bg-background text-foreground;
   }
-
-  /* Custom animations for Strava import components */
   @keyframes shimmer {
     0% {
       transform: translateX(-100%);

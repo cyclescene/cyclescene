@@ -157,24 +157,10 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 		_ = tx.Rollback()
 	}()
 
-	// Get event ID and source - CRITICAL for detach-on-edit
 	var eventID int64
-	var source sql.NullString
-	err = tx.QueryRow(`SELECT id, source FROM events WHERE edit_token = ?`, token).Scan(&eventID, &source)
+	err = tx.QueryRow(`SELECT id FROM events WHERE edit_token = ?`, token).Scan(&eventID)
 	if err != nil {
 		return err
-	}
-
-	// DETACH ON EDIT: If this is a Strava event, detach it before updating
-	// This complies with Strava's "no modification" rule (Phase 2, Milestone 2.3)
-	if source.Valid && source.String == "strava" {
-		if err := r.detachStravaEvent(tx, eventID); err != nil {
-			return fmt.Errorf("failed to detach strava event: %w", err)
-		}
-		slog.Info("detached_strava_event_on_edit",
-			"event_id", eventID,
-			"reason", "organizer_edit",
-		)
 	}
 
 	// Update event fields
@@ -232,8 +218,7 @@ func (r *Repository) UpdateRide(token string, submission *Submission, latitude, 
 }
 
 // UpdateEventDetails updates only the description, audience, and ride_length fields
-// This is used when editing event details via the edit form (Phase 2, Milestone 2.3)
-// If the event is from Strava, it will be detached before updating
+// This is used when editing event details via the edit form.
 func (r *Repository) UpdateEventDetails(token, description, audience, rideLength string) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -243,24 +228,10 @@ func (r *Repository) UpdateEventDetails(token, description, audience, rideLength
 		_ = tx.Rollback()
 	}()
 
-	// Get event ID and source - CRITICAL for detach-on-edit
 	var eventID int64
-	var source sql.NullString
-	err = tx.QueryRow(`SELECT id, source FROM events WHERE edit_token = ?`, token).Scan(&eventID, &source)
+	err = tx.QueryRow(`SELECT id FROM events WHERE edit_token = ?`, token).Scan(&eventID)
 	if err != nil {
 		return err
-	}
-
-	// DETACH ON EDIT: If this is a Strava event, detach it before updating
-	// This complies with Strava's "no modification" rule (Phase 2, Milestone 2.3)
-	if source.Valid && source.String == "strava" {
-		if err := r.detachStravaEvent(tx, eventID); err != nil {
-			return fmt.Errorf("failed to detach strava event: %w", err)
-		}
-		slog.Info("detached_strava_event_on_edit",
-			"event_id", eventID,
-			"reason", "event_details_edit",
-		)
 	}
 
 	// Update only the event detail fields
@@ -285,33 +256,7 @@ func (r *Repository) UpdateEventDetails(token, description, audience, rideLength
 	return tx.Commit()
 }
 
-// detachStravaEvent detaches a Strava event from background sync
-// This is called when an organizer edits the event via the edit link
-// Phase 2, Milestone 2.3: Detach-on-Edit Implementation
-func (r *Repository) detachStravaEvent(tx *sql.Tx, eventID int64) error {
-	// 1. Set source to NULL (detach from Strava)
-	// This stops the event from being synced in future runs
-	_, err := tx.Exec(`
-		UPDATE events
-		SET source = NULL, source_id = NULL, updated_at = STRFTIME('%Y-%m-%d %H:%M:%f', 'NOW')
-		WHERE id = ? AND source = 'strava'
-	`, eventID)
-	if err != nil {
-		return fmt.Errorf("failed to update event source: %w", err)
-	}
-
-	// 2. Delete from strava_event_metadata (stops sync)
-	// This ensures the event won't be included in GetUpcomingStravaEventsByAthlete()
-	_, err = tx.Exec(`DELETE FROM strava_event_metadata WHERE event_id = ?`, eventID)
-	if err != nil {
-		return fmt.Errorf("failed to delete strava metadata: %w", err)
-	}
-
-	return nil
-}
-
 // UpdateOccurrence updates a single occurrence's time, details, and newsflash
-// IMPORTANT: Detaches Strava events before updating since times come from Strava API
 func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTime string, eventDurationMinutes int, eventTimeDetails string, newsflash string, isCancelled bool) error {
 	tx, err := r.db.Begin()
 	if err != nil {
@@ -321,24 +266,10 @@ func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTim
 		_ = tx.Rollback()
 	}()
 
-	// Get event ID and source - CRITICAL for detach-on-edit
 	var eventID int64
-	var source sql.NullString
-	err = tx.QueryRow(`SELECT id, source FROM events WHERE edit_token = ?`, token).Scan(&eventID, &source)
+	err = tx.QueryRow(`SELECT id FROM events WHERE edit_token = ?`, token).Scan(&eventID)
 	if err != nil {
 		return err
-	}
-
-	// DETACH ON EDIT: If this is a Strava event, detach it before updating
-	// Occurrence times come directly from Strava API, so modifying them requires detach
-	if source.Valid && source.String == "strava" {
-		if err := r.detachStravaEvent(tx, eventID); err != nil {
-			return fmt.Errorf("failed to detach strava event: %w", err)
-		}
-		slog.Info("detached_strava_event_on_edit",
-			"event_id", eventID,
-			"reason", "occurrence_edit",
-		)
 	}
 
 	// Update the occurrence

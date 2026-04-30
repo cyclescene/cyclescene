@@ -1,6 +1,6 @@
--- Add source tracking columns to events table for Strava import deduplication
--- source: identifies where the event came from ("strava", "manual", etc.)
--- source_id: external identifier (e.g., Strava event ID) for deduplication
+-- Add source tracking columns to events table for external import deduplication
+-- source: identifies where the event came from
+-- source_id: external identifier for deduplication
 
 ALTER TABLE events ADD COLUMN source TEXT;
 

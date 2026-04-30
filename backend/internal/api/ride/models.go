@@ -21,8 +21,8 @@ type Submission struct {
 	DateType    string `json:"date_type"`
 
 	// Source tracking (for deduplication of imported events)
-	Source   string `json:"source,omitempty"`    // e.g., "strava", "manual"
-	SourceID string `json:"source_id,omitempty"` // External identifier (e.g., Strava event ID)
+	Source   string `json:"source,omitempty"`    // External source name, if imported
+	SourceID string `json:"source_id,omitempty"` // External identifier, if imported
 
 	// Location
 	VenueName       string `json:"venue_name"`

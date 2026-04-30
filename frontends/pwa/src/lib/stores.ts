@@ -814,10 +814,9 @@ export const rideGeoJSON = derived(
       let dupCount = seenCoords[key] ?? 0
 
       if (dupCount > 0) {
-        const offset = dupCount * 0.0009
-        lat += offset
-        lng += offset
-        key = `${lng}_${lat}`
+        const offset = offsetDuplicateCoordinate(lat, dupCount)
+        lat += offset.lat
+        lng += offset.lng
       }
 
       seenCoords[key] = dupCount + 1
@@ -844,6 +843,18 @@ export const rideGeoJSON = derived(
     } as GeoJSON.FeatureCollection<GeoJSON.Point, any>;
   }
 )
+
+function offsetDuplicateCoordinate(lat: number, duplicateIndex: number) {
+  const metersPerDegree = 111_320
+  const angle = duplicateIndex * 2.399963229728653 // golden angle in radians
+  const ring = Math.floor((duplicateIndex - 1) / 8)
+  const radiusMeters = 18 + ring * 10
+  const latOffset = (Math.sin(angle) * radiusMeters) / metersPerDegree
+  const lngMetersPerDegree = metersPerDegree * Math.max(Math.cos(lat * Math.PI / 180), 0.01)
+  const lngOffset = (Math.cos(angle) * radiusMeters) / lngMetersPerDegree
+
+  return { lat: latOffset, lng: lngOffset }
+}
 
 export const STARTING_ZOOM = 12
 export const SINGLE_RIDE_ZOOM = 16
