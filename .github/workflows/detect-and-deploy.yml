@@ -12,11 +12,11 @@ on:
   workflow_dispatch:
     inputs:
       services:
-        description: 'Services to deploy (comma-separated: api,image-optimizer,scraperv2,token-cleaner,db-backups,strava-sync)'
+        description: 'Services to deploy (comma-separated: api,image-optimizer,scraperv2,token-cleaner,db-backups)'
         required: false
 
 env:
-  SERVICES: api image-optimizer scraperv2 token-cleaner db-backups strava-sync
+  SERVICES: api image-optimizer scraperv2 token-cleaner db-backups
 
 jobs:
   detect-changes:
@@ -29,7 +29,6 @@ jobs:
       scraperv2: ${{ steps.detect.outputs.scraperv2 }}
       token-cleaner: ${{ steps.detect.outputs.token-cleaner }}
       db-backups: ${{ steps.detect.outputs.db-backups }}
-      strava-sync: ${{ steps.detect.outputs.strava-sync }}
 
     steps:
       - name: Checkout code
@@ -90,12 +89,6 @@ jobs:
           if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/db-backups/|backend/internal/|backend/go\.)"; then
             CHANGED_SERVICES="$CHANGED_SERVICES db-backups"
             echo "db-backups=true" >> $GITHUB_OUTPUT
-          fi
-
-          # Check Strava Sync
-          if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/strava-sync/|backend/internal/strava/|backend/go\.)"; then
-            CHANGED_SERVICES="$CHANGED_SERVICES strava-sync"
-            echo "strava-sync=true" >> $GITHUB_OUTPUT
           fi
 
           # Check database migrations
@@ -160,16 +153,6 @@ jobs:
       id-token: write
     secrets: inherit
 
-  deploy-strava-sync:
-    name: Deploy Strava Sync
-    needs: detect-changes
-    if: needs.detect-changes.outputs.strava-sync == 'true'
-    uses: ./.github/workflows/deploy-strava-sync.yml
-    permissions:
-      contents: read
-      id-token: write
-    secrets: inherit
-
   summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
@@ -188,4 +171,3 @@ jobs:
           echo "- Scraperv2: ${{ needs.detect-changes.outputs.scraperv2 }}"
           echo "- Token Cleaner: ${{ needs.detect-changes.outputs.token-cleaner }}"
           echo "- DB Backups: ${{ needs.detect-changes.outputs.db-backups }}"
-          echo "- Strava Sync: ${{ needs.detect-changes.outputs.strava-sync }}"
