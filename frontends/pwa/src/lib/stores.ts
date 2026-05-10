@@ -296,7 +296,7 @@ interface SavedRideStore {
 }
 
 function createSavedRideStore() {
-  const { subscribe, set } = writable<SavedRideStore>({
+  const { subscribe, set, update } = writable<SavedRideStore>({
     loading: true,
     data: [],
     error: null

@@ -1,6 +1,4 @@
 <script>
-  import { savedRidesForSelectedDay } from "$lib/stores";
-  import RideList from "../components/ride/rideList.svelte";
   import RideTab from "../components/saved/rideTab.svelte";
 </script>
 

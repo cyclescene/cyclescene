@@ -20,14 +20,14 @@
   <Tabs.Content value="upcoming" class=" w-full px-5 pt-5">
     <ScrollArea class="">
       <div class="scroll-area">
-        {#each upcomingRides as ride (ride)}
+        {#each upcomingRides as ride (ride.id)}
           <Card {ride} />
         {/each}
       </div>
     </ScrollArea>
   </Tabs.Content>
   <Tabs.Content value="past" class="grow w-full px-5 pt-5">
-    {#each pastRides as ride (ride)}
+    {#each pastRides as ride (ride.id)}
       <Card {ride} />
     {/each}
   </Tabs.Content>
