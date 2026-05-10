@@ -17,8 +17,8 @@
   let { ride }: { ride: RideData } = $props();
 
   function onCardClick(ride: RideData) {
-    navigateTo(VIEW_RIDE_DETAILS);
     currentRideStore.setRide(ride);
+    navigateTo(VIEW_RIDE_DETAILS);
   }
 
   function trimString(str: string, maxLength: number) {

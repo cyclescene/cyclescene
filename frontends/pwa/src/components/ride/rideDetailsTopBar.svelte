@@ -14,7 +14,7 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import { mode } from "mode-watcher";
 
-  let ride = $derived(currentRideStore.getRide());
+  let ride = $derived($currentRide);
   let rideExists = $state(false);
   let loading = $state(true);
 
@@ -24,6 +24,8 @@
   }
 
   async function copyToClipboard() {
+    if (!ride) return false;
+
     try {
       await navigator.clipboard.writeText(ride.shareable);
       return true;
@@ -51,15 +53,20 @@
 
   $effect(() => {
     (async () => {
-      if (typeof window !== "undefined") {
+      if (typeof window !== "undefined" && $currentRide?.id) {
         loading = true;
-        rideExists = await savedRidesStore.isRideSaved($currentRide?.id);
+        rideExists = await savedRidesStore.isRideSaved($currentRide.id);
+        loading = false;
+      } else {
+        rideExists = false;
         loading = false;
       }
     })();
   });
 
   async function handleSavedRide() {
+    if (!ride || loading) return;
+
     try {
       if (rideExists) {
         await savedRidesStore.deleteRide(ride.id);
@@ -111,7 +118,7 @@
     </Button>
     <Button
       variant="ghost"
-      disabled={false}
+      disabled={loading || !ride}
       class={`h-10 w-10`}
       onclick={handleSavedRide}
     >
