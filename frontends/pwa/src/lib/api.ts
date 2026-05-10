@@ -31,6 +31,9 @@ export async function getPastRides(): Promise<RideData[]> {
 
 export interface RouteGeoJSON {
   id: string;
+  source: string;
+  source_id: string;
+  source_url: string;
   geojson: {
     type: 'Feature';
     geometry: {
@@ -59,4 +62,3 @@ export async function getAllRoutes(): Promise<RouteGeoJSON[]> {
     throw error
   }
 }
-

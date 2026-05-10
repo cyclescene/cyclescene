@@ -17,14 +17,17 @@ func NewRepository(db *sql.DB) *Repository {
 
 // Route represents a route with its GeoJSON data
 type Route struct {
-	ID       string          `json:"id"`
-	GeoJSON  json.RawMessage `json:"geojson"`
+	ID        string          `json:"id"`
+	Source    string          `json:"source"`
+	SourceID  string          `json:"source_id"`
+	SourceURL string          `json:"source_url"`
+	GeoJSON   json.RawMessage `json:"geojson"`
 }
 
 // GetAllRoutes retrieves all routes for a specific city from the database with their full GeoJSON data
 func (r *Repository) GetAllRoutes(ctx context.Context, city string) ([]Route, error) {
 	query := `
-		SELECT id, geojson
+		SELECT id, source, source_id, source_url, geojson
 		FROM routes
 		WHERE city = ?
 		ORDER BY created_at DESC
@@ -41,18 +44,15 @@ func (r *Repository) GetAllRoutes(ctx context.Context, city string) ([]Route, er
 	routes := make([]Route, 0) // Initialize as empty slice instead of nil
 
 	for rows.Next() {
-		var id string
+		var route Route
 		var geoJSON string
 
-		if err := rows.Scan(&id, &geoJSON); err != nil {
+		if err := rows.Scan(&route.ID, &route.Source, &route.SourceID, &route.SourceURL, &geoJSON); err != nil {
 			slog.Error("[Routes Repo] Scan error", "error", err)
 			continue
 		}
 
-		route := Route{
-			ID:      id,
-			GeoJSON: json.RawMessage(geoJSON),
-		}
+		route.GeoJSON = json.RawMessage(geoJSON)
 
 		routes = append(routes, route)
 	}
