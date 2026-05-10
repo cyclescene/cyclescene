@@ -9,8 +9,8 @@ api_cpu_limit    = "2"
 api_memory_limit = "1Gi"
 
 # API Scaling
-api_min_instances = 0
-api_max_instances = 10
+api_min_instances = 1
+api_max_instances = 20
 
 # Public Access
 api_allow_public = true
