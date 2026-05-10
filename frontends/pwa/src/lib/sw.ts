@@ -11,9 +11,9 @@ import { CacheableResponsePlugin } from 'workbox-cacheable-response'
 const API_BASE = "https://api.cyclescene.cc"
 let CITY_CODE = "pdx" // fallback, will be updated via postMessage
 
-// Compute API URL dynamically based on city code
-function getApiUpcomingUrl() {
-  return API_BASE + "/v1/rides/upcoming?city=" + CITY_CODE;
+// Compute API URLs dynamically based on city code
+function getApiRidesUrl(type: "upcoming" | "past") {
+  return API_BASE + "/v1/rides/" + type + "?city=" + CITY_CODE;
 }
 const ONE_HOUR_IN_SECONDS = 60 * 60
 const ONE_WEEK_IN_SECONDS = ONE_HOUR_IN_SECONDS * 24 * 7
@@ -99,26 +99,39 @@ async function fetchAndNotifyUpdate(syncType: "periodic" | "manual" | "foregroun
       return;
     }
 
-    const url = getApiUpcomingUrl();
-    console.log('Service Worker: Fetching from', url);
+    const upcomingUrl = getApiRidesUrl("upcoming");
+    const pastUrl = getApiRidesUrl("past");
+    console.log('Service Worker: Fetching from', upcomingUrl, pastUrl);
 
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const [upcomingResponse, pastResponse] = await Promise.all([
+      fetch(upcomingUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      }),
+      fetch(pastUrl, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      })
+    ]);
 
-    if (!response.ok) {
+    if (!upcomingResponse.ok || !pastResponse.ok) {
       status = "error";
-      const statusText = response.statusText || 'No status text';
-      errorMsg = `HTTP ${response.status} ${statusText} from ${url}`;
-      console.warn(`Service Worker: API returned ${response.status} ${statusText}`);
+      const failedResponse = !upcomingResponse.ok ? upcomingResponse : pastResponse;
+      const failedUrl = !upcomingResponse.ok ? upcomingUrl : pastUrl;
+      const statusText = failedResponse.statusText || 'No status text';
+      errorMsg = `HTTP ${failedResponse.status} ${statusText} from ${failedUrl}`;
+      console.warn(`Service Worker: API returned ${failedResponse.status} ${statusText}`);
       await logSyncEvent(syncType, status, errorMsg, 0, Date.now() - startTime);
       return; // Don't throw, just return gracefully
     }
 
     let freshData;
     try {
-      freshData = await response.json();
+      const [upcomingRides, pastRides] = await Promise.all([
+        upcomingResponse.json(),
+        pastResponse.json()
+      ]);
+      freshData = [...upcomingRides, ...pastRides];
     } catch (parseErr) {
       status = "error";
       errorMsg = `Failed to parse API response: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}`;
@@ -126,7 +139,7 @@ async function fetchAndNotifyUpdate(syncType: "periodic" | "manual" | "foregroun
       await logSyncEvent(syncType, status, errorMsg, 0, Date.now() - startTime);
       return;
     }
-    rideCount = freshData?.rides?.length || 0;
+    rideCount = freshData.length || 0;
     console.log('Service Worker: Got fresh data, notifying clients');
 
     self.clients.matchAll().then(clients => {

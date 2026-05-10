@@ -19,7 +19,7 @@
     "@types/workbox-sw": "^4.3.7",
     "bits-ui": "^2.11.4",
     "layerchart": "2.0.0-next.27",
-    "maplibre-gl": "^5.8.0",
+    "maplibre-gl": "^5.24.0",
     "mode-watcher": "^1.1.0",
     "svelte": "^5.38.1",
     "svelte-maplibre-gl": "^1.0.1",
