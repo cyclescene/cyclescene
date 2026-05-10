@@ -107,6 +107,18 @@ export default defineConfig(({ mode }) => {
       alias: {
         $lib: path.resolve(__dirname, './src/lib')
       }
+    },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            maplibre: ['maplibre-gl', 'svelte-maplibre-gl'],
+            charts: ['layerchart', 'd3-shape'],
+            workbox: ['workbox-window'],
+            icons: ['@lucide/svelte']
+          }
+        }
+      }
     }
   }
 });
