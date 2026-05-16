@@ -45,6 +45,26 @@ registerRoute(
   })
 )
 
+// Cache map styles, TileJSON, sprites, glyphs, and previously viewed tiles.
+// This does not prefetch tiles; it keeps map areas usable after they have been viewed once.
+registerRoute(
+  ({ url }) =>
+    url.hostname === 'tiles.cyclescene.cc' ||
+    url.hostname === 'protomaps.github.io' ||
+    url.hostname === 'klokantech.github.io',
+  new CacheFirst({
+    cacheName: 'map-asset-cache',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 700,
+        maxAgeSeconds: ONE_WEEK_IN_SECONDS,
+        purgeOnQuotaError: true,
+      }),
+    ],
+  })
+)
+
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'FORCE_FOREGROUND_SYNC') {
     event.waitUntil(fetchAndNotifyUpdate('manual'))
