@@ -8,20 +8,28 @@ const ALLRIDES_STORE_NAME = 'rides'
 const SAVED_RIDES_STORE_NAME = "saved"
 const SAVED_RIDES_STORE_DATE_INDEX = "dateIndex"
 const ROUTES_STORE_NAME = "routes"
-const DB_VERSION = 3
+const DB_VERSION = 4
 
 // Initialize the database and create the object store if it doesn't exist
 // LOGIC FOR ALL RIDES ////////////////////
 const dbPromise = openDB(DB_NAME, DB_VERSION, {
-  upgrade(db) {
+  upgrade(db, _oldVersion, _newVersion, transaction) {
     if (!db.objectStoreNames.contains(ALLRIDES_STORE_NAME)) {
       db.createObjectStore(ALLRIDES_STORE_NAME, { keyPath: 'id' })
     }
+
+    let savedRidesStore
     if (!db.objectStoreNames.contains(SAVED_RIDES_STORE_NAME)) {
-      const savedRidesStore = db.createObjectStore(SAVED_RIDES_STORE_NAME, { keyPath: 'id' })
-      // dateIndex needed to be able to sort by the ride date
+      savedRidesStore = db.createObjectStore(SAVED_RIDES_STORE_NAME, { keyPath: 'id' })
+    } else {
+      savedRidesStore = transaction.objectStore(SAVED_RIDES_STORE_NAME)
+    }
+
+    // dateIndex needed to be able to sort by the ride date
+    if (!savedRidesStore.indexNames.contains(SAVED_RIDES_STORE_DATE_INDEX)) {
       savedRidesStore.createIndex(SAVED_RIDES_STORE_DATE_INDEX, "date", { unique: false })
     }
+
     if (!db.objectStoreNames.contains(ROUTES_STORE_NAME)) {
       db.createObjectStore(ROUTES_STORE_NAME, { keyPath: 'id' })
     }
@@ -58,9 +66,11 @@ export async function getRidesfromDB(): Promise<RideData[]> {
 export async function addSavedRide(ride: RideData) {
   const db = await dbPromise
   const tx = db.transaction(SAVED_RIDES_STORE_NAME, "readwrite")
+  const storableRide = { ...ride }
   try {
-    await tx.store.put(ride)
+    await tx.store.put(storableRide)
   } catch (e) {
+    console.error("Failed to add saved ride", { rideId: ride.id, error: e });
     errorLogger.logError('db_error', e instanceof Error ? e : new Error(String(e)), {
       component: 'db.ts',
       action: 'addSavedRide',
@@ -78,6 +88,7 @@ export async function deleteSavedRide(rideID: string) {
   try {
     await tx.store.delete(rideID)
   } catch (e) {
+    console.error("Failed to delete saved ride", { rideId: rideID, error: e });
     errorLogger.logError('db_error', e instanceof Error ? e : new Error(String(e)), {
       component: 'db.ts',
       action: 'deleteSavedRide',
@@ -93,9 +104,13 @@ export async function getAllSavedRides() {
   const db = await dbPromise
   const tx = db.transaction(SAVED_RIDES_STORE_NAME)
   let objectStore = tx.objectStore(SAVED_RIDES_STORE_NAME)
-  let index = objectStore.index(SAVED_RIDES_STORE_DATE_INDEX)
 
-  return await index.getAll()
+  if (objectStore.indexNames.contains(SAVED_RIDES_STORE_DATE_INDEX)) {
+    let index = objectStore.index(SAVED_RIDES_STORE_DATE_INDEX)
+    return await index.getAll()
+  }
+
+  return await objectStore.getAll()
 }
 
 // in case a user want to clear their saved rides

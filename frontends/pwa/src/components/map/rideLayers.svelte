@@ -1,6 +1,6 @@
 <script lang="ts">
   import { SymbolLayer } from "svelte-maplibre-gl";
-  import { mode } from "mode-watcher";
+  // import { mode } from "mode-watcher";
   import type { MapLayerMouseEvent } from "maplibre-gl";
   import { selectedRideId } from "$lib/stores";
 
@@ -19,7 +19,7 @@
     onRideClick?: (e: MapLayerMouseEvent) => void;
   } = $props();
 
-  let textColor = $derived(mode.current === "dark" ? "#ffffff" : "#000000");
+  // let textColor = $derived(mode.current === "dark" ? "#ffffff" : "#000000");
 
   let selectedId = $state("");
 
@@ -67,24 +67,26 @@
   }}
   onclick={onRideClick}
 />
-<SymbolLayer
-  id="ride-labels"
-  source={sourceId}
-  layout={{
-    "text-field": ["get", "name"],
-    "text-font": ["Noto Sans Regular"],
-    "text-size": 12,
-    "text-offset": [0, 2],
-    "text-anchor": "top",
+<!--
+  <SymbolLayer
+    id="ride-labels"
+    source={sourceId}
+    layout={{
+      "text-field": ["get", "name"],
+      "text-font": ["Noto Sans Regular"],
+      "text-size": 12,
+      "text-offset": [0, 2],
+      "text-anchor": "top",
 
-    "text-allow-overlap": false,
-    "icon-allow-overlap": true,
-    "icon-ignore-placement": true,
-  }}
-  paint={{
-    "text-color": textColor,
-    "text-halo-color": "#ffffff",
-    "text-halo-width": 0.1,
-  }}
-  onclick={onRideClick}
-/>
+      "text-allow-overlap": false,
+      "icon-allow-overlap": true,
+      "icon-ignore-placement": true,
+    }}
+    paint={{
+      "text-color": textColor,
+      "text-halo-color": "#ffffff",
+      "text-halo-width": 0.1,
+    }}
+    onclick={onRideClick}
+  />
+-->

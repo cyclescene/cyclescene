@@ -5,14 +5,13 @@
     goBackInHistory,
     savedRidesStore,
   } from "$lib/stores";
-  import { toast, Toaster } from "svelte-sonner";
+  import { toast } from "svelte-sonner";
 
   import SavedIcon from "~icons/material-symbols/bookmark-sharp";
   import UnsavedIcon from "~icons/material-symbols/bookmark-outline";
   import ShareIcon from "~icons/material-symbols/battery-android-share-outline";
   import BackIcon from "~icons/ic/baseline-keyboard-backspace";
   import Button from "$lib/components/ui/button/button.svelte";
-  import { mode } from "mode-watcher";
 
   let ride = $derived($currentRide);
   let rideExists = $state(false);
@@ -67,6 +66,8 @@
   async function handleSavedRide() {
     if (!ride || loading) return;
 
+    loading = true;
+
     try {
       if (rideExists) {
         await savedRidesStore.deleteRide(ride.id);
@@ -83,17 +84,13 @@
       } else {
         toast.error("Unable to save ride");
       }
+    } finally {
+      loading = false;
     }
   }
 </script>
 
 <div class="flex justify-center items-center p-2.5 z-[1000]">
-  <Toaster
-    position="top-center"
-    theme={mode.current}
-    duration={1000}
-    visibleToasts={1}
-  />
   <Button
     variant="ghost"
     disabled={false}

@@ -27,6 +27,12 @@ class ErrorLogger {
     this.initializeClientId();
   }
 
+  private shouldSendToBackend(): boolean {
+    if (typeof window === 'undefined') return false;
+
+    return window.location.protocol === 'https:' && !['localhost', '127.0.0.1'].includes(window.location.hostname);
+  }
+
   /**
    * Get or create client ID from localStorage
    * Falls back to in-memory storage if localStorage is unavailable
@@ -166,11 +172,17 @@ class ErrorLogger {
       stack_trace: stackTrace,
       component: context?.component,
       action: context?.action,
+      additional_data: context?.additionalData,
       url,
       user_agent: userAgent,
       os: this.detectOS(),
       timestamp: new Date().toISOString()
     };
+
+    if (!this.shouldSendToBackend()) {
+      console.error('[ErrorLogger]', payload, error);
+      return;
+    }
 
     // Log async (fire-and-forget)
     this.sendErrorToBackend(payload).catch((err) => {

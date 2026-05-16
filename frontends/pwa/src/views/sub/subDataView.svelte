@@ -1,8 +1,13 @@
 <script lang="ts">
   import Button from "$lib/components/ui/button/button.svelte";
   import * as Card from "$lib/components/ui/card";
+  import ConfirmActionDialog from "../../components/settings/confirmActionDialog.svelte";
   import Separator from "$lib/components/ui/separator/separator.svelte";
   import { rides, savedRidesStore, syncStatus } from "$lib/stores";
+  import { toast } from "svelte-sonner";
+
+  let refreshDialogOpen = $state(false);
+  let clearSavedDialogOpen = $state(false);
 
   function formatSyncTime(date: Date | null) {
     if (!date) return "Never";
@@ -24,33 +29,21 @@
     }
   }
 
-  async function handleClearAndRefreshRides() {
-    if (
-      confirm(
-        "Are you sure you want to clear all ride data and fetch the latest from the API? This will replace all cached ride data.",
-      )
-    ) {
-      try {
-        await rides.clearAndRefreshRides();
-        alert("Ride data has been refreshed successfully!");
-      } catch (e) {
-        alert(`Failed to refresh ride data: ${e}`);
-      }
+  async function refreshRideData() {
+    try {
+      await rides.clearAndRefreshRides();
+      toast.success("Ride data refreshed");
+    } catch (e) {
+      toast.error(`Failed to refresh ride data: ${e}`);
     }
   }
 
-  async function handleClearSavedRides() {
-    if (
-      confirm(
-        "Are you sure you want to clear all saved rides? This action cannot be undone.",
-      )
-    ) {
-      try {
-        await savedRidesStore.clearAll();
-        alert("All saved rides have been cleared!");
-      } catch (e) {
-        alert(`Failed to clear saved rides: ${e}`);
-      }
+  async function clearSavedRides() {
+    try {
+      await savedRidesStore.clearAll();
+      toast.success("Saved rides cleared");
+    } catch (e) {
+      toast.error(`Failed to clear saved rides: ${e}`);
     }
   }
 </script>
@@ -109,7 +102,7 @@
           variant="ghost"
           class="w-full justify-start"
           disabled={false}
-          onclick={handleClearAndRefreshRides}
+          onclick={() => (refreshDialogOpen = true)}
         >
           Get latest ride data
         </Button>
@@ -122,9 +115,26 @@
           variant="ghost"
           class="w-full justify-start"
           disabled={false}
-          onclick={handleClearSavedRides}>Clear saved rides</Button
+          onclick={() => (clearSavedDialogOpen = true)}>Clear saved rides</Button
         >
       </Card.Title>
     </Card.Header>
   </Card.Root>
 </div>
+
+<ConfirmActionDialog
+  bind:open={refreshDialogOpen}
+  title="Refresh ride data?"
+  description="This clears cached ride data and fetches the latest rides from the API."
+  confirmLabel="Refresh"
+  onConfirm={refreshRideData}
+/>
+
+<ConfirmActionDialog
+  bind:open={clearSavedDialogOpen}
+  title="Clear saved rides?"
+  description="This removes every saved ride from this device. This action cannot be undone."
+  confirmLabel="Clear"
+  destructive
+  onConfirm={clearSavedRides}
+/>

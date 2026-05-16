@@ -6,6 +6,31 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.6.0",
+      date: "May 16, 2026",
+      changes: {
+        Added: [
+          "Install prompt banner with platform-aware install guidance behind a feature flag.",
+          "Contact page for bug reports, questions, and feature requests.",
+          "Last primary view persistence so the app reopens to Map, List, Saved, or Settings.",
+          "In-app confirmation dialogs for data refresh and clearing saved rides.",
+        ],
+        Fixed: [
+          "Saved rides now store plain ride data in IndexedDB to avoid DataCloneError failures.",
+          "Manual ride data refresh now deduplicates rides returned by overlapping API responses.",
+          "Saved rides database migration now backfills the date index for older local installs.",
+          "Local development error logging no longer sends blocked CORS requests to production.",
+        ],
+        Changed: [
+          "Ride title labels were removed from the map to reduce visual clutter.",
+          "Recenter button now resets map orientation and highlights when the map drifts.",
+          "Bottom navigation now highlights the active view in yellow.",
+          "Top bar title sizes are now consistent across the main PWA views.",
+          "Alert feedback was replaced with toast notifications.",
+        ],
+      },
+    },
+    {
       version: "1.5.0",
       date: "January 18, 2026",
       changes: {

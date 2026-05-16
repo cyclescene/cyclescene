@@ -1,6 +1,7 @@
 <script lang="ts">
   import Button from "$lib/components/ui/button/button.svelte";
   import {
+    activeView,
     navigateTo,
     VIEW_LIST,
     VIEW_MAP,
@@ -47,7 +48,9 @@
     <Button
       disabled={false}
       variant="ghost"
-      class="grow h-full rounded-none flex flex-col justify-center items-center"
+      class={`grow h-full rounded-none flex flex-col justify-center items-center ${
+        $activeView === view.view ? "text-yellow-400" : "text-muted-foreground"
+      }`}
       onclick={() => onChangeView(view.view)}
     >
       <Component style="height: 20px; width: 20px;" />

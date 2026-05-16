@@ -26,7 +26,40 @@
   let iconLoaded = $state(false);
   let groupMarkersLoaded = $state(false);
   let groupMarkers: Record<string, string> = $state({});
+  let recenterHighlighted = $state(false);
+  let fittedCenter:
+    | {
+        lng: number;
+        lat: number;
+        zoom: number;
+      }
+    | null = $state(null);
   let source = $derived(TILE_URLS[mode.current as keyof typeof TILE_URLS]);
+
+  function rememberFittedCamera() {
+    if (!mapInstance) return;
+
+    const center = mapInstance.getCenter();
+    fittedCenter = {
+      lng: center.lng,
+      lat: center.lat,
+      zoom: mapInstance.getZoom(),
+    };
+    recenterHighlighted = false;
+  }
+
+  function updateRecenterHighlight() {
+    if (!mapInstance || !fittedCenter) return;
+
+    const center = mapInstance.getCenter();
+    const drift = Math.hypot(center.lng - fittedCenter.lng, center.lat - fittedCenter.lat);
+    const zoomDrift = Math.abs(mapInstance.getZoom() - fittedCenter.zoom);
+    const bearingDrift = Math.abs(mapInstance.getBearing());
+    const pitchDrift = Math.abs(mapInstance.getPitch());
+
+    recenterHighlighted =
+      drift > 0.01 || zoomDrift > 1.25 || bearingDrift > 5 || pitchDrift > 5;
+  }
 
   function navigateToRide(ride: RideData) {
     currentRideStore.setRide(ride);
@@ -67,6 +100,21 @@
       return;
     }
     mapStore.fitMap(mapInstance);
+    window.setTimeout(rememberFittedCamera, 900);
+  });
+
+  $effect(() => {
+    if (!mapInstance) return;
+
+    mapInstance.on("moveend", updateRecenterHighlight);
+    mapInstance.on("rotateend", updateRecenterHighlight);
+    mapInstance.on("pitchend", updateRecenterHighlight);
+
+    return () => {
+      mapInstance?.off("moveend", updateRecenterHighlight);
+      mapInstance?.off("rotateend", updateRecenterHighlight);
+      mapInstance?.off("pitchend", updateRecenterHighlight);
+    };
   });
 
   $effect(() => {
@@ -145,7 +193,11 @@
     {/if}
 
     {#if mapInstance}
-      <RecenterButton map={mapInstance} />
+      <RecenterButton
+        map={mapInstance}
+        highlighted={recenterHighlighted}
+        onRecentered={rememberFittedCamera}
+      />
     {/if}
 
     <RidesNotShown />

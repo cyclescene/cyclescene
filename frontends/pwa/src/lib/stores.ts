@@ -5,7 +5,7 @@ import { addSavedRide, deleteSavedRide, getAllSavedRides, getRidesfromDB, savedR
 import { today, getLocalTimeZone, DateFormatter } from "@internationalized/date";
 import { writable, derived, get } from "svelte/store";
 import { SvelteMap } from "svelte/reactivity";
-import { STARTING_LAT, STARTING_LNG } from "./config";
+import { ENABLE_INSTALL_PROMPT_V2, STARTING_LAT, STARTING_LNG } from "./config";
 import { type ValidatedRide, type RideData } from "./types";
 import type * as GeoJSON from "geojson";
 import { CITY_CODE } from "./config";
@@ -15,33 +15,184 @@ import { errorLogger } from "./errorLogger";
 const FALLBACK_LAT = STARTING_LAT
 const FALLBACK_LNG = STARTING_LNG
 
-// Install prompt store
-export const installPromptEvent = writable<Event | null>(null);
+const INSTALL_MESSAGE_DISMISSED_KEY = "install-message-dismissed";
+const INSTALL_MESSAGE_DISMISSED_AT_KEY = "install-message-dismissed-at";
+const INSTALL_MESSAGE_DISMISS_COOLDOWN = 7 * 24 * 60 * 60 * 1000;
 
-// Check if app is installable (not already installed)
-export const isAppInstallable = derived(installPromptEvent, ($installPromptEvent) => {
-  // If we're in browser (not client-side yet), return false
-  if (typeof window === 'undefined') {
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice?: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+};
+
+export type InstallPlatform = "ios" | "android" | "desktop" | "installed" | "unsupported";
+
+export interface InstallInfo {
+  platform: InstallPlatform;
+  isInstalled: boolean;
+  canUseNativePrompt: boolean;
+  shouldShowInstallEntry: boolean;
+  title: string;
+  message: string;
+  primaryActionLabel: string;
+}
+
+function getNavigatorPlatform() {
+  return (
+    (navigator as Navigator & { userAgentData?: { platform?: string } }).userAgentData?.platform ||
+    navigator.platform ||
+    ""
+  ).toLowerCase();
+}
+
+function isIOSBrowser(userAgent: string) {
+  const platform = getNavigatorPlatform();
+  const isKnownChromiumShell = /chrome|chromium|crios|edg|opr|helium/.test(userAgent);
+  const hasNonApplePlatform = /android|chrome os|chromium os|linux|win/.test(platform);
+  const hasIOSUserAgent = /iphone|ipad|ipod/.test(userAgent) && !/helium/.test(userAgent);
+  const hasIPadDesktopModeSignals =
+    platform === "macintel" &&
+    navigator.maxTouchPoints > 1 &&
+    !isKnownChromiumShell;
+
+  if (hasNonApplePlatform) {
     return false;
   }
 
-  // Check if already installed (iOS/Safari standalone mode)
-  const isStandalone = (window.navigator as any).standalone === true;
-  if (isStandalone) {
-    return false; // App is already installed
+  return hasIOSUserAgent || hasIPadDesktopModeSignals;
+}
+
+// Install prompt store
+export const installPromptEvent = writable<BeforeInstallPromptEvent | null>(null);
+export const installMessageDismissed = writable(
+  isInstallMessageDismissed()
+);
+
+function isInstallMessageDismissed() {
+  if (typeof window === "undefined") {
+    return false;
   }
 
-  // Check if there's a beforeinstallprompt event (Chromium browsers)
-  if ($installPromptEvent) {
-    return true; // Can install via native prompt
+  const dismissedAt = Number(localStorage.getItem(INSTALL_MESSAGE_DISMISSED_AT_KEY) || "0");
+
+  if (dismissedAt > 0) {
+    return Date.now() - dismissedAt < INSTALL_MESSAGE_DISMISS_COOLDOWN;
   }
 
-  // For iOS/Safari not in standalone mode, show install instructions
+  if (localStorage.getItem(INSTALL_MESSAGE_DISMISSED_KEY) === "true") {
+    localStorage.removeItem(INSTALL_MESSAGE_DISMISSED_KEY);
+  }
+
+  return false;
+}
+
+function detectInstallInfo(promptEvent: BeforeInstallPromptEvent | null): InstallInfo {
+  if (typeof window === "undefined") {
+    return {
+      platform: "unsupported",
+      isInstalled: false,
+      canUseNativePrompt: false,
+      shouldShowInstallEntry: false,
+      title: "Install Cycle Scene",
+      message: "Add Cycle Scene to your home screen for quick access.",
+      primaryActionLabel: "Install",
+    };
+  }
+
   const userAgent = navigator.userAgent.toLowerCase();
-  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  const isStandalone =
+    (window.navigator as any).standalone === true ||
+    window.matchMedia("(display-mode: standalone)").matches;
+  const isIOS = isIOSBrowser(userAgent);
+  const isAndroid = /android/.test(userAgent);
+  const isDesktop = !isIOS && !isAndroid;
 
-  return isIOS; // Show install button for iOS users
-});
+  if (isStandalone) {
+    return {
+      platform: "installed",
+      isInstalled: true,
+      canUseNativePrompt: false,
+      shouldShowInstallEntry: false,
+      title: "Cycle Scene is installed",
+      message: "Open it from your home screen or app launcher.",
+      primaryActionLabel: "Installed",
+    };
+  }
+
+  if (promptEvent) {
+    return {
+      platform: isAndroid ? "android" : "desktop",
+      isInstalled: false,
+      canUseNativePrompt: true,
+      shouldShowInstallEntry: true,
+      title: "Install Cycle Scene",
+      message: "Add Cycle Scene to your device for faster access and offline ride info.",
+      primaryActionLabel: "Install",
+    };
+  }
+
+  if (isIOS) {
+    return {
+      platform: "ios",
+      isInstalled: false,
+      canUseNativePrompt: false,
+      shouldShowInstallEntry: true,
+      title: "Add Cycle Scene to Home Screen",
+      message: "Use your browser share menu to add Cycle Scene as an app.",
+      primaryActionLabel: "Show steps",
+    };
+  }
+
+  if (isAndroid || isDesktop) {
+    return {
+      platform: isAndroid ? "android" : "desktop",
+      isInstalled: false,
+      canUseNativePrompt: false,
+      shouldShowInstallEntry: ENABLE_INSTALL_PROMPT_V2,
+      title: "Install Cycle Scene",
+      message: "Use your browser menu to install Cycle Scene when the install button is not available.",
+      primaryActionLabel: "Show steps",
+    };
+  }
+
+  return {
+    platform: "unsupported",
+    isInstalled: false,
+    canUseNativePrompt: false,
+    shouldShowInstallEntry: ENABLE_INSTALL_PROMPT_V2,
+    title: "Install Cycle Scene",
+    message: "Add Cycle Scene from your browser menu if your browser supports web apps.",
+    primaryActionLabel: "Show steps",
+  };
+}
+
+export const installInfo = derived(installPromptEvent, detectInstallInfo);
+
+export async function promptInstallApp() {
+  const event = get(installPromptEvent);
+
+  if (!event) {
+    return false;
+  }
+
+  await event.prompt();
+  installPromptEvent.set(null);
+  return true;
+}
+
+export function dismissInstallMessage() {
+  installMessageDismissed.set(true);
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(INSTALL_MESSAGE_DISMISSED_AT_KEY, Date.now().toString());
+    localStorage.removeItem(INSTALL_MESSAGE_DISMISSED_KEY);
+  }
+}
+
+// Check if app is installable (not already installed)
+export const isAppInstallable = derived(
+  installInfo,
+  ($installInfo) => $installInfo.shouldShowInstallEntry
+);
 
 // views
 export const VIEW_MAP = 'map'
@@ -51,6 +202,18 @@ export const VIEW_SAVED = 'saved'
 export const VIEW_SETTINGS = 'settings'
 export const VIEW_OTHER_RIDES = 'otherRides'
 export const VIEW_DATE_PICKER = 'datePicker'
+
+const LAST_PRIMARY_VIEW_KEY = "last-primary-view"
+const PRIMARY_VIEWS = [VIEW_MAP, VIEW_LIST, VIEW_SAVED, VIEW_SETTINGS]
+
+function getInitialPrimaryView() {
+  if (typeof window === "undefined") {
+    return VIEW_MAP
+  }
+
+  const storedView = localStorage.getItem(LAST_PRIMARY_VIEW_KEY)
+  return PRIMARY_VIEWS.includes(storedView || "") ? storedView as string : VIEW_MAP
+}
 
 // setting sub views
 export const SUB_VIEW_APPEARANCE = 'appearance'
@@ -176,8 +339,12 @@ function createRidesStore() {
     error: null
   })
 
+  function uniqueRidesById(rides: RideData[]) {
+    return Array.from(new globalThis.Map(rides.map((ride) => [ride.id, ride])).values())
+  }
 
   function updateStoreAndDB(freshRides: RideData[]) {
+    freshRides = uniqueRidesById(freshRides)
     saveRidesToDB(freshRides).then(() => {
       getRidesfromDB()
         .then((rides) => (set({ loading: false, rideData: rides, loadingStage: "", error: null })))
@@ -227,7 +394,7 @@ function createRidesStore() {
             const upcomingRides = await getUpcomingRides()
             const pastRides = await getPastRides()
 
-            const freshRides = [...upcomingRides, ...pastRides]
+            const freshRides = uniqueRidesById([...upcomingRides, ...pastRides])
 
             update(store => ({ ...store, loading: true, loadingStage: "Saving rides to cache..." }))
             await saveRidesToDB(freshRides)
@@ -269,7 +436,7 @@ function createRidesStore() {
         // Fetch fresh data from API
         const upcomingRides = await getUpcomingRides()
         const pastRides = await getPastRides()
-        const freshRides = [...upcomingRides, ...pastRides]
+        const freshRides = uniqueRidesById([...upcomingRides, ...pastRides])
         // Save to IndexedDB
         await saveRidesToDB(freshRides)
         // Update the store
@@ -324,6 +491,7 @@ function createSavedRideStore() {
           additionalData: { rideId: ride.id }
         })
         update((state) => ({ ...state, loading: false, error: "Could not save ride" }))
+        throw e
       }
     },
     deleteRide: async (rideID: string) => {
@@ -338,6 +506,7 @@ function createSavedRideStore() {
           additionalData: { rideId: rideID }
         })
         update((state) => ({ ...state, loading: false, error: "Could not delete ride" }))
+        throw e
       }
 
     },
@@ -507,12 +676,19 @@ export const savedRidesForSelectedDay = derived(
 
 // NAVIGATION STORE
 
-export const viewStack = writable<string[]>([VIEW_MAP])
-export const activeView = writable<string>(VIEW_MAP)
+const initialPrimaryView = getInitialPrimaryView()
+
+export const viewStack = writable<string[]>([initialPrimaryView])
+export const activeView = writable<string>(initialPrimaryView)
 
 viewStack.subscribe(stack => {
   if (stack.length > 0) {
-    activeView.set(stack[stack.length - 1])
+    const nextActiveView = stack[stack.length - 1]
+    activeView.set(nextActiveView)
+
+    if (typeof window !== "undefined" && PRIMARY_VIEWS.includes(nextActiveView)) {
+      localStorage.setItem(LAST_PRIMARY_VIEW_KEY, nextActiveView)
+    }
   } else {
     activeView.set(VIEW_MAP)
     viewStack.set([VIEW_MAP])
@@ -863,8 +1039,10 @@ export const SINGLE_RIDE_ZOOM = 16
 function createMapStore() {
   const { subscribe, update } = rawMapStore
 
-  const fitMaptoRides = (map: Map, rides: ValidatedRide[]) => {
+  const fitMaptoRides = (map: Map, rides: ValidatedRide[], resetOrientation = false) => {
     if (!map || !rides) return;
+
+    const orientation = resetOrientation ? { bearing: 0, pitch: 0 } : {}
 
     if (rides.length === 0) {
       map.flyTo({
@@ -872,6 +1050,7 @@ function createMapStore() {
         zoom: STARTING_ZOOM,
         essential: true,
         duration: 1000,
+        ...orientation,
       });
       return;
     }
@@ -882,6 +1061,7 @@ function createMapStore() {
         zoom: SINGLE_RIDE_ZOOM,
         essential: true,
         duration: 1000,
+        ...orientation,
       });
 
       return;
@@ -889,7 +1069,7 @@ function createMapStore() {
 
     const bounds = new LngLatBounds();
     rides.forEach((ride) => bounds.extend(ride));
-    map.fitBounds(bounds, { padding: 100, duration: 800 });
+    map.fitBounds(bounds, { padding: 100, duration: 800, ...orientation });
   }
 
   return {
@@ -909,15 +1089,15 @@ function createMapStore() {
     getRideById: (rideId: string) => {
       return get(todaysRides).filter(ride => ride.id === rideId)[0]
     },
-    fitMap: (mapInstance: Map) => {
+    fitMap: (mapInstance: Map, resetOrientation = false) => {
       const currentValidCoords = get(validRides)
 
       if (currentValidCoords.length === 0) {
-        fitMaptoRides(mapInstance, currentValidCoords)
+        fitMaptoRides(mapInstance, currentValidCoords, resetOrientation)
       }
       setTimeout(
         () => {
-          fitMaptoRides(mapInstance, currentValidCoords)
+          fitMaptoRides(mapInstance, currentValidCoords, resetOrientation)
         }, 50
       )
     },

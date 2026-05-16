@@ -4,23 +4,36 @@
   import type { Map } from "maplibre-gl";
   import ZoomOutIcon from "~icons/material-symbols/zoom-out-map-rounded";
 
-  const { map }: { map: Map } = $props();
+  const {
+    map,
+    highlighted = false,
+    onRecentered,
+  }: {
+    map: Map;
+    highlighted?: boolean;
+    onRecentered?: () => void;
+  } = $props();
 
   function handleRecenter() {
     if (map) {
       currentRideStore.clearRide();
       mapStore.showCurrentRide(false);
-      mapStore.fitMap(map);
+      mapStore.fitMap(map, true);
+      window.setTimeout(() => onRecentered?.(), 1100);
     }
   }
 </script>
 
 <div
-  class="absolute top-5 right-5 z-[1000] p-3 bg-red-50 h-5 w-5 flex items-center justify-center"
+  class="absolute top-5 right-5 z-[1000] flex items-center justify-center"
 >
   <Button
     disabled={false}
-    class={`text-secondary-foreground bg-background h-10 w-10`}
+    class={`h-10 w-10 shadow-md transition-all ${
+      highlighted
+        ? "bg-yellow-400 text-black ring-4 ring-yellow-400/30 scale-110"
+        : "bg-background text-secondary-foreground"
+    }`}
     variant="primary"
     onclick={handleRecenter}
   >

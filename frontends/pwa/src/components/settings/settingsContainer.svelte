@@ -6,8 +6,8 @@
   import { CITY_CODE } from "$lib/config";
   import {
     navigateTo,
-    installPromptEvent,
     isAppInstallable,
+    promptInstallApp,
     SUB_VIEW_ABOUT,
     SUB_VIEW_ADULT_ONLY_RIDES,
     SUB_VIEW_APPEARANCE,
@@ -20,6 +20,7 @@
     SUB_VIEW_PRIVACY_POLICY,
     SUB_VIEW_TERMS_OF_USE,
   } from "$lib/stores";
+  import { toast } from "svelte-sonner";
   import IconChevronRight from "~icons/bxs/chevron-right";
 
   async function handleHostRide() {
@@ -46,7 +47,7 @@
       window.location.href = `${import.meta.env.VITE_FORM_BASE_URL}?token=${token}&city=${CITY_CODE}`;
     } catch (err) {
       console.error("Error getting form access: ", err);
-      alert("Unable to access form");
+      toast.error("Unable to access form");
     }
   }
   async function handleRegisterGroup() {
@@ -65,20 +66,17 @@
       window.location.href = `${import.meta.env.VITE_FORM_BASE_URL}/group?token=${token}&city=${CITY_CODE}`;
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Unable to access group registration");
     }
   }
 
   function handleInstall() {
-    const event = $installPromptEvent;
+    promptInstallApp().then((prompted) => {
+      if (prompted) return;
 
-    if (event) {
-      // Chromium browsers: Show native install prompt immediately
-      event.prompt();
-      installPromptEvent.set(null);
-    } else {
       // iOS/other browsers: Navigate to install instructions view
       navigateTo(SUB_VIEW_INSTALL);
-    }
+    });
   }
 </script>
 

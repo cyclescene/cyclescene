@@ -3,8 +3,10 @@
   import "./app.css";
   import { errorLogger } from "./lib/errorLogger";
   import DatePicker from "./components/datePicker.svelte";
+  import InstallPromptBanner from "./components/installPromptBanner.svelte";
   import NavigationBar from "./components/navigationBar.svelte";
   import RideDetailsTopBar from "./components/ride/rideDetailsTopBar.svelte";
+  import { Toaster } from "./lib/components/ui/sonner";
 
   import {
     activeView,
@@ -21,7 +23,7 @@
     VIEW_RIDE_DETAILS,
     VIEW_SAVED,
     VIEW_SETTINGS,
-    // SUB_VIEW_CONTACT,
+    SUB_VIEW_CONTACT,
     SUB_VIEW_COVID_SAFETY_RIDES,
     SUB_VIEW_DATA,
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
@@ -50,6 +52,7 @@
   import SubAboutView from "./views/sub/subAboutView.svelte";
   import SubAppearanceView from "./views/sub/subAppearanceView.svelte";
   import SubChangelogView from "./views/sub/subChangelogView.svelte";
+  import SubContactView from "./views/sub/subContactView.svelte";
   import SubDataView from "./views/sub/subDataView.svelte";
   import SubPrivacyPolicyView from "./views/sub/subPrivacyPolicyView.svelte";
   import SubRideListView from "./views/sub/subRideListView.svelte";
@@ -154,6 +157,7 @@
     [SUB_VIEW_COVID_SAFETY_RIDES]: SubRideListView,
     [SUB_VIEW_ABOUT]: SubAboutView,
     [SUB_VIEW_CHANGE_LOG]: SubChangelogView,
+    [SUB_VIEW_CONTACT]: SubContactView,
     [SUB_VIEW_DATA]: SubDataView,
     [SUB_VIEW_INSTALL]: SubInstallView,
   };
@@ -221,6 +225,8 @@
   <footer class="shrink">
     <NavigationBar />
   </footer>
+  <Toaster position="top-center" duration={1600} visibleToasts={1} />
+  <InstallPromptBanner />
 </main>
 
 <style>
