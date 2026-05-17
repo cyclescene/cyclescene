@@ -286,10 +286,8 @@
   </div>
 
   <div class="flex justify-center mt-8">
-    <Button variant="outline" class="gap-2" asChild>
-      <a href={backUrl}>
-        <span>← Back to CycleScene</span>
-      </a>
+    <Button variant="outline" class="gap-2" href={backUrl}>
+      <span>← Back to CycleScene</span>
     </Button>
   </div>
   </div>

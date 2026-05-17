@@ -620,12 +620,13 @@
       </div>
     </div>
 
-    {#if !isLinkedEvent}
-      <!-- Group Association -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    <!-- Group Association -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
         <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Association</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Link this ride to a cycling group</p>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          Link this ride to a cycling group
+        </p>
       </div>
       <div class="px-6 py-6">
         <GroupSelector
@@ -637,8 +638,9 @@
           error={Array.isArray($errors.group_code) ? $errors.group_code[0] : typeof $errors.group_code === 'object' && $errors.group_code?._errors ? $errors.group_code._errors[0] : typeof $errors.group_code === 'string' ? $errors.group_code : undefined}
         />
       </div>
-      </div>
+    </div>
 
+    {#if !isLinkedEvent}
       <!-- Additional Details -->
       <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">

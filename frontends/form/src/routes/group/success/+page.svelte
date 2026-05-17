@@ -145,11 +145,9 @@
               <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
                 You can use this link to make changes:
               </p>
-              <Button size="sm" variant="outline" class="gap-2 hover:bg-slate-100 dark:hover:bg-slate-800" asChild>
-                <a href={editUrl}>
-                  <Edit2 class="h-3.5 w-3.5" />
-                  <span>Go to Edit Page</span>
-                </a>
+              <Button size="sm" variant="outline" class="gap-2 hover:bg-slate-100 dark:hover:bg-slate-800" href={editUrl}>
+                <Edit2 class="h-3.5 w-3.5" />
+                <span>Go to Edit Page</span>
               </Button>
             </div>
           </div>
@@ -170,10 +168,8 @@
 
     <!-- Footer Actions -->
     <div class="flex justify-center pt-8">
-      <Button variant="outline" class="gap-2" asChild>
-        <a href={backUrl}>
-          <span>← Back to CycleScene</span>
-        </a>
+      <Button variant="outline" class="gap-2" href={backUrl}>
+        <span>← Back to CycleScene</span>
       </Button>
     </div>
 

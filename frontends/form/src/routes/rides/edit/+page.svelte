@@ -711,10 +711,13 @@
       <!-- Footer Actions -->
       {#if successMessage}
         <div class="flex justify-center pt-8">
-          <Button variant="outline" size="lg" class="gap-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-semibold shadow-sm hover:shadow" asChild>
-            <a href={getCycleSceneDomain(rideData?.event.city)} class="flex items-center gap-2.5">
-              <span>← Back to {rideData?.event.city?.toUpperCase() || "CycleScene"}</span>
-            </a>
+          <Button
+            variant="outline"
+            size="lg"
+            class="gap-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all font-semibold shadow-sm hover:shadow"
+            href={getCycleSceneDomain(rideData?.event.city)}
+          >
+            <span>← Back to {rideData?.event.city?.toUpperCase() || "CycleScene"}</span>
           </Button>
         </div>
       {/if}
