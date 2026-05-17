@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
   import { PUBLIC_API_URL } from "$env/static/public";
   import { validateGroupCode } from "$lib/api/client";
   import { Input } from "$lib/components/ui/input";
@@ -21,6 +21,18 @@
   let groupName = $state<string>("");
   let debounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
   let registeringGroup = $state(false);
+
+  onMount(() => {
+    const resetRegisteringState = () => {
+      registeringGroup = false;
+    };
+
+    window.addEventListener("pageshow", resetRegisteringState);
+
+    return () => {
+      window.removeEventListener("pageshow", resetRegisteringState);
+    };
+  });
 
   // Cleanup debounce timer on component destroy
   onDestroy(() => {
@@ -44,7 +56,15 @@
         body: JSON.stringify({ city }),
       });
 
+      if (!response.ok) {
+        throw new Error("Failed to create group registration token");
+      }
+
       const { token } = await response.json();
+
+      if (!token) {
+        throw new Error("Group registration token was missing");
+      }
 
       // Redirect to group registration form
       window.location.href = `/group?token=${token}&city=${city}`;
