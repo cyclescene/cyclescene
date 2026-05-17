@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Label } from "$lib/components/ui/label";
+  import Slider from "$lib/components/ui/slider/slider.svelte";
   import { Button } from "$lib/components/ui/button";
   import {
     Upload,
@@ -23,11 +24,11 @@
   let { cityCode, onUploadComplete, onUploadError }: Props = $props();
 
   const DEFAULT_MARKER_COLOR = "#3B82F6";
-  const IMAGE_SCALE = 1.0;
   const MASK_SCALE = 2.25;
 
   let imageFile = $state<File | null>(null);
   let imagePreview = $state<string | null>(null);
+  let imageScale = $state(1.0);
   let markerColor = $state(DEFAULT_MARKER_COLOR);
   let pendingMarkerColor = $state(DEFAULT_MARKER_COLOR);
   let colorChangeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -52,7 +53,7 @@
 
   // Re-render when marker color changes while an uploaded image is previewed.
   $effect(() => {
-    if (markerColor && imagePreview && canvasRef) {
+    if ((markerColor || imageScale) && imagePreview && canvasRef) {
       renderCanvas();
     }
   });
@@ -209,8 +210,8 @@
         drawHeight = diameter / aspect;
       }
 
-      drawWidth *= IMAGE_SCALE;
-      drawHeight *= IMAGE_SCALE;
+      drawWidth *= imageScale;
+      drawHeight *= imageScale;
 
       console.log("CustomMarkerBuilder: Drawing image", {
         centerX,
@@ -373,6 +374,7 @@
     imagePreview = null;
     imageUUID = null;
     generatedPreviewURL = null;
+    imageScale = 1.0;
     error = null;
   }
 
@@ -577,6 +579,16 @@
       {:else if !imageUUID}
         <!-- Editor Controls -->
         <div class="space-y-4">
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <Label>Image Size (Zoom)</Label>
+              <span class="text-xs text-muted-foreground"
+                >{Math.round(imageScale * 100)}%</span
+              >
+            </div>
+            <Slider bind:value={imageScale} min={0.5} max={3.0} step={0.1} />
+          </div>
+
           <div class="space-y-2">
             <Label for="markerColor" class="text-sm">Marker Color</Label>
             <div class="flex items-center gap-3">
