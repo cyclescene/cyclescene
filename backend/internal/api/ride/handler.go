@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/spacesedan/cyclescene/backend/internal/api/auth"
@@ -41,6 +42,7 @@ func (h *Handler) RegisterRoutes(r chi.Router) {
 		r.Patch("/admin/{id}/publish", h.PublishRide)
 
 		// Scraped rides from Shift2Bikes
+		r.Get("/search", h.SearchRides)
 		r.Get("/upcoming", h.GetUpcomingRides)
 		r.Get("/past", h.GetPastRides)
 		r.Get("/ics", h.GenerateICS)
@@ -277,6 +279,36 @@ func (h *Handler) UpdateOccurrence(w http.ResponseWriter, r *http.Request) {
 // SCRAPED RIDES FROM SHIFT2BIKES
 // ============================================================================
 
+func (h *Handler) SearchRides(w http.ResponseWriter, r *http.Request) {
+	cityCode := r.URL.Query().Get("city")
+	if cityCode == "" {
+		cityCode = "pdx"
+	}
+
+	searchQuery := strings.TrimSpace(r.URL.Query().Get("q"))
+	limit, err := parseRideSearchLimit(r.URL.Query().Get("limit"))
+	if err != nil {
+		http.Error(w, "Invalid limit", http.StatusBadRequest)
+		return
+	}
+
+	rides, err := h.service.SearchRides(cityCode, searchQuery, limit)
+	if err != nil {
+		slog.Error("Failed to search rides", "error", err, "city", cityCode)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Searched rides", "city", cityCode, "query", searchQuery, "count", len(rides))
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(rides); err != nil {
+		slog.Error("Failed to encode rides to JSON", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+}
+
 func (h *Handler) GetUpcomingRides(w http.ResponseWriter, r *http.Request) {
 	cityCode := r.URL.Query().Get("city")
 	if cityCode == "" {
@@ -298,6 +330,24 @@ func (h *Handler) GetUpcomingRides(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
+}
+
+func parseRideSearchLimit(rawLimit string) (int, error) {
+	if rawLimit == "" {
+		return 25, nil
+	}
+
+	limit, err := strconv.Atoi(rawLimit)
+	if err != nil {
+		return 0, err
+	}
+	if limit < 1 {
+		return 0, fmt.Errorf("limit must be positive")
+	}
+	if limit > 100 {
+		return 100, nil
+	}
+	return limit, nil
 }
 
 func (h *Handler) GetPastRides(w http.ResponseWriter, r *http.Request) {

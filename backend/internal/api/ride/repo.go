@@ -287,6 +287,149 @@ func (r *Repository) UpdateOccurrence(token string, occurrenceID int64, startTim
 }
 
 // Scraped rides from Shift2Bikes (PDX only) + Published user-submitted rides
+func (r *Repository) SearchRides(city, searchQuery string, limit int) ([]ScrapedRideFromDB, error) {
+	tzStr := getTimeZone(city)
+	tz, err := time.LoadLocation(tzStr)
+	if err != nil {
+		slog.Error("failed to load timezone", "error", err.Error())
+		return nil, err
+	}
+	todayStr := time.Now().In(tz).Format("2006-01-02")
+	pattern := "%" + escapeLikePattern(strings.ToLower(searchQuery)) + "%"
+
+	searchFilter := `
+		AND (
+			LOWER(COALESCE(title, '')) LIKE ? ESCAPE '\'
+			OR LOWER(COALESCE(venue, '')) LIKE ? ESCAPE '\'
+			OR LOWER(COALESCE(address, '')) LIKE ? ESCAPE '\'
+			OR LOWER(COALESCE(organizer, '')) LIKE ? ESCAPE '\'
+			OR LOWER(COALESCE(details, '')) LIKE ? ESCAPE '\'
+		)
+	`
+	patternArgs := []any{pattern, pattern, pattern, pattern, pattern}
+
+	var query string
+	var args []any
+
+	if city == "pdx" {
+		query = `
+			SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
+			       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
+			       route_id, endtime,
+			       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
+			       group_marker
+			FROM (
+				SELECT composite_event_id, title, lat, lng, address, audience, cancelled, date, starttime,
+				       safetyplan, details, venue, organizer, loopride, shareable, ridesource,
+				       route_id, endtime,
+				       email, eventduration, image, locdetails, locend, newsflash, timedetails, webname, weburl,
+				       NULL as group_marker
+				FROM shift2bikes_events
+				WHERE citycode = ? AND date >= ?
+				` + searchFilter + `
+				UNION ALL
+				SELECT
+					CAST(e.id AS TEXT) as composite_event_id,
+					e.title,
+					e.latitude as lat,
+					e.longitude as lng,
+					e.address,
+					e.audience,
+					eo.is_cancelled as cancelled,
+					eo.start_date as date,
+					eo.start_time as starttime,
+					0 as safetyplan,
+					e.description as details,
+					e.venue_name as venue,
+					e.organizer_name as organizer,
+					e.is_loop_ride as loopride,
+					'' as shareable,
+					COALESCE(e.source, 'user-submitted') as ridesource,
+					e.route_id,
+					'' as endtime,
+					e.organizer_email as email,
+					eo.event_duration_minutes as eventduration,
+					e.image_url as image,
+					e.location_details as locdetails,
+					e.ending_location as locend,
+					e.newsflash,
+					eo.event_time_details as timedetails,
+					e.web_name as webname,
+					e.web_url as weburl,
+					rg.marker as group_marker
+				FROM events e
+				JOIN event_occurrences eo ON e.id = eo.event_id
+				LEFT JOIN ride_groups rg ON e.group_code = rg.code
+				WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+				AND (
+					LOWER(COALESCE(e.title, '')) LIKE ? ESCAPE '\'
+					OR LOWER(COALESCE(e.venue_name, '')) LIKE ? ESCAPE '\'
+					OR LOWER(COALESCE(e.address, '')) LIKE ? ESCAPE '\'
+					OR LOWER(COALESCE(e.organizer_name, '')) LIKE ? ESCAPE '\'
+					OR LOWER(COALESCE(e.description, '')) LIKE ? ESCAPE '\'
+				)
+			)
+			ORDER BY date ASC, starttime ASC
+			LIMIT ?
+		`
+		args = append(args, city, todayStr)
+		args = append(args, patternArgs...)
+		args = append(args, city, todayStr)
+		args = append(args, patternArgs...)
+		args = append(args, limit)
+	} else {
+		query = `
+			SELECT
+				CAST(e.id AS TEXT) as composite_event_id,
+				e.title,
+				e.latitude as lat,
+				e.longitude as lng,
+				e.address,
+				e.audience,
+				eo.is_cancelled as cancelled,
+				eo.start_date as date,
+				eo.start_time as starttime,
+				0 as safetyplan,
+				e.description as details,
+				e.venue_name as venue,
+				e.organizer_name as organizer,
+				e.is_loop_ride as loopride,
+				'' as shareable,
+				COALESCE(e.source, 'user-submitted') as ridesource,
+				e.route_id,
+				'' as endtime,
+				e.organizer_email as email,
+				eo.event_duration_minutes as eventduration,
+				e.image_url as image,
+				e.location_details as locdetails,
+				e.ending_location as locend,
+				e.newsflash,
+				eo.event_time_details as timedetails,
+				e.web_name as webname,
+				e.web_url as weburl,
+				rg.marker as group_marker
+			FROM events e
+			JOIN event_occurrences eo ON e.id = eo.event_id
+			LEFT JOIN ride_groups rg ON e.group_code = rg.code
+			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+			AND (
+				LOWER(COALESCE(e.title, '')) LIKE ? ESCAPE '\'
+				OR LOWER(COALESCE(e.venue_name, '')) LIKE ? ESCAPE '\'
+				OR LOWER(COALESCE(e.address, '')) LIKE ? ESCAPE '\'
+				OR LOWER(COALESCE(e.organizer_name, '')) LIKE ? ESCAPE '\'
+				OR LOWER(COALESCE(e.description, '')) LIKE ? ESCAPE '\'
+			)
+			ORDER BY date ASC, starttime ASC
+			LIMIT ?
+		`
+		args = append(args, city, todayStr)
+		args = append(args, patternArgs...)
+		args = append(args, limit)
+	}
+
+	return r.scanScrapedRides(query, args...)
+}
+
 func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) {
 	tzStr := getTimeZone(city)
 	tz, err := time.LoadLocation(tzStr)
@@ -535,7 +678,7 @@ func (r *Repository) scanScrapedRides(query string, args ...any) ([]ScrapedRideF
 		}
 		rides = append(rides, ride)
 	}
-	return rides, nil
+	return rides, rows.Err()
 }
 
 func getTimeZone(city string) string {
@@ -561,6 +704,15 @@ func nilIfEmpty(s string) any {
 		return nil
 	}
 	return s
+}
+
+func escapeLikePattern(s string) string {
+	replacer := strings.NewReplacer(
+		`\`, `\\`,
+		`%`, `\%`,
+		`_`, `\_`,
+	)
+	return replacer.Replace(s)
 }
 
 // GetPendingRides returns all rides that are not yet published

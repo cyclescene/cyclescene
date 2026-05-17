@@ -40,3 +40,4 @@ export const STARTING_LNG = CITY_DATA['starting-coords'].lng
 export const FULL_CITY_CONFIG = CITY_DATA
 
 export const ENABLE_INSTALL_PROMPT_V2 = import.meta.env.VITE_ENABLE_INSTALL_PROMPT_V2 === "true"
+export const ENABLE_RIDE_SEARCH = import.meta.env.VITE_ENABLE_RIDE_SEARCH === "true"

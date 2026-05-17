@@ -29,6 +29,28 @@ export async function getPastRides(): Promise<RideData[]> {
   return apiFetch('/past')
 }
 
+export async function searchUpcomingRides(query: string, limit = 25): Promise<RideData[]> {
+  const params = new URLSearchParams({
+    city: CITY_CODE,
+    q: query,
+    limit: String(limit),
+  })
+  const url = `${API_BASE_URL}/v1/rides/search?${params.toString()}`
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      const errorBody = await response.text()
+      throw new Error(`API ride search failed with status ${response.status}: ${errorBody}`)
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error('Error during ride search', error)
+    throw error
+  }
+}
+
 export interface RouteGeoJSON {
   id: string;
   source: string;

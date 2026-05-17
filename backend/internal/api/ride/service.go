@@ -210,6 +210,30 @@ func (s *Service) processRoute(ctx context.Context, routeURL string, city string
 }
 
 // Scraped rides from Shift2Bikes
+func (s *Service) SearchRides(city, query string, limit int) ([]ScrapedRide, error) {
+	query = strings.TrimSpace(query)
+	if query == "" {
+		return []ScrapedRide{}, nil
+	}
+
+	storedRides, err := s.repo.SearchRides(city, query, limit)
+	if err != nil {
+		slog.Error("Failed to search rides", "error", err)
+		return nil, err
+	}
+
+	var rides []ScrapedRide
+	for i := range storedRides {
+		rides = append(rides, storedRides[i].ToScrapedRide())
+	}
+
+	if rides == nil {
+		rides = []ScrapedRide{}
+	}
+
+	return rides, nil
+}
+
 func (s *Service) GetUpcomingRides(city string) ([]ScrapedRide, error) {
 	storedRides, err := s.repo.GetUpcomingRides(city)
 	if err != nil {

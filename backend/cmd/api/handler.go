@@ -146,6 +146,7 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 			r.Patch("/edit/{token}/occurrences/{occurrenceId}", rideHandler.UpdateOccurrence)
 			r.Get("/admin/pending", rideHandler.GetPendingRides)
 			r.Patch("/admin/{id}/publish", rideHandler.PublishRide)
+			r.Get("/search", rideHandler.SearchRides)
 			r.Get("/upcoming", rideHandler.GetUpcomingRides)
 			r.Get("/past", rideHandler.GetPastRides)
 			r.Get("/ics", rideHandler.GenerateICS)

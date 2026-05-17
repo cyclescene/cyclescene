@@ -227,6 +227,7 @@ export const SUB_VIEW_TERMS_OF_USE = 'termsOfUse'
 export const SUB_VIEW_CHANGE_LOG = 'changeLog'
 export const SUB_VIEW_CONTACT = 'contact'
 export const SUB_VIEW_INSTALL = "install"
+export const SUB_VIEW_SEARCH_RESULTS = "searchResults"
 export const SUB_VIEWS = [
   SUB_VIEW_APPEARANCE,
   SUB_VIEW_DATA,
@@ -240,6 +241,8 @@ export const SUB_VIEWS = [
   SUB_VIEW_CONTACT,
   SUB_VIEW_INSTALL,
 ]
+
+export const rideSearchQuery = writable("")
 
 export const TILE_URLS = {
   dark: "https://tiles.cyclescene.cc/dark-tiles.json",

@@ -3,68 +3,61 @@ package scraper
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
-func buildShift2BikesURLUpcoming() (string, error) {
-	location, err := time.LoadLocation("America/Los_Angeles")
-	if err != nil {
-		return "", fmt.Errorf("failed to load timezone location: %w", err)
-	}
-
-	nowInPortland := time.Now().In(location)
-
-	year, month, day := nowInPortland.Date()
-	startDate := time.Date(year, month, day, 0, 0, 0, 0, location)
-
-	endDate := startDate.AddDate(0, 0, 99)
-
-	formattedStartDate := startDate.Format(time.RFC3339)
-	formattedEndDate := endDate.Format(time.RFC3339)
-
+func buildShift2BikesURL(startDate, endDate time.Time) (string, error) {
 	baseURL := "https://www.shift2bikes.org/api/events.php"
 
-	finalURL, _ := url.Parse(baseURL)
+	finalURL, err := url.Parse(baseURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse Shift2Bikes API URL: %w", err)
+	}
 
 	params := url.Values{}
-	params.Set("startdate", formattedStartDate)
-	params.Set("enddate", formattedEndDate)
+	params.Set("startdate", startDate.Format(time.DateOnly))
+	params.Set("enddate", endDate.Format(time.DateOnly))
 
 	finalURL.RawQuery = params.Encode()
 
 	return finalURL.String(), nil
 }
 
-func buildShift2BikesURLPast() (string, error) {
+func shift2BikesToday() (time.Time, error) {
 	location, err := time.LoadLocation("America/Los_Angeles")
 	if err != nil {
-		return "", fmt.Errorf("failed to load timezone location: %w", err)
+		return time.Time{}, fmt.Errorf("failed to load timezone location: %w", err)
 	}
 
 	nowInPortland := time.Now().In(location)
-
 	year, month, day := nowInPortland.Date()
-	startDate := time.Date(year, month, day, 0, 0, 0, 0, location)
 
-	endDate := startDate.AddDate(0, 0, -99)
+	return time.Date(year, month, day, 0, 0, 0, 0, location), nil
+}
 
-	formattedStartDate := startDate.Format(time.RFC3339)
-	formattedEndDate := endDate.Format(time.RFC3339)
+func buildShift2BikesURLUpcoming() (string, error) {
+	startDate, err := shift2BikesToday()
+	if err != nil {
+		return "", err
+	}
 
-	baseURL := "https://www.shift2bikes.org/api/events.php"
+	return buildShift2BikesURL(startDate, startDate.AddDate(0, 0, 99))
+}
 
-	finalURL, _ := url.Parse(baseURL)
+func buildShift2BikesURLPast() (string, error) {
+	endDate, err := shift2BikesToday()
+	if err != nil {
+		return "", err
+	}
 
-	params := url.Values{}
-	params.Set("startdate", formattedStartDate)
-	params.Set("enddate", formattedEndDate)
+	startDate := endDate.AddDate(0, 0, -99)
 
-	finalURL.RawQuery = params.Encode()
-
-	return finalURL.String(), nil
+	return buildShift2BikesURL(startDate, endDate)
 }
 
 func fetchAndDecode(url string, target any) error {
@@ -82,6 +75,11 @@ func fetchAndDecode(url string, target any) error {
 		return err
 	}
 	defer res.Body.Close()
+
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(res.Body, 1024))
+		return fmt.Errorf("shift2bikes API returned status %d: %s", res.StatusCode, strings.TrimSpace(string(body)))
+	}
 
 	decoder := json.NewDecoder(res.Body)
 	return decoder.Decode(&target)

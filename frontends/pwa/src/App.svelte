@@ -29,6 +29,7 @@
     SUB_VIEW_FAMILY_FRIENDLY_RIDES,
     SUB_VIEW_INSTALL,
     SUB_VIEW_PRIVACY_POLICY,
+    SUB_VIEW_SEARCH_RESULTS,
     SUB_VIEW_TERMS_OF_USE,
     SUB_VIEWS,
     SUB_VIEW_ABOUT,
@@ -41,6 +42,7 @@
   import { ModeWatcher } from "mode-watcher";
   import { SvelteSet } from "svelte/reactivity";
   import SavedTopBar from "./components/saved/savedTopbar.svelte";
+  import SearchResultsTopBar from "./components/search/searchResultsTopBar.svelte";
   import SettingsSubTopBar from "./components/settings/settingsSubTopBar.svelte";
   import SettingsTopBar from "./components/settings/settingsTopBar.svelte";
   import ListView from "./views/ListView.svelte";
@@ -56,6 +58,7 @@
   import SubDataView from "./views/sub/subDataView.svelte";
   import SubPrivacyPolicyView from "./views/sub/subPrivacyPolicyView.svelte";
   import SubRideListView from "./views/sub/subRideListView.svelte";
+  import SubSearchResultsView from "./views/sub/subSearchResultsView.svelte";
   import SubTermsOfServiceView from "./views/sub/subTermsOfServiceView.svelte";
   import SubInstallView from "./views/sub/subInstallView.svelte";
 
@@ -131,11 +134,13 @@
       ? DatePicker
       : $activeView === VIEW_OTHER_RIDES || $activeView === VIEW_RIDE_DETAILS
         ? RideDetailsTopBar
-        : $activeView === VIEW_SAVED
-          ? SavedTopBar
-          : $activeView === VIEW_SETTINGS
-            ? SettingsTopBar
-            : DatePicker,
+        : $activeView === SUB_VIEW_SEARCH_RESULTS
+          ? SearchResultsTopBar
+          : $activeView === VIEW_SAVED
+            ? SavedTopBar
+            : $activeView === VIEW_SETTINGS
+              ? SettingsTopBar
+              : DatePicker,
   );
 
   // Sub-view header for settings sub-views
@@ -160,6 +165,7 @@
     [SUB_VIEW_CONTACT]: SubContactView,
     [SUB_VIEW_DATA]: SubDataView,
     [SUB_VIEW_INSTALL]: SubInstallView,
+    [SUB_VIEW_SEARCH_RESULTS]: SubSearchResultsView,
   };
 
   // Derived reactive values

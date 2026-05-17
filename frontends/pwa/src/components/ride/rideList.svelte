@@ -4,6 +4,7 @@
   import Card from "../card.svelte";
 
   export let rides = [];
+  export let emptyMessage = "";
 </script>
 
 <div
@@ -15,6 +16,8 @@
         {#each rides as ride (ride.id)}
           <Card {ride} />
         {/each}
+      {:else if emptyMessage}
+        {emptyMessage}
       {:else if $activeView === VIEW_SAVED}
         no rides saved for today :(
       {:else}

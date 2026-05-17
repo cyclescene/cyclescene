@@ -105,7 +105,7 @@
 	// Get weekday names
 	const getWeekdays = () => {
 		try {
-			const date = new Date(2024, 0, 1); // Monday, Jan 1, 2024
+			const date = new Date(2024, 0, 7); // Sunday, Jan 7, 2024
 			const weekdays = [];
 			for (let i = 0; i < 7; i++) {
 				const formatter = new Intl.DateTimeFormat(locale, { weekday: weekdayFormat });
