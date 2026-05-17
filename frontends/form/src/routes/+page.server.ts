@@ -70,6 +70,8 @@ export const load: PageServerLoad = async ({ url, request }) => {
       city,
       title: '',
       description: '',
+      web_url: '',
+      web_name: '',
       venue_name: '',
       address: '',
       organizer_name: '',
@@ -150,4 +152,3 @@ export const actions = {
 
   }
 } satisfies Actions;
-

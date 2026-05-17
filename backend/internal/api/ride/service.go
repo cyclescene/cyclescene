@@ -1,26 +1,37 @@
 package ride
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"net/url"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/spacesedan/cyclescene/backend/internal/api/magiclink"
 	"github.com/spacesedan/cyclescene/backend/internal/routes"
 	"github.com/spacesedan/cyclescene/backend/internal/scraper"
+	"golang.org/x/oauth2/google"
 )
 
+const linkedRideDefaultDescription = "See link for full details."
+const shift2BikesSyncCooldown = 2 * time.Minute
+
 type Service struct {
-	repo            *Repository
-	magicLinkSvc    *magiclink.Service
-	editLinkBaseURL string
-	routeFetcher    *routes.RouteFetcher
-	routeRepository *routes.Repository
+	repo                       *Repository
+	magicLinkSvc               *magiclink.Service
+	editLinkBaseURL            string
+	routeFetcher               *routes.RouteFetcher
+	routeRepository            *routes.Repository
+	syncMu                     sync.Mutex
+	lastShift2BikesSyncTrigger time.Time
 }
 
 func NewService(repo *Repository) *Service {
@@ -42,6 +53,8 @@ func (s *Service) SetRouteServices(fetcher *routes.RouteFetcher, routeRepo *rout
 
 // User-submitted rides
 func (s *Service) SubmitRide(submission *Submission) (*SubmissionResponse, error) {
+	normalizeLinkedRideSubmission(submission)
+
 	// Generate edit token
 	editToken, err := generateSecureToken(32)
 	if err != nil {
@@ -126,6 +139,8 @@ func (s *Service) UpdateOccurrence(token string, occurrenceID int64, startTime s
 }
 
 func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionResponse, error) {
+	normalizeLinkedRideSubmission(submission)
+
 	// Geocode the address to get latitude and longitude
 	var lat, lng float64
 	if submission.Address != "" {
@@ -173,8 +188,112 @@ func (s *Service) UpdateRide(token string, submission *Submission) (*SubmissionR
 	}, nil
 }
 
+func normalizeLinkedRideSubmission(submission *Submission) {
+	submission.Title = strings.TrimSpace(submission.Title)
+	submission.Description = strings.TrimSpace(submission.Description)
+	submission.WebURL = strings.TrimSpace(submission.WebURL)
+	submission.WebName = strings.TrimSpace(submission.WebName)
+	submission.Source = strings.TrimSpace(submission.Source)
+
+	if submission.WebURL == "" {
+		return
+	}
+
+	if submission.Description == "" {
+		submission.Description = linkedRideDefaultDescription
+	}
+
+	if submission.WebName == "" {
+		submission.WebName = inferExternalEventLabel(submission.WebURL)
+	}
+
+	if submission.Source == "" {
+		submission.Source = "linked-event"
+	}
+}
+
+func inferExternalEventLabel(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return "Event link"
+	}
+
+	host := strings.TrimPrefix(strings.ToLower(parsedURL.Hostname()), "www.")
+	switch {
+	case strings.Contains(host, "strava.com") || strings.Contains(host, "strava.app.link"):
+		return "Strava"
+	case strings.Contains(host, "instagram.com"):
+		return "Instagram"
+	case strings.Contains(host, "facebook.com") || strings.Contains(host, "fb.me"):
+		return "Facebook"
+	case strings.Contains(host, "meetup.com"):
+		return "Meetup"
+	default:
+		return "Event link"
+	}
+}
+
 func (s *Service) UpdateEventDetails(token, description, audience, rideLength string) error {
 	return s.repo.UpdateEventDetails(token, description, audience, rideLength)
+}
+
+func (s *Service) TriggerShift2BikesSync(ctx context.Context) (AdminSyncResponse, int, error) {
+	s.syncMu.Lock()
+	defer s.syncMu.Unlock()
+
+	if !s.lastShift2BikesSyncTrigger.IsZero() && time.Since(s.lastShift2BikesSyncTrigger) < shift2BikesSyncCooldown {
+		return AdminSyncResponse{
+			Status:  "recently_triggered",
+			Message: "Shift2Bikes sync was triggered recently. Try again in a minute.",
+		}, http.StatusTooManyRequests, nil
+	}
+
+	projectID := os.Getenv("GCP_PROJECT")
+	if projectID == "" {
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+	}
+	if projectID == "" {
+		return AdminSyncResponse{}, http.StatusInternalServerError, fmt.Errorf("GCP project is not configured")
+	}
+
+	region := os.Getenv("SCRAPER_JOB_REGION")
+	if region == "" {
+		region = "us-west1"
+	}
+
+	jobName := os.Getenv("SCRAPER_JOB_NAME")
+	if jobName == "" {
+		jobName = "pdx-scraper"
+	}
+
+	client, err := google.DefaultClient(ctx, "https://www.googleapis.com/auth/cloud-platform")
+	if err != nil {
+		return AdminSyncResponse{}, http.StatusInternalServerError, fmt.Errorf("failed to create Google API client: %w", err)
+	}
+
+	runURL := fmt.Sprintf("https://run.googleapis.com/v2/projects/%s/locations/%s/jobs/%s:run", projectID, region, jobName)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, runURL, bytes.NewReader([]byte("{}")))
+	if err != nil {
+		return AdminSyncResponse{}, http.StatusInternalServerError, fmt.Errorf("failed to create scraper job request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		return AdminSyncResponse{}, http.StatusBadGateway, fmt.Errorf("failed to trigger scraper job: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(res.Body, 1024))
+		return AdminSyncResponse{}, http.StatusBadGateway, fmt.Errorf("scraper job trigger failed with status %d: %s", res.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	s.lastShift2BikesSyncTrigger = time.Now()
+	return AdminSyncResponse{
+		Status:  "started",
+		Message: "Shift2Bikes sync job started.",
+	}, http.StatusAccepted, nil
 }
 
 // processRoute fetches, converts, and deduplicates a route

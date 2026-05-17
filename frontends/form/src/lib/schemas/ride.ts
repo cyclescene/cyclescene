@@ -14,7 +14,7 @@ export const rideSubmissionSchema = z.object({
   // Core content
   title: z.string().min(3, 'Title must be at least 3 characters').max(200),
   tinytitle: z.string().max(50).optional(),
-  description: z.string().min(10, 'Description must be at least 10 characters'),
+  description: z.string().max(5000).optional(),
   image_url: z.union([z.httpUrl(), z.literal('')]).optional(),
   image_uuid: z.string().optional(),
   audience: z.enum(['G', 'F', 'A', 'E'], {
@@ -54,6 +54,26 @@ export const rideSubmissionSchema = z.object({
 
   // Occurrences
   occurrences: z.array(rideOccurrenceSchema).min(1, 'At least one date is required')
+}).superRefine((data, ctx) => {
+  const hasDescription = (data.description || '').trim().length > 0;
+  const hasExternalLink = (data.web_url || '').trim().length > 0;
+
+  if (!hasExternalLink && !hasDescription) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['description'],
+      message: 'Description is required'
+    });
+    return;
+  }
+
+  if (hasDescription && (data.description || '').trim().length < 10) {
+    ctx.addIssue({
+      code: 'custom',
+      path: ['description'],
+      message: 'Description must be at least 10 characters'
+    });
+  }
 });
 
 export type RideSubmission = z.infer<typeof rideSubmissionSchema>;
@@ -89,4 +109,3 @@ export const dateTypeOptions = [
   { value: 'R', label: 'Recurring - Repeats regularly' },
   { value: 'O', label: 'One-Off - Special event' }
 ] as const;
-

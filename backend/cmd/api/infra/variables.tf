@@ -149,3 +149,15 @@ variable "form_url" {
   type        = string
   default     = ""
 }
+
+variable "scraper_job_name" {
+  description = "Cloud Run job name for the Shift2Bikes scraper"
+  type        = string
+  default     = "pdx-scraper"
+}
+
+variable "scraper_job_region" {
+  description = "Cloud Run job region for the Shift2Bikes scraper"
+  type        = string
+  default     = "us-west1"
+}

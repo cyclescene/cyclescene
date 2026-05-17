@@ -20,7 +20,7 @@
   import * as Select from "$lib/components/ui/select";
   import * as Card from "$lib/components/ui/card";
   import { Separator } from "$lib/components/ui/separator";
-  import { CircleX, MapPin, Bike, AlertTriangle } from "lucide-svelte";
+  import { CircleX, Link, MapPin, AlertTriangle } from "lucide-svelte";
 
   interface Props {
     data: {
@@ -41,6 +41,52 @@
       $message = result.error.message;
     },
   });
+
+  let linkedEventDate = $state("");
+  let linkedEventTime = $state("");
+
+  let isLinkedEvent = $derived(Boolean(($form.web_url || "").trim()));
+
+  $effect(() => {
+    if (!isLinkedEvent) {
+      return;
+    }
+
+    $form.date_type = "S";
+    $form.is_loop_ride = false;
+    $form.audience = $form.audience || "G";
+
+    if (!$form.web_name) {
+      $form.web_name = getLinkLabel($form.web_url || "");
+    }
+
+    if (linkedEventDate && linkedEventTime) {
+      $form.occurrences = [
+        {
+          start_date: linkedEventDate,
+          start_time: `${linkedEventTime}:00`,
+          event_duration_minutes: 0,
+          event_time_details: "",
+          newsflash: "",
+        },
+      ];
+    } else {
+      $form.occurrences = [];
+    }
+  });
+
+  function getLinkLabel(url: string) {
+    try {
+      const hostname = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+      if (hostname.includes("strava.com") || hostname.includes("strava.app.link")) return "Strava";
+      if (hostname.includes("instagram.com")) return "Instagram";
+      if (hostname.includes("facebook.com") || hostname.includes("fb.me")) return "Facebook";
+      if (hostname.includes("meetup.com")) return "Meetup";
+    } catch {
+      return "";
+    }
+    return "Event link";
+  }
 </script>
 
 <style>
@@ -121,6 +167,38 @@
     <input type="hidden" name="image_uuid" bind:value={$form.image_uuid} />
     <input type="hidden" name="city" bind:value={$form.city} />
 
+    <!-- Linked Event Entry -->
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+        <div class="flex items-center gap-2">
+          <Link class="h-5 w-5 text-slate-500" />
+          <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Link an Existing Event</h2>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          Paste a Strava, Instagram, Facebook, Meetup, or event page link to use a simpler submission form.
+        </p>
+      </div>
+      <div class="px-6 py-6 space-y-2">
+        <Label for="linked_event_url" class="text-sm sm:text-base">External Event Link</Label>
+        <Input
+          id="linked_event_url"
+          type="url"
+          bind:value={$form.web_url}
+          placeholder="https://www.strava.com/..."
+          aria-invalid={!!$errors.web_url}
+          class={`text-base transition-colors ${$errors.web_url ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
+        />
+        {#if $errors.web_url}
+          <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.web_url}</p>
+        {/if}
+        {#if isLinkedEvent}
+          <p class="text-sm text-slate-600 dark:text-slate-400">
+            Linked event mode is on. Add the basics here; riders will use the link for full details.
+          </p>
+        {/if}
+      </div>
+    </div>
+
     <!-- Basic Information -->
     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
@@ -166,22 +244,28 @@
 
         <div class="space-y-2">
           <Label for="description" class="text-sm sm:text-base"
-            >Description *</Label
+            >Description {isLinkedEvent ? "(Optional)" : "*"}</Label
           >
           <Textarea
             id="description"
             bind:value={$form.description}
-            placeholder="Join us for a casual morning ride through the city. We'll stop at local coffee shops along the way..."
+            placeholder={isLinkedEvent ? "Optional extra context. If left blank, Cycle Scene will show See link for full details." : "Join us for a casual morning ride through the city. We'll stop at local coffee shops along the way..."}
             rows={5}
             aria-invalid={!!$errors.description}
             class={`text-base transition-colors ${$errors.description ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
+          {#if isLinkedEvent}
+            <p class="text-sm text-slate-500 dark:text-slate-400">
+              Optional for linked events. If left blank, Cycle Scene will show “See link for full details.”
+            </p>
+          {/if}
           {#if $errors.description}
             <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.description}</p>
           {/if}
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {#if !isLinkedEvent}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="audience" class="text-sm sm:text-base">Audience</Label>
             <Select.Root bind:value={$form.audience} type="single">
@@ -210,9 +294,9 @@
               class="text-base"
             />
           </div>
-        </div>
+          </div>
 
-        <div class="space-y-4">
+          <div class="space-y-4">
           <ImageUploader
             cityCode={data.city}
             entityType="ride"
@@ -246,7 +330,8 @@
               </p>
             {/if}
           </div>
-        </div>
+          </div>
+        {/if}
       </div>
     </div>
 
@@ -287,7 +372,8 @@
           {/if}
         </div>
 
-        <div class="space-y-2">
+        {#if !isLinkedEvent}
+          <div class="space-y-2">
           <Label for="location_details">Location Details (Optional)</Label>
           <Textarea
             id="location_details"
@@ -295,9 +381,9 @@
             placeholder="Meet on the west side near the fountain"
             rows={2}
           />
-        </div>
+          </div>
 
-        <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-2">
           <Checkbox
             id="is_loop_ride"
             checked={$form.is_loop_ride}
@@ -308,9 +394,9 @@
           <Label for="is_loop_ride" class="font-normal cursor-pointer">
             This is a loop ride (returns to start)
           </Label>
-        </div>
+          </div>
 
-        {#if !$form.is_loop_ride}
+          {#if !$form.is_loop_ride}
           <div class="space-y-2">
             <Label for="ending_location">Ending Location</Label>
             <Input
@@ -320,9 +406,9 @@
               placeholder="Waterfront Park"
             />
           </div>
-        {/if}
+          {/if}
 
-        <div class="space-y-2">
+          <div class="space-y-2">
           <Label for="area">Area/Neighborhood</Label>
           <Input
             id="area"
@@ -330,7 +416,8 @@
             bind:value={$form.area}
             placeholder="Downtown, Southeast, North Portland"
           />
-        </div>
+          </div>
+        {/if}
       </div>
     </div>
 
@@ -343,7 +430,35 @@
         </p>
       </div>
       <div class="px-6 py-6 space-y-4 sm:space-y-4">
-        <div class="space-y-2">
+        {#if isLinkedEvent}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="linked_event_date" class="text-sm sm:text-base">Date *</Label>
+              <Input
+                id="linked_event_date"
+                type="date"
+                bind:value={linkedEventDate}
+                class="text-base"
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="linked_event_time" class="text-sm sm:text-base">Start Time *</Label>
+              <Input
+                id="linked_event_time"
+                type="time"
+                bind:value={linkedEventTime}
+                class="text-base"
+              />
+            </div>
+          </div>
+          {#if $errors.occurrences}
+            <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1">
+              <CircleX class="h-3 w-3 flex-shrink-0" />
+              {Array.isArray($errors.occurrences) ? $errors.occurrences[0] : typeof $errors.occurrences === 'object' && $errors.occurrences?._errors ? $errors.occurrences._errors[0] : $errors.occurrences}
+            </p>
+          {/if}
+        {:else}
+          <div class="space-y-2">
           <Label class="text-sm sm:text-base">Date Type *</Label>
           <Select.Root bind:value={$form.date_type} type="single">
             <Select.Trigger id="date_type" class="text-base">
@@ -373,6 +488,7 @@
             }}
             error={Array.isArray($errors.occurrences) ? $errors.occurrences[0] : typeof $errors.occurrences === 'object' && $errors.occurrences?._errors ? $errors.occurrences._errors[0] : typeof $errors.occurrences === 'string' ? $errors.occurrences : undefined}
           />
+        {/if}
         {/if}
       </div>
     </div>
@@ -443,7 +559,8 @@
           </div>
         </div>
 
-        <div class="space-y-2">
+        {#if !isLinkedEvent}
+          <div class="space-y-2">
           <Label for="organizer_phone">Phone (Optional)</Label>
           <Input
             id="organizer_phone"
@@ -469,11 +586,11 @@
               </Label>
             </div>
           {/if}
-        </div>
+          </div>
 
-        <Separator />
+          <Separator />
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="web_url">Website URL (Optional)</Label>
             <Input
@@ -498,12 +615,14 @@
               placeholder="Our Cycling Club"
             />
           </div>
-        </div>
+          </div>
+        {/if}
       </div>
     </div>
 
-    <!-- Group Association -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+    {#if !isLinkedEvent}
+      <!-- Group Association -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
         <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Association</h2>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Link this ride to a cycling group</p>
@@ -518,10 +637,10 @@
           error={Array.isArray($errors.group_code) ? $errors.group_code[0] : typeof $errors.group_code === 'object' && $errors.group_code?._errors ? $errors.group_code._errors[0] : typeof $errors.group_code === 'string' ? $errors.group_code : undefined}
         />
       </div>
-    </div>
+      </div>
 
-    <!-- Additional Details -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+      <!-- Additional Details -->
+      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
       <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
         <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Additional Details</h2>
         <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -548,7 +667,8 @@
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    {/if}
 
     <!-- Submit Button -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">

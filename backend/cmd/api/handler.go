@@ -132,6 +132,8 @@ func NewRideAPIRouter(db *sql.DB, monitoringDB *sql.DB) http.Handler {
 		// sync logs handlers -- /sync-logs
 		synclogHandler.RegisterRoutes(r)
 
+		r.Post("/admin/sync/shift2bikes", rideHandler.TriggerShift2BikesSync)
+
 		// client error handler -- POST /client-errors only
 		r.Post("/client-errors", clientErrorHandler.LogError)
 

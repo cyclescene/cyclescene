@@ -72,6 +72,11 @@ type SubmissionResponse struct {
 	Message   string `json:"message,omitempty"`
 }
 
+type AdminSyncResponse struct {
+	Status  string `json:"status"`
+	Message string `json:"message"`
+}
+
 type EditResponse struct {
 	Event       Submission `json:"event"`
 	IsPublished bool       `json:"is_published"`

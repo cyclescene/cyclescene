@@ -1,7 +1,52 @@
 <script lang="ts">
   import * as Card from "$lib/components/ui/card";
   import { Button } from "$lib/components/ui/button";
-  import { ListOrdered, TrendingUp, MapPin } from "@lucide/svelte";
+  import { ListOrdered, TrendingUp, MapPin, RefreshCw } from "@lucide/svelte";
+
+  const API_URL = import.meta.env.PUBLIC_API_URL || "https://api.cyclescene.cc";
+
+  let triggeringSync = $state(false);
+  let syncMessage = $state("");
+  let syncError = $state("");
+
+  async function triggerShift2BikesSync() {
+    const adminToken = localStorage.getItem("adminToken") || "";
+    if (!adminToken) {
+      syncError = "Missing admin API key.";
+      return;
+    }
+
+    try {
+      triggeringSync = true;
+      syncMessage = "";
+      syncError = "";
+
+      const response = await fetch(`${API_URL}/v1/admin/sync/shift2bikes`, {
+        method: "POST",
+        headers: {
+          "X-Admin-Token": adminToken,
+        },
+      });
+
+      const text = await response.text();
+      let payload: { message?: string; status?: string } = {};
+      try {
+        payload = text ? JSON.parse(text) : {};
+      } catch {
+        payload = { message: text };
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.message || `Sync trigger failed with ${response.status}`);
+      }
+
+      syncMessage = payload.message || "Shift2Bikes sync job started.";
+    } catch (err) {
+      syncError = err instanceof Error ? err.message : "Failed to trigger Shift2Bikes sync.";
+    } finally {
+      triggeringSync = false;
+    }
+  }
 </script>
 
 <div class="container max-w-6xl mx-auto py-8 md:py-16 px-4">
@@ -80,6 +125,42 @@
             Portland, OR • Salt Lake City, UT
           </p>
         </div>
+      </Card.Content>
+    </Card.Root>
+  </div>
+
+  <div class="max-w-4xl mx-auto mt-6">
+    <Card.Root class="border-2">
+      <Card.Header>
+        <div
+          class="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-4"
+        >
+          <RefreshCw class="h-6 w-6 text-muted-foreground" />
+        </div>
+        <Card.Title class="text-2xl">Shift2Bikes Sync</Card.Title>
+        <Card.Description class="text-base">
+          Trigger the scraper now instead of waiting for the scheduled refresh.
+        </Card.Description>
+      </Card.Header>
+      <Card.Content class="space-y-4">
+        {#if syncMessage}
+          <div class="rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-700 dark:text-green-300">
+            {syncMessage}
+          </div>
+        {/if}
+        {#if syncError}
+          <div class="rounded-lg border border-destructive bg-destructive/10 p-3 text-sm text-destructive">
+            {syncError}
+          </div>
+        {/if}
+        <Button
+          onclick={triggerShift2BikesSync}
+          disabled={triggeringSync}
+          class="gap-2"
+        >
+          <RefreshCw class={`h-4 w-4 ${triggeringSync ? "animate-spin" : ""}`} />
+          {triggeringSync ? "Starting sync..." : "Refresh Shift2Bikes Now"}
+        </Button>
       </Card.Content>
     </Card.Root>
   </div>

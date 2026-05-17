@@ -39,6 +39,7 @@ module "api_service_account" {
     "roles/iam.serviceAccountTokenCreator",              # Required for signing URLs
     "roles/serviceusage.serviceUsageConsumer",           # Required to call Google APIs
     "roles/eventarc.publisher",                          # Required to publish events to Eventarc
+    "roles/run.developer",                               # Required to trigger scraper Cloud Run job
   ]
 }
 
@@ -121,6 +122,8 @@ module "api_service" {
       RESEND_API_KEY           = var.resend_api_key
       EDIT_LINK_BASE_URL       = var.edit_link_base_url
       FORM_URL                 = var.form_url
+      SCRAPER_JOB_NAME         = var.scraper_job_name
+      SCRAPER_JOB_REGION       = var.scraper_job_region
     }
   )
 

@@ -68,7 +68,7 @@ func (h *Handler) SubmitRide(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate required fields
-	if submission.Title == "" || submission.Description == "" || submission.City == "" {
+	if submission.Title == "" || (submission.Description == "" && submission.WebURL == "") || submission.City == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
@@ -158,7 +158,7 @@ func (h *Handler) UpdateRide(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate required fields (Phase 2, Milestone 2.3)
-	if submission.Title == "" || submission.Description == "" || submission.City == "" {
+	if submission.Title == "" || (submission.Description == "" && submission.WebURL == "") || submission.City == "" {
 		http.Error(w, "Missing required fields (title, description, city)", http.StatusBadRequest)
 		return
 	}
@@ -440,6 +440,25 @@ func (h *Handler) GetPendingRides(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(rides)
+}
+
+func (h *Handler) TriggerShift2BikesSync(w http.ResponseWriter, r *http.Request) {
+	if !h.validateAdminKey(w, r) {
+		return
+	}
+
+	response, statusCode, err := h.service.TriggerShift2BikesSync(r.Context())
+	if err != nil {
+		slog.Error("Failed to trigger Shift2Bikes sync", "error", err)
+		http.Error(w, "Failed to trigger Shift2Bikes sync", statusCode)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		slog.Error("Failed to encode sync trigger response", "error", err)
+	}
 }
 
 type PublishRequest struct {
