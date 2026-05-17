@@ -276,21 +276,21 @@
   }
 </style>
 
-<div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+<div class="min-h-screen bg-background">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
 
     <!-- Header -->
     <header class="mb-12">
-      <div class="inline-flex items-center gap-2.5 text-sm font-bold text-slate-500 dark:text-slate-400 mb-4">
+      <div class="inline-flex items-center gap-2.5 text-sm font-bold text-muted-foreground mb-4">
         <MapPin class="h-4 w-4" />
         <span class="uppercase tracking-widest">{rideData?.event.city || 'CycleScene'}</span>
       </div>
 
-      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 dark:text-slate-50 mb-5 leading-[1.1]">
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-card-foreground mb-5 leading-[1.1]">
         {rideData?.event.title}
       </h1>
 
-      <p class="text-lg text-slate-600 dark:text-slate-400 mb-8 max-w-2xl">
+      <p class="text-lg text-muted-foreground mb-8 max-w-2xl">
         Manage your ride details and upcoming occurrences
       </p>
 
@@ -332,12 +332,12 @@
     <div class="space-y-6">
 
       <!-- Ride Information Card -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all hover:shadow-md">
-        <div class="px-6 py-6 border-b-2 border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100/30 dark:from-slate-900/50 dark:to-slate-800/30">
+      <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden transition-all hover:shadow-md">
+        <div class="px-6 py-6 border-b-2 border-border bg-gradient-to-br from-slate-50 to-slate-100/30 dark:from-slate-900/50 dark:to-slate-800/30">
           <div class="flex items-center justify-between">
             <div>
-              <h2 class="text-2xl font-black text-slate-900 dark:text-slate-50 tracking-tight">Event Details</h2>
-              <p class="text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-medium">Core information for all occurrences</p>
+              <h2 class="text-2xl font-black text-card-foreground tracking-tight">Event Details</h2>
+              <p class="text-sm text-muted-foreground mt-1.5 font-medium">Core information for all occurrences</p>
             </div>
             {#if !isEditingEvent}
               <Button
@@ -372,7 +372,7 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-8 pl-10">
                 <div class="group">
                   <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2.5">Venue</h3>
-                  <p class="text-base text-slate-900 dark:text-slate-50 font-semibold">{rideData?.event.venue_name}</p>
+                  <p class="text-base text-card-foreground font-semibold">{rideData?.event.venue_name}</p>
                 </div>
                 <div class="group">
                   <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2.5">Address</h3>
@@ -380,13 +380,13 @@
                 </div>
                 <div class="group">
                   <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2.5">Audience</h3>
-                  <p class="text-base text-slate-900 dark:text-slate-50 font-medium">
+                  <p class="text-base text-card-foreground font-medium">
                     {audienceOptions.find(opt => opt.value === rideData?.event.audience)?.label || "Not specified"}
                   </p>
                 </div>
                 <div class="group">
                   <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2.5">Ride Length</h3>
-                  <p class="text-base text-slate-900 dark:text-slate-50 font-medium">
+                  <p class="text-base text-card-foreground font-medium">
                     {rideData?.event.ride_length || "Not specified"}
                   </p>
                 </div>
@@ -400,7 +400,7 @@
               {/if}
 
               <!-- Organizer -->
-              <div class="pt-8 border-t border-slate-200 dark:border-slate-800">
+              <div class="pt-8 border-t border-border">
                 <h3 class="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-5 flex items-center gap-2">
                   <span class="h-px w-8 bg-slate-300 dark:bg-slate-700"></span>
                   Organizer
@@ -413,8 +413,8 @@
                       </span>
                     </div>
                     <div>
-                      <p class="text-base font-semibold text-slate-900 dark:text-slate-50">{rideData?.event.organizer_name}</p>
-                      <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{rideData?.event.organizer_email}</p>
+                      <p class="text-base font-semibold text-card-foreground">{rideData?.event.organizer_name}</p>
+                      <p class="text-sm text-muted-foreground mt-0.5">{rideData?.event.organizer_email}</p>
                     </div>
                   </div>
                 </div>
@@ -424,7 +424,7 @@
             <!-- Edit Mode -->
             <div class="space-y-8 edit-mode-enter">
               <div class="field-group">
-                <label for="description" class="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
+                <label for="description" class="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                   Description <span class="text-rose-500">*</span>
                 </label>
                 <Textarea
@@ -434,12 +434,12 @@
                   class="resize-none font-sans text-base leading-relaxed focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100"
                   placeholder="Describe your ride..."
                 />
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 pl-0.5">Minimum 10 characters</p>
+                <p class="text-xs text-muted-foreground mt-2 pl-0.5">Minimum 10 characters</p>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 <div class="field-group">
-                  <label for="audience" class="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
+                  <label for="audience" class="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                     Audience
                   </label>
                   <Select.Root type="single" bind:value={editedAudience}>
@@ -457,7 +457,7 @@
                 </div>
 
                 <div class="field-group">
-                  <label for="ride_length" class="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
+                  <label for="ride_length" class="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                     Ride Length
                   </label>
                   <Input
@@ -470,12 +470,12 @@
                 </div>
               </div>
 
-              <div class="flex gap-3 pt-6 border-t border-slate-200 dark:border-slate-800">
+              <div class="flex gap-3 pt-6 border-t border-border">
                 <Button
                   disabled={isSavingEvent}
                   onclick={saveEventDetails}
                   size="lg"
-                  class="gap-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-50 dark:hover:bg-slate-200 font-semibold shadow-sm hover:shadow transition-all"
+                  class="gap-2.5 bg-yellow-400 text-black hover:bg-yellow-300 font-semibold shadow-sm hover:shadow transition-all"
                 >
                   {#if isSavingEvent}
                     <div class="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -503,15 +503,15 @@
 
       <!-- Upcoming Occurrences -->
       {#if upcomingOccurrences.length > 0}
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden transition-all hover:shadow-md">
-          <div class="px-6 py-6 border-b-2 border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100/30 dark:from-slate-900/50 dark:to-slate-800/30">
-            <h2 class="text-2xl font-black text-slate-900 dark:text-slate-50 tracking-tight">Upcoming Rides</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-medium">Edit timing or cancel individual occurrences</p>
+        <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div class="px-6 py-6 border-b-2 border-border bg-gradient-to-br from-slate-50 to-slate-100/30 dark:from-slate-900/50 dark:to-slate-800/30">
+            <h2 class="text-2xl font-black text-card-foreground tracking-tight">Upcoming Rides</h2>
+            <p class="text-sm text-muted-foreground mt-1.5 font-medium">Edit timing or cancel individual occurrences</p>
           </div>
 
           <div class="divide-y divide-slate-200 dark:divide-slate-800">
             {#each upcomingOccurrences as occurrence (occurrence.id)}
-              <div class="px-6 py-6 {occurrence.is_cancelled ? 'bg-slate-50/50 dark:bg-slate-900/50' : ''} hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
+              <div class="px-6 py-6 {occurrence.is_cancelled ? 'bg-muted/50' : ''} hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors">
                 {#if !occurrence.isEditing}
                   <!-- View Mode -->
                   <div class="flex items-start justify-between gap-6 read-mode-enter">
@@ -519,7 +519,7 @@
                       <div class="flex items-baseline gap-4 flex-wrap">
                         <div class="flex items-center gap-2.5">
                           <Calendar class="h-4.5 w-4.5 text-slate-400 dark:text-slate-500" />
-                          <span class="text-lg font-bold text-slate-900 dark:text-slate-50 tracking-tight">
+                          <span class="text-lg font-bold text-card-foreground tracking-tight">
                             {formatDate(occurrence.start_date)}
                           </span>
                         </div>
@@ -532,7 +532,7 @@
                             Cancelled
                           </span>
                         {:else}
-                          <div class="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                          <div class="flex items-center gap-2 text-muted-foreground">
                             <Clock class="h-4 w-4" />
                             <span class="font-semibold text-base">{formatTime(occurrence.start_time)}</span>
                           </div>
@@ -540,14 +540,14 @@
                       </div>
 
                       {#if occurrence.event_duration_minutes}
-                        <div class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                        <div class="flex items-center gap-2 text-sm text-muted-foreground">
                           <span class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600"></span>
                           <span>Duration: <span class="font-semibold text-slate-700 dark:text-slate-300">{occurrence.event_duration_minutes} minutes</span></span>
                         </div>
                       {/if}
 
                       {#if occurrence.event_time_details}
-                        <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed pl-6 border-l-2 border-slate-200 dark:border-slate-700">
+                        <p class="text-sm text-muted-foreground leading-relaxed pl-6 border-l-2 border-slate-200 dark:border-slate-700">
                           {occurrence.event_time_details}
                         </p>
                       {/if}
@@ -577,7 +577,7 @@
                   <div class="space-y-6 edit-mode-enter">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div class="field-group">
-                        <label for={`start-time-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
+                        <label for={`start-time-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                           Start Time
                         </label>
                         <Input
@@ -589,7 +589,7 @@
                       </div>
 
                       <div class="field-group">
-                        <label for={`duration-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
+                        <label for={`duration-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                           Duration (minutes)
                         </label>
                         <Input
@@ -603,7 +603,7 @@
                     </div>
 
                     <div class="field-group">
-                      <label for={`time-details-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
+                      <label for={`time-details-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                         Time Details <span class="text-slate-400 dark:text-slate-500 font-normal normal-case tracking-normal text-xs">(Optional)</span>
                       </label>
                       <Input
@@ -616,7 +616,7 @@
                     </div>
 
                     <div class="field-group">
-                      <label for={`newsflash-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-3">
+                      <label for={`newsflash-${occurrence.id}`} class="block text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">
                         Alert/Update <span class="text-slate-400 dark:text-slate-500 font-normal normal-case tracking-normal text-xs">(Optional)</span>
                       </label>
                       <Input
@@ -627,7 +627,7 @@
                         maxlength={500}
                         class="focus:ring-2 focus:ring-slate-900 dark:focus:ring-slate-100 text-base"
                       />
-                      <p class="text-xs text-slate-500 dark:text-slate-400 mt-2 pl-0.5">Special message for this date (max 500 characters)</p>
+                      <p class="text-xs text-muted-foreground mt-2 pl-0.5">Special message for this date (max 500 characters)</p>
                     </div>
 
                     <div class="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 border border-slate-200 dark:border-slate-700 rounded-xl">
@@ -643,12 +643,12 @@
                       </label>
                     </div>
 
-                    <div class="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                    <div class="flex gap-3 pt-4 border-t border-border">
                       <Button
                         disabled={occurrence.isSaving}
                         onclick={() => saveOccurrence(occurrence)}
                         size="lg"
-                        class="gap-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-50 dark:hover:bg-slate-200 font-semibold shadow-sm hover:shadow transition-all"
+                        class="gap-2.5 bg-yellow-400 text-black hover:bg-yellow-300 font-semibold shadow-sm hover:shadow transition-all"
                       >
                         {#if occurrence.isSaving}
                           <div class="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -679,18 +679,18 @@
 
       <!-- Past Occurrences -->
       {#if pastOccurrences.length > 0}
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border-2 border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden opacity-80 hover:opacity-100 transition-all">
-          <div class="px-6 py-6 border-b-2 border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-50 to-slate-100/30 dark:from-slate-900/50 dark:to-slate-800/30">
-            <h2 class="text-2xl font-black text-slate-900 dark:text-slate-50 tracking-tight">Past Rides</h2>
-            <p class="text-sm text-slate-600 dark:text-slate-400 mt-1.5 font-medium">These occurrences have already happened</p>
+        <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden opacity-80 hover:opacity-100 transition-all">
+          <div class="px-6 py-6 border-b-2 border-border bg-gradient-to-br from-slate-50 to-slate-100/30 dark:from-slate-900/50 dark:to-slate-800/30">
+            <h2 class="text-2xl font-black text-card-foreground tracking-tight">Past Rides</h2>
+            <p class="text-sm text-muted-foreground mt-1.5 font-medium">These occurrences have already happened</p>
           </div>
 
           <div class="px-6 py-6">
             <div class="space-y-2.5">
               {#each pastOccurrences as occurrence (occurrence.id)}
-                <div class="flex items-center gap-3.5 p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                <div class="flex items-center gap-3.5 p-4 bg-gradient-to-r from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/30 rounded-xl border border-border shadow-sm">
                   <Calendar class="h-4.5 w-4.5 text-slate-400 dark:text-slate-500" />
-                  <span class="text-sm font-bold text-slate-600 dark:text-slate-400">
+                  <span class="text-sm font-bold text-muted-foreground">
                     {formatDate(occurrence.start_date)}
                   </span>
                   <span class="text-sm text-slate-500 dark:text-slate-500 font-medium">

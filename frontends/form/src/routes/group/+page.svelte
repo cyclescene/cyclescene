@@ -119,7 +119,7 @@
   }
 </style>
 
-<div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+<div class="min-h-screen bg-background">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
 
     <header class="mb-10">
@@ -128,10 +128,10 @@
         <span class="uppercase tracking-wide">{data.city.toUpperCase()}</span>
       </div>
 
-      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4 leading-tight">
+      <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-card-foreground mb-4 leading-tight">
         Register Your Group
       </h1>
-      <p class="text-lg text-slate-600 dark:text-slate-400">
+      <p class="text-lg text-muted-foreground">
         Create a group for your cycling community in {data.city.toUpperCase()}
       </p>
     </header>
@@ -173,10 +173,10 @@
 
   <form method="POST" use:enhance class="space-y-6">
     <!-- Group Code & Name -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Identity</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Group Identity</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           Choose a unique 4-character code and name for your group
         </p>
       </div>
@@ -268,10 +268,10 @@
     </div>
 
     <!-- Description & Details -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">About Your Group</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">About Your Group</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           Tell the community what your group is about
         </p>
       </div>
@@ -320,10 +320,10 @@
     </div>
 
     <!-- Contact Information -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Contact Information</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Contact Information</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           We'll use this to send you a magic link to edit your group
         </p>
       </div>
@@ -359,10 +359,10 @@
     </div>
 
     <!-- Group Marker -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Marker</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Group Marker</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           Add a custom marker for your group's rides on the map
         </p>
       </div>
@@ -388,7 +388,7 @@
 
     <!-- Submit Button -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
-      <p class="text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left">
+      <p class="text-sm text-muted-foreground text-center sm:text-left">
         * Required fields
       </p>
       <Button
@@ -397,7 +397,7 @@
           codeCheckState === "checking" ||
           codeCheckState === "unavailable"}
         size="lg"
-        class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 dark:bg-slate-50 dark:hover:bg-slate-200 gap-2"
+        class="w-full sm:w-auto bg-yellow-400 text-black hover:bg-yellow-300 gap-2"
       >
         {#if $delayed}
           <div class="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -412,7 +412,7 @@
       </Button>
     </div>
 
-    <div class="text-center text-sm text-slate-500 dark:text-slate-400 pb-4 pt-6">
+    <div class="text-center text-sm text-muted-foreground pb-4 pt-6">
       You'll receive a magic link via email to edit your group information.
     </div>
   </form>

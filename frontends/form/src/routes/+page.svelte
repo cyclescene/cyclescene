@@ -106,7 +106,7 @@
   }
 </style>
 
-<div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+<div class="min-h-screen bg-background">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
     <!-- Manual Form Mode -->
     <header class="mb-10">
@@ -117,10 +117,10 @@
 
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
         <div>
-          <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4 leading-tight">
+          <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-card-foreground mb-4 leading-tight">
             Host a Ride
           </h1>
-          <p class="text-lg text-slate-600 dark:text-slate-400">
+          <p class="text-lg text-muted-foreground">
             Share your ride with the {data.city.toUpperCase()} cycling community
           </p>
         </div>
@@ -168,13 +168,13 @@
     <input type="hidden" name="city" bind:value={$form.city} />
 
     <!-- Linked Event Entry -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
         <div class="flex items-center gap-2">
           <Link class="h-5 w-5 text-slate-500" />
-          <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Link an Existing Event</h2>
+          <h2 class="text-xl font-semibold text-card-foreground">Link an Existing Event</h2>
         </div>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+        <p class="text-sm text-muted-foreground mt-0.5">
           Paste a Strava, Instagram, Facebook, Meetup, or event page link to use a simpler submission form.
         </p>
       </div>
@@ -192,7 +192,7 @@
           <p class="text-xs sm:text-sm text-red-600 dark:text-red-400 flex items-center gap-1"><CircleX class="h-3 w-3 flex-shrink-0" />{$errors.web_url}</p>
         {/if}
         {#if isLinkedEvent}
-          <p class="text-sm text-slate-600 dark:text-slate-400">
+          <p class="text-sm text-muted-foreground">
             Linked event mode is on. Add the basics here; riders will use the link for full details.
           </p>
         {/if}
@@ -200,10 +200,10 @@
     </div>
 
     <!-- Basic Information -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Basic Information</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Basic Information</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           Tell riders what your ride is about
         </p>
       </div>
@@ -255,7 +255,7 @@
             class={`text-base transition-colors ${$errors.description ? "border-red-500 bg-red-50/5 dark:bg-red-950/5 focus:border-red-500 focus:ring-1 focus:ring-red-500/20" : ""}`}
           />
           {#if isLinkedEvent}
-            <p class="text-sm text-slate-500 dark:text-slate-400">
+            <p class="text-sm text-muted-foreground">
               Optional for linked events. If left blank, Cycle Scene will show “See link for full details.”
             </p>
           {/if}
@@ -336,10 +336,10 @@
     </div>
 
     <!-- Location Information -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Location</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Where does the ride start and end?</p>
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Location</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">Where does the ride start and end?</p>
       </div>
       <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
@@ -422,10 +422,10 @@
     </div>
 
     <!-- Date & Time Section -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Date & Time</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Date & Time</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           When does your ride happen?
         </p>
       </div>
@@ -494,10 +494,10 @@
     </div>
 
     <!-- Contact Information -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Contact Information</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">How can riders reach you?</p>
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Contact Information</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">How can riders reach you?</p>
       </div>
       <div class="px-6 py-6 space-y-4">
         <div class="space-y-2">
@@ -621,10 +621,10 @@
     </div>
 
     <!-- Group Association -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Group Association</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Group Association</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           Link this ride to a cycling group
         </p>
       </div>
@@ -642,10 +642,10 @@
 
     {#if !isLinkedEvent}
       <!-- Additional Details -->
-      <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Additional Details</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+      <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Additional Details</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">
           Any extra information riders should know
         </p>
       </div>
@@ -674,14 +674,14 @@
 
     <!-- Submit Button -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
-      <p class="text-sm text-slate-500 dark:text-slate-400 text-center sm:text-left">
+      <p class="text-sm text-muted-foreground text-center sm:text-left">
         * Required fields
       </p>
       <Button
         type="submit"
         disabled={$delayed}
         size="lg"
-        class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 dark:bg-slate-50 dark:hover:bg-slate-200 gap-2"
+        class="w-full sm:w-auto bg-yellow-400 text-black hover:bg-yellow-300 gap-2"
       >
         {#if $delayed}
           <div class="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -692,7 +692,7 @@
       </Button>
     </div>
 
-    <div class="text-center text-sm text-slate-500 dark:text-slate-400 pb-4 pt-6">
+    <div class="text-center text-sm text-muted-foreground pb-4 pt-6">
       Your ride will be reviewed before appearing on CycleScene.
       <br class="hidden sm:block" />
       <span class="block sm:inline mt-1 sm:mt-0">

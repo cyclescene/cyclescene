@@ -49,7 +49,7 @@
   }
 </style>
 
-<div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+<div class="min-h-screen bg-background">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
 
     <!-- Header -->
@@ -63,10 +63,10 @@
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-800 mb-6">
           <Check class="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
         </div>
-        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4 leading-tight">
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-card-foreground mb-4 leading-tight">
           Group Registered Successfully!
         </h1>
-        <p class="text-lg text-slate-600 dark:text-slate-400">
+        <p class="text-lg text-muted-foreground">
           Your cycling group is now live on CycleScene
         </p>
       </div>
@@ -94,7 +94,7 @@
               Your Group Code
             </h3>
             <div class="flex items-center gap-2">
-              <code class="text-2xl font-bold tracking-wider bg-white dark:bg-slate-900 px-5 py-3 rounded-lg border border-blue-200 dark:border-blue-800 flex-1 text-center text-blue-900 dark:text-blue-100">
+              <code class="text-2xl font-bold tracking-wider bg-card px-5 py-3 rounded-lg border border-blue-200 dark:border-blue-800 flex-1 text-center text-blue-900 dark:text-blue-100">
                 {groupCode}
               </code>
               <Button variant="outline" size="icon" onclick={copyCode} class="h-12 w-12 flex-shrink-0">
@@ -114,21 +114,21 @@
     {/if}
 
     <!-- Main Content Card -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-in">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">Next Steps</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Get started with your group</p>
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden animate-fade-in">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">Next Steps</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">Get started with your group</p>
       </div>
 
       <div class="px-6 py-6 space-y-6">
         <!-- Check Email -->
-        <div class="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800">
+        <div class="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-border">
           <div class="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
-            <Mail class="w-5 h-5 text-slate-600 dark:text-slate-400" />
+            <Mail class="w-5 h-5 text-muted-foreground" />
           </div>
           <div class="flex-1">
-            <h3 class="text-base font-semibold text-slate-900 dark:text-slate-50 mb-1">Check Your Email</h3>
-            <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+            <h3 class="text-base font-semibold text-card-foreground mb-1">Check Your Email</h3>
+            <p class="text-sm text-muted-foreground leading-relaxed">
               We've sent you a magic link to edit your group information anytime. Keep this email safe!
             </p>
           </div>
@@ -136,13 +136,13 @@
 
         <!-- Edit Your Group -->
         {#if editUrl}
-          <div class="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-200 dark:border-slate-800">
+          <div class="flex items-start gap-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-border">
             <div class="h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0">
-              <Edit2 class="w-5 h-5 text-slate-600 dark:text-slate-400" />
+              <Edit2 class="w-5 h-5 text-muted-foreground" />
             </div>
             <div class="flex-1">
-              <h3 class="text-base font-semibold text-slate-900 dark:text-slate-50 mb-1">Edit Your Group</h3>
-              <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-3">
+              <h3 class="text-base font-semibold text-card-foreground mb-1">Edit Your Group</h3>
+              <p class="text-sm text-muted-foreground leading-relaxed mb-3">
                 You can use this link to make changes:
               </p>
               <Button size="sm" variant="outline" class="gap-2 hover:bg-slate-100 dark:hover:bg-slate-800" href={editUrl}>
@@ -155,7 +155,7 @@
 
         <!-- Next Steps -->
         <div class="p-5 bg-gradient-to-br from-slate-50 to-slate-100/50 dark:from-slate-900/50 dark:to-slate-800/50 border border-slate-200/60 dark:border-slate-800/60 rounded-xl">
-          <h3 class="text-base font-semibold text-slate-900 dark:text-slate-50 mb-3">Build Your Community</h3>
+          <h3 class="text-base font-semibold text-card-foreground mb-3">Build Your Community</h3>
           <ul class="text-sm text-slate-700 dark:text-slate-300 space-y-2.5 list-disc list-inside">
             <li>Share your group code with ride organizers</li>
             <li>When hosting rides, enter your code to associate them with your group</li>

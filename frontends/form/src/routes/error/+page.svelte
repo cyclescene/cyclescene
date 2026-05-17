@@ -35,7 +35,7 @@
   }
 </style>
 
-<div class="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-950 dark:to-slate-900">
+<div class="min-h-screen bg-background">
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
 
     <!-- Header -->
@@ -49,10 +49,10 @@
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 mb-6">
           <CircleX class="w-8 h-8 text-red-600 dark:text-red-400" />
         </div>
-        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900 dark:text-slate-50 mb-4 leading-tight">
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-card-foreground mb-4 leading-tight">
           Oops! Something Went Wrong
         </h1>
-        <p class="text-lg text-slate-600 dark:text-slate-400">
+        <p class="text-lg text-muted-foreground">
           We couldn't process your request
         </p>
       </div>
@@ -67,17 +67,17 @@
     </div>
 
     <!-- Main Content Card -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-fade-in">
-      <div class="px-6 py-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-        <h2 class="text-xl font-semibold text-slate-900 dark:text-slate-50">What you can do</h2>
-        <p class="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Try these troubleshooting steps</p>
+    <div class="bg-card rounded-xl border border-border shadow-sm overflow-hidden animate-fade-in">
+      <div class="px-6 py-5 border-b border-border bg-muted/50">
+        <h2 class="text-xl font-semibold text-card-foreground">What you can do</h2>
+        <p class="text-sm text-muted-foreground mt-0.5">Try these troubleshooting steps</p>
       </div>
 
       <div class="px-6 py-6">
         <ul class="space-y-4">
           <li class="flex items-start gap-3">
             <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">1</span>
+              <span class="text-xs font-semibold text-muted-foreground">1</span>
             </div>
             <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               Make sure you clicked the "Host a Ride" button from the CycleScene app
@@ -85,7 +85,7 @@
           </li>
           <li class="flex items-start gap-3">
             <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">2</span>
+              <span class="text-xs font-semibold text-muted-foreground">2</span>
             </div>
             <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               Check that your link hasn't expired (tokens are valid for 30 minutes)
@@ -93,7 +93,7 @@
           </li>
           <li class="flex items-start gap-3">
             <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">3</span>
+              <span class="text-xs font-semibold text-muted-foreground">3</span>
             </div>
             <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               Try requesting a new submission link from the app
@@ -101,7 +101,7 @@
           </li>
           <li class="flex items-start gap-3">
             <div class="h-6 w-6 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">4</span>
+              <span class="text-xs font-semibold text-muted-foreground">4</span>
             </div>
             <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               Contact support if the problem persists
@@ -113,7 +113,7 @@
 
     <!-- Footer Actions -->
     <div class="flex justify-center pt-8">
-      <Button class="gap-2 bg-slate-900 hover:bg-slate-800 dark:bg-slate-50 dark:hover:bg-slate-200">
+      <Button class="gap-2 bg-yellow-400 text-black hover:bg-yellow-300">
         <a {href} class="flex items-center gap-2">
           <span>← Back to CycleScene</span>
         </a>
