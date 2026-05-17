@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
@@ -284,15 +285,25 @@ func (s *Service) TriggerShift2BikesSync(ctx context.Context) (AdminSyncResponse
 	}
 	defer res.Body.Close()
 
+	body, _ := io.ReadAll(io.LimitReader(res.Body, 4096))
 	if res.StatusCode < http.StatusOK || res.StatusCode >= http.StatusMultipleChoices {
-		body, _ := io.ReadAll(io.LimitReader(res.Body, 1024))
 		return AdminSyncResponse{}, http.StatusBadGateway, fmt.Errorf("scraper job trigger failed with status %d: %s", res.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var operation struct {
+		Name string `json:"name"`
+	}
+	if len(body) > 0 {
+		if err := json.Unmarshal(body, &operation); err != nil {
+			slog.Warn("failed to decode scraper job trigger operation", "error", err)
+		}
 	}
 
 	s.lastShift2BikesSyncTrigger = time.Now()
 	return AdminSyncResponse{
-		Status:  "started",
-		Message: "Shift2Bikes sync job started.",
+		Status:    "started",
+		Message:   "Shift2Bikes sync job started.",
+		Operation: operation.Name,
 	}, http.StatusAccepted, nil
 }
 

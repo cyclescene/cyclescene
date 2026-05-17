@@ -20,10 +20,12 @@ allowed_origins = [
   "https://cyclescene.cc",
   "https://www.cyclescene.cc",
   "https://form.cyclescene.cc",
+  "https://dashboard.cyclescene.cc",
   "https://pdx.cyclescene.cc",
   "https://slc.cyclescene.cc",
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:5175",
 ]
 
 # Database & API credentials (passed via environment variables from GitHub secrets)

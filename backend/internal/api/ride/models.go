@@ -73,8 +73,9 @@ type SubmissionResponse struct {
 }
 
 type AdminSyncResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message"`
+	Status    string `json:"status"`
+	Message   string `json:"message"`
+	Operation string `json:"operation,omitempty"`
 }
 
 type EditResponse struct {

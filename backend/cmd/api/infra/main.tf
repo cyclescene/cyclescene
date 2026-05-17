@@ -124,6 +124,7 @@ module "api_service" {
       FORM_URL                 = var.form_url
       SCRAPER_JOB_NAME         = var.scraper_job_name
       SCRAPER_JOB_REGION       = var.scraper_job_region
+      ALLOWED_ORIGINS          = join(",", var.allowed_origins)
     }
   )
 

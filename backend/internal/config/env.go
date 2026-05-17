@@ -36,6 +36,23 @@ func IsProd() bool {
 	return GetEnvironment() == EnvProd
 }
 
+func configuredOrigins() []string {
+	rawOrigins := os.Getenv("ALLOWED_ORIGINS")
+	if rawOrigins == "" {
+		return nil
+	}
+
+	origins := strings.Split(rawOrigins, ",")
+	filtered := make([]string, 0, len(origins))
+	for _, origin := range origins {
+		origin = strings.TrimSpace(origin)
+		if origin != "" {
+			filtered = append(filtered, origin)
+		}
+	}
+	return filtered
+}
+
 // =============================================================================
 // CORS Configuration
 // =============================================================================
@@ -87,6 +104,10 @@ func CORSConfig() cors.Options {
 		origins = ProdOrigins
 	}
 
+	if configured := configuredOrigins(); len(configured) > 0 {
+		origins = configured
+	}
+
 	return cors.Options{
 		AllowedOrigins:   origins,
 		AllowOriginFunc:  allowOriginFunc,
@@ -100,6 +121,10 @@ func CORSConfig() cors.Options {
 
 // GetAllowedOrigins returns the allowed origins for the current environment
 func GetAllowedOrigins() []string {
+	if configured := configuredOrigins(); len(configured) > 0 {
+		return configured
+	}
+
 	if IsDev() {
 		return DevOrigins
 	}
@@ -148,8 +173,8 @@ func GetCookieConfig() CookieConfig {
 		}
 	}
 	return CookieConfig{
-		HttpOnly: true,  // Protect from XSS
-		Secure:   true,  // HTTPS only
+		HttpOnly: true, // Protect from XSS
+		Secure:   true, // HTTPS only
 		SameSite: http.SameSiteLaxMode,
 	}
 }
