@@ -57,9 +57,7 @@
     >
       Admin Dashboard
     </div>
-    <h1
-      class="text-4xl md:text-6xl font-bold tracking-tight bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent"
-    >
+    <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
       CycleScene Dashboard
     </h1>
     <p class="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -72,7 +70,7 @@
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
     <!-- Manage Rides Card -->
     <Card.Root
-      class="group hover:shadow-lg transition-all duration-200 cursor-pointer border-2 hover:border-primary/50"
+      class="group cursor-pointer transition-colors hover:bg-muted/50 hover:border-primary/50"
       onclick={() => (window.location.href = "/rides")}
     >
       <Card.Header>
@@ -100,7 +98,7 @@
     </Card.Root>
 
     <!-- Quick Stats Card -->
-    <Card.Root class="border-2">
+    <Card.Root>
       <Card.Header>
         <div
           class="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-4"
@@ -130,7 +128,7 @@
   </div>
 
   <div class="max-w-4xl mx-auto mt-6">
-    <Card.Root class="border-2">
+    <Card.Root>
       <Card.Header>
         <div
           class="h-12 w-12 rounded-lg bg-muted flex items-center justify-center mb-4"

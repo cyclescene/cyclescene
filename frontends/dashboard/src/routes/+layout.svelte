@@ -21,23 +21,7 @@
   let authError = $state("");
 
   onMount(() => {
-    // Load admin token from localStorage
-    adminToken = localStorage.getItem("adminToken") || "";
-
-    if (!adminToken) {
-      showApiKeyForm = true;
-      isValidating = false;
-      return;
-    }
-
-    // Validate the token by making a test API call
-    validateToken();
-
-    // Load selected city from localStorage
-    const savedCity = localStorage.getItem("selectedCity") as CityCode | null;
-    if (savedCity) {
-      selectedCity = savedCity;
-    }
+    const removeThemeListener = syncThemeWithSystem();
 
     // Track current path for active navigation
     currentPath = window.location.pathname;
@@ -45,10 +29,46 @@
     // Listen for API key change requests
     window.addEventListener("changeapikey", clearApiKey);
 
+    // Load admin token from localStorage
+    adminToken = localStorage.getItem("adminToken") || "";
+
+    if (!adminToken) {
+      showApiKeyForm = true;
+      isValidating = false;
+    } else {
+      // Validate the token by making a test API call
+      validateToken();
+    }
+
+    // Load selected city from localStorage
+    const savedCity = localStorage.getItem("selectedCity") as CityCode | null;
+    if (savedCity) selectedCity = savedCity;
+
     return () => {
       window.removeEventListener("changeapikey", clearApiKey);
+      removeThemeListener();
     };
   });
+
+  function syncThemeWithSystem() {
+    const query = window.matchMedia("(prefers-color-scheme: dark)");
+    const themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+
+    const applyTheme = () => {
+      document.documentElement.classList.toggle("dark", query.matches);
+      document.documentElement.style.colorScheme = query.matches ? "dark" : "light";
+      if (themeColor) {
+        themeColor.content = query.matches ? "black" : "white";
+      }
+    };
+
+    applyTheme();
+    query.addEventListener("change", applyTheme);
+
+    return () => {
+      query.removeEventListener("change", applyTheme);
+    };
+  }
 
   async function validateToken() {
     try {

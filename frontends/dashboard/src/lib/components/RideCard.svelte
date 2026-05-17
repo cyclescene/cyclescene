@@ -47,8 +47,8 @@
 <div class="space-y-2">
   <button
     onclick={toggleExpanded}
-    class="w-full text-left p-4 border rounded-lg hover:bg-accent/50 transition-colors {expanded
-      ? 'bg-accent/30'
+    class="w-full text-left p-4 rounded-xl border bg-card text-card-foreground shadow-sm transition-colors hover:bg-muted/50 {expanded
+      ? 'border-primary bg-muted/50'
       : ''}"
   >
     <div class="flex items-start sm:items-center justify-between gap-4 flex-col sm:flex-row">
