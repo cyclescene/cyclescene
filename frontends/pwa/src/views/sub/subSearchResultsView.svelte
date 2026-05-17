@@ -17,6 +17,7 @@
   let searchRequestID = 0;
   let lastQueuedQuery = "";
 
+  $: groupedResults = groupResultsByDate(searchResults);
   $: trimmedSearchQuery = $rideSearchQuery.trim();
   $: resultCountLabel =
     searchResults.length === 1 ? "1 result" : `${searchResults.length} results`;
@@ -97,6 +98,21 @@
     return `In ${daysOut} days`;
   }
 
+  function groupResultsByDate(rides: RideData[]) {
+    const groups = new Map<string, RideData[]>();
+
+    for (const ride of rides) {
+      const group = groups.get(ride.date) || [];
+      group.push(ride);
+      groups.set(ride.date, group);
+    }
+
+    return Array.from(groups.entries()).map(([date, groupedRides]) => ({
+      date,
+      rides: groupedRides,
+    }));
+  }
+
   function clearSearch() {
     rideSearchQuery.set("");
     searchInput?.focus();
@@ -137,12 +153,16 @@
 
     <div class="flex flex-col gap-2">
       {#if searchResults.length > 0}
-        {#each searchResults as ride (ride.id)}
-          <div class="mt-2 flex items-center justify-between text-sm text-muted-foreground">
-            <span>{formatDate(ride.date)}</span>
-            <span>{getDaysOutLabel(ride.date)}</span>
-          </div>
-          <Card {ride} />
+        {#each groupedResults as group (group.date)}
+          <section class="flex flex-col gap-2">
+            <div class="mt-2 flex items-center justify-between text-sm text-muted-foreground">
+              <span>{formatDate(group.date)}</span>
+              <span>{getDaysOutLabel(group.date)}</span>
+            </div>
+            {#each group.rides as ride (ride.id)}
+              <Card {ride} />
+            {/each}
+          </section>
         {/each}
       {:else}
         <div class="pt-8 text-center text-muted-foreground">{emptyMessage}</div>
