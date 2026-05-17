@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Label } from "$lib/components/ui/label";
-  import Slider from "$lib/components/ui/slider/slider.svelte";
   import { Button } from "$lib/components/ui/button";
   import {
     Upload,
@@ -24,11 +23,11 @@
   let { cityCode, onUploadComplete, onUploadError }: Props = $props();
 
   const DEFAULT_MARKER_COLOR = "#3B82F6";
+  const IMAGE_SCALE = 1.0;
+  const MASK_SCALE = 2.25;
 
   let imageFile = $state<File | null>(null);
   let imagePreview = $state<string | null>(null);
-  let imageScale = $state(1.0);
-  let maskScale = $state(0.8);
   let markerColor = $state(DEFAULT_MARKER_COLOR);
   let pendingMarkerColor = $state(DEFAULT_MARKER_COLOR);
   let colorChangeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -51,14 +50,10 @@
     }
   });
 
-  // Re-render only when sliders change, NOT on color changes
-  // Color is baked into the preview but doesn't require full re-render
+  // Re-render when marker color changes while an uploaded image is previewed.
   $effect(() => {
-    // Dependency on scales to trigger re-render
-    if (imageScale || maskScale) {
-      if (imagePreview && canvasRef) {
-        renderCanvas();
-      }
+    if (markerColor && imagePreview && canvasRef) {
+      renderCanvas();
     }
   });
 
@@ -94,12 +89,21 @@
 
     error = null;
     imageFile = file;
+    imageUUID = null;
+    generatedPreviewURL = null;
 
     const reader = new FileReader();
     reader.onload = (e) => {
       imagePreview = e.target?.result as string;
     };
     reader.readAsDataURL(file);
+  }
+
+  function openFileSelector() {
+    if (!fileInput) return;
+
+    fileInput.value = "";
+    fileInput.click();
   }
 
   async function renderCanvas() {
@@ -126,7 +130,7 @@
     const centerX = 12 * scale;
     const centerY = 9 * scale;
     const baseRadius = 2.5 * scale;
-    const currentRadius = baseRadius * maskScale;
+    const currentRadius = baseRadius * MASK_SCALE;
 
     ctx.beginPath();
     ctx.arc(centerX, centerY, currentRadius, 0, Math.PI * 2);
@@ -205,9 +209,8 @@
         drawHeight = diameter / aspect;
       }
 
-      // Apply image scale (zoom)
-      drawWidth *= imageScale;
-      drawHeight *= imageScale;
+      drawWidth *= IMAGE_SCALE;
+      drawHeight *= IMAGE_SCALE;
 
       console.log("CustomMarkerBuilder: Drawing image", {
         centerX,
@@ -370,8 +373,6 @@
     imagePreview = null;
     imageUUID = null;
     generatedPreviewURL = null;
-    imageScale = 1.0;
-    maskScale = 0.8;
     error = null;
   }
 
@@ -561,8 +562,8 @@
             class="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-muted/50 transition-colors"
             role="button"
             tabindex="0"
-            onclick={() => fileInput?.click()}
-            onkeydown={(e) => e.key === "Enter" && fileInput?.click()}
+            onclick={openFileSelector}
+            onkeydown={(e) => e.key === "Enter" && openFileSelector()}
           >
             <div class="flex flex-col items-center gap-2">
               <Upload class="h-6 w-6 text-muted-foreground" />
@@ -572,37 +573,10 @@
               </p>
             </div>
           </div>
-          <input
-            bind:this={fileInput}
-            type="file"
-            accept="image/*"
-            class="hidden"
-            onchange={handleFileSelect}
-          />
         </div>
       {:else if !imageUUID}
         <!-- Editor Controls -->
         <div class="space-y-4">
-          <div class="space-y-2">
-            <div class="flex justify-between">
-              <Label>Image Size (Zoom)</Label>
-              <span class="text-xs text-muted-foreground"
-                >{Math.round(imageScale * 100)}%</span
-              >
-            </div>
-            <Slider bind:value={imageScale} min={0.5} max={3.0} step={0.1} />
-          </div>
-
-          <div class="space-y-2">
-            <div class="flex justify-between">
-              <Label>Mask Size</Label>
-              <span class="text-xs text-muted-foreground"
-                >{Math.round(maskScale * 100)}%</span
-              >
-            </div>
-            <Slider bind:value={maskScale} min={0.5} max={2.25} step={0.05} />
-          </div>
-
           <div class="space-y-2">
             <Label for="markerColor" class="text-sm">Marker Color</Label>
             <div class="flex items-center gap-3">
@@ -623,7 +597,7 @@
           </div>
 
           <div class="flex gap-2 pt-2">
-            <Button variant="outline" class="flex-1" onclick={reset}>
+            <Button variant="outline" class="flex-1" onclick={openFileSelector}>
               Change Image
             </Button>
             <Button
@@ -666,6 +640,14 @@
           </div>
         </div>
       {/if}
+
+      <input
+        bind:this={fileInput}
+        type="file"
+        accept="image/*"
+        class="hidden"
+        onchange={handleFileSelect}
+      />
 
       {#if error}
         <div

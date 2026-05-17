@@ -20,6 +20,7 @@
   );
   let groupName = $state<string>("");
   let debounceTimer: ReturnType<typeof setTimeout> | null = $state(null);
+  let registeringGroup = $state(false);
 
   // Cleanup debounce timer on component destroy
   onDestroy(() => {
@@ -29,7 +30,12 @@
   });
 
   async function handleRegisterGroup() {
+    if (registeringGroup) {
+      return;
+    }
+
     try {
+      registeringGroup = true;
       const url = `${PUBLIC_API_URL}/v1/tokens/submission`;
 
       const response = await fetch(url, {
@@ -44,6 +50,7 @@
       window.location.href = `/group?token=${token}&city=${city}`;
     } catch (error) {
       console.error("Error:", error);
+      registeringGroup = false;
     }
   }
 
@@ -146,8 +153,11 @@
 
   <p class="text-xs text-muted-foreground">
     Don't have a group? <button
+      type="button"
       onclick={handleRegisterGroup}
-      class="underline hover:text-foreground">Register one here</button
+      disabled={registeringGroup}
+      class="inline-flex items-center gap-1 underline hover:text-foreground disabled:pointer-events-none disabled:opacity-60"
+      >{#if registeringGroup}<Loader class="h-3 w-3 animate-spin" />Opening...{:else}Register one here{/if}</button
     >
   </p>
 </div>
