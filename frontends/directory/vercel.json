@@ -2,6 +2,6 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install --frozen-lockfile",
-  "ignoreCommand": "git diff --quiet \"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\" \"${VERCEL_GIT_COMMIT_SHA:-HEAD}\" -- ':(top)frontends/directory' 2>/dev/null && exit 100 || exit 0",
+  "ignoreCommand": "git diff HEAD^ HEAD --quiet -- .",
   "framework": "sveltekit"
 }
