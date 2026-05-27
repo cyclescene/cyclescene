@@ -14,9 +14,17 @@
   import CardLabel from "./cardLabel.svelte";
   import RideLabels from "./ride/rideLabels.svelte";
 
-  let { ride }: { ride: RideData } = $props();
+  let {
+    ride,
+    disabled = false,
+  }: {
+    ride: RideData;
+    disabled?: boolean;
+  } = $props();
 
   function onCardClick(ride: RideData) {
+    if (disabled) return;
+
     currentRideStore.setRide(ride);
     navigateTo(VIEW_RIDE_DETAILS);
   }
@@ -35,7 +43,8 @@
     role="button"
     class={cn(
       "py-3",
-      "cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2, focus-visible:ring-ring focus-visible:ring-offset-2 gap-1",
+      disabled ? "" : "cursor-pointer transition-colors hover:bg-muted/50",
+      "focus-visible:outline-none focus-visible:ring-2, focus-visible:ring-ring focus-visible:ring-offset-2 gap-1",
     )}
     onclick={() => onCardClick(ride)}
     on:keydown={() => onCardClick(ride)}

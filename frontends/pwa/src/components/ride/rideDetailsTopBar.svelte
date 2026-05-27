@@ -2,8 +2,11 @@
   import {
     currentRide,
     currentRideStore,
+    activeView,
     goBackInHistory,
+    mapStore,
     savedRidesStore,
+    VIEW_OTHER_RIDES,
   } from "$lib/stores";
   import { toast } from "svelte-sonner";
 
@@ -14,12 +17,14 @@
   import Button from "$lib/components/ui/button/button.svelte";
 
   let ride = $derived($currentRide);
+  let isOtherRidesView = $derived($activeView === VIEW_OTHER_RIDES);
   let rideExists = $state(false);
   let loading = $state(true);
 
   function handleGoBack() {
     goBackInHistory();
     currentRideStore.clearRide();
+    mapStore.showCurrentRide(false);
   }
 
   async function copyToClipboard() {
@@ -101,29 +106,33 @@
   </Button>
 
   <div class="grow ml-10 font-bold py-2 px-2.5 text-center text-xl">
-    Ride Details
+    {isOtherRidesView ? "Unmapped Rides" : "Ride Details"}
   </div>
 
-  <div>
-    <Button
-      variant="ghost"
-      disabled={false}
-      class="h-10 w-10"
-      onclick={handleShareRide}
-    >
-      <ShareIcon />
-    </Button>
-    <Button
-      variant="ghost"
-      disabled={loading || !ride}
-      class={`h-10 w-10`}
-      onclick={handleSavedRide}
-    >
-      {#if rideExists}
-        <SavedIcon />
-      {:else}
-        <UnsavedIcon />
-      {/if}
-    </Button>
-  </div>
+  {#if isOtherRidesView}
+    <div class="w-20"></div>
+  {:else}
+    <div>
+      <Button
+        variant="ghost"
+        disabled={false}
+        class="h-10 w-10"
+        onclick={handleShareRide}
+      >
+        <ShareIcon />
+      </Button>
+      <Button
+        variant="ghost"
+        disabled={loading || !ride}
+        class={`h-10 w-10`}
+        onclick={handleSavedRide}
+      >
+        {#if rideExists}
+          <SavedIcon />
+        {:else}
+          <UnsavedIcon />
+        {/if}
+      </Button>
+    </div>
+  {/if}
 </div>

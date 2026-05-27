@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Map, type MapLayerMouseEvent } from "maplibre-gl";
+  import { Map, type MapLayerMouseEvent, type MapMouseEvent } from "maplibre-gl";
   import { GeoJSONSource, MapLibre } from "svelte-maplibre-gl";
   import {
     currentRideStore,
@@ -27,6 +27,9 @@
   let groupMarkersLoaded = $state(false);
   let groupMarkers: Record<string, string> = $state({});
   let recenterHighlighted = $state(false);
+  let fittingToRides = false;
+  let fitCompleteTimeout: number | undefined;
+  let removeFitCompleteListener: (() => void) | undefined;
   let fittedCenter:
     | {
         lng: number;
@@ -48,8 +51,43 @@
     recenterHighlighted = false;
   }
 
+  function fitMapToRides() {
+    if (!mapInstance) return;
+
+    fittingToRides = true;
+    recenterHighlighted = false;
+    window.clearTimeout(fitCompleteTimeout);
+    removeFitCompleteListener?.();
+
+    const fittedMap = mapInstance;
+    let fitCompletionHandled = false;
+    const handleFitComplete = () => {
+      if (fitCompletionHandled) return;
+      fitCompletionHandled = true;
+      window.clearTimeout(fitCompleteTimeout);
+      removeFitCompleteListener?.();
+      removeFitCompleteListener = undefined;
+      if (fittedMap !== mapInstance) return;
+
+      fittingToRides = false;
+      rememberFittedCamera();
+    };
+
+    fittedMap.on("moveend", handleFitComplete);
+    removeFitCompleteListener = () => fittedMap.off("moveend", handleFitComplete);
+    fitCompleteTimeout = window.setTimeout(handleFitComplete, 1200);
+    mapStore.fitMap(fittedMap);
+  }
+
+  function cancelFitMapToRides() {
+    fittingToRides = false;
+    window.clearTimeout(fitCompleteTimeout);
+    removeFitCompleteListener?.();
+    removeFitCompleteListener = undefined;
+  }
+
   function updateRecenterHighlight() {
-    if (!mapInstance || !fittedCenter) return;
+    if (!mapInstance || !fittedCenter || fittingToRides) return;
 
     const center = mapInstance.getCenter();
     const drift = Math.hypot(center.lng - fittedCenter.lng, center.lat - fittedCenter.lat);
@@ -61,12 +99,21 @@
       drift > 0.01 || zoomDrift > 1.25 || bearingDrift > 5 || pitchDrift > 5;
   }
 
+  function selectedRideOffset(): [number, number] {
+    if (!mapInstance) return [0, 0];
+
+    const mapHeight = mapInstance.getCanvas().clientHeight;
+    return [0, -Math.min(160, mapHeight * 0.22)];
+  }
+
   function navigateToRide(ride: RideData) {
+    cancelFitMapToRides();
     currentRideStore.setRide(ride);
     mapStore.showCurrentRide(true);
     mapStore.showNoLocationsRides(false);
     if (mapInstance) {
-      mapStore.flyToSelected(mapInstance);
+      mapInstance.stop();
+      mapStore.flyToSelected(mapInstance, selectedRideOffset());
     }
   }
 
@@ -78,19 +125,29 @@
       if (rideId) {
         const selectedRide = mapStore.getRideById(rideId);
         if (selectedRide) {
-          currentRideStore.setRide(selectedRide);
-          mapStore.showCurrentRide(true);
-          mapStore.showNoLocationsRides(false);
-          if (mapInstance) {
-            mapStore.flyToSelected(mapInstance);
-          }
+          navigateToRide(selectedRide);
         }
       }
     }
   }
 
-  function handleMapClick(_: MapLayerMouseEvent) {
+  function handleMapClick(e: MapMouseEvent) {
+    if (!mapInstance) return;
+
+    const rideFeatures = mapInstance.queryRenderedFeatures(e.point, {
+      layers: ["ride-icons"],
+    });
+    if (rideFeatures.length > 0) {
+      return;
+    }
+
+    if (!$mapStore.showCurrentRide) {
+      return;
+    }
+
     currentRideStore.clearRide();
+    mapStore.showCurrentRide(false);
+    fitMapToRides();
   }
 
   // Fit map bounds to rides when they load
@@ -99,8 +156,7 @@
     if (!mapInstance || $todaysRides.length === 0) {
       return;
     }
-    mapStore.fitMap(mapInstance);
-    window.setTimeout(rememberFittedCamera, 900);
+    fitMapToRides();
   });
 
   $effect(() => {

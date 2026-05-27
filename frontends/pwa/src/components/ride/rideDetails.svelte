@@ -4,6 +4,7 @@
   import { ScrollArea } from "$lib/components/ui/scroll-area/index";
   import { currentRide, currentRoute } from "$lib/stores";
   import { formatDate, formatTime } from "$lib/utils";
+  import { STARTING_LAT, STARTING_LNG } from "$lib/config";
   import RideLabels from "./rideLabels.svelte";
   import RideMap from "./rideMap.svelte";
   import RideRouteMap from "./rideRouteMap.svelte";
@@ -21,6 +22,20 @@
 
   const ride = $derived($currentRide);
   const route = $derived($currentRoute);
+  const hasMapLocation = $derived.by(() => {
+    if (!ride) return false;
+
+    const lat = Number(ride.lat);
+    const lng = Number(ride.lng);
+
+    return (
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat !== 0 &&
+      lng !== 0 &&
+      !(lat === STARTING_LAT && lng === STARTING_LNG)
+    );
+  });
 
   const imageUrl = $derived.by(() =>
     ride && ride?.ridesource === "Shift2Bikes"
@@ -43,7 +58,7 @@
   $inspect(ride);
 
   function handleOpenNativeMapApp() {
-    if (ride) {
+    if (ride && hasMapLocation) {
       const url = `https://www.google.com/maps/search/?api=1&query=${ride.lat},${ride.lng}`;
       if (
         window.matchMedia("(display-mode: standalone)").matches ||
@@ -89,7 +104,9 @@
       <div
         class="flex flex-col gap-5 p-5 pb-[calc(var(--footer-height)_+_env(safe-area-inset-bottom)_+_10px)]"
       >
-        <RideMap {ride} />
+        {#if hasMapLocation}
+          <RideMap {ride} />
+        {/if}
 
         <h2 class="text-3xl">{ride.title}</h2>
         {#if ride.newsflash}
@@ -143,7 +160,11 @@
           </Card.Root>
         {/if}
 
-        <Card.Root role="button" tabindex="0" onclick={handleOpenNativeMapApp}>
+        <Card.Root
+          role={hasMapLocation ? "button" : undefined}
+          tabindex={hasMapLocation ? 0 : undefined}
+          onclick={handleOpenNativeMapApp}
+        >
           <Card.Header>
             <Card.Description class="flex flex-row gap-1 items-center">
               <MapPinIcon height="15" width="15" style="color: orange;" />

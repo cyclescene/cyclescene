@@ -43,6 +43,7 @@
   let currentX = $state(0);
   let isDragging = $state(false);
   let wasSwipe = $state(false);
+  let cardClickDisabled = $state(false);
   let cardElement = $state<HTMLElement>();
 
   function handlePointerDown(e: PointerEvent) {
@@ -84,6 +85,7 @@
     if (Math.abs(deltaX) > swipeThreshold) {
       // Swipe detected
       wasSwipe = true;
+      cardClickDisabled = true;
       if (deltaX < 0) {
         // Swiped left → next ride
         navigateToNextRide();
@@ -94,6 +96,9 @@
       // Prevent click event from firing after swipe
       e.preventDefault();
       e.stopPropagation();
+      window.setTimeout(() => {
+        cardClickDisabled = false;
+      }, 250);
     }
     // If deltaX < swipeThreshold, wasSwipe remains false - allow click to propagate
 
@@ -117,7 +122,7 @@
     onpointercancel={handlePointerUp}
     style="touch-action: pan-y; transition: transform 0.2s ease-out;"
   >
-    <Card {ride} />
+    <Card {ride} disabled={cardClickDisabled} />
   </div>
 {/if}
 

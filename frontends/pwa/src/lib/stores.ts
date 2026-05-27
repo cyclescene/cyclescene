@@ -741,9 +741,11 @@ export const currentDate = writable<CalendarDate>(initialDate)
 export const dateStore = {
   subscribe: currentDate.subscribe,
   setToday: () => {
+    clearRideForDateChange()
     currentDate.set(today(getLocalTimeZone()))
   },
   addDays: (offset: number) => {
+    clearRideForDateChange()
     currentDate.update((currentStoredDate) => {
       if (!currentStoredDate || typeof currentStoredDate.add !== 'function') {
         return today(getLocalTimeZone()).add({ days: offset })
@@ -752,6 +754,7 @@ export const dateStore = {
     })
   },
   subtractDays: (offset: number) => {
+    clearRideForDateChange()
     currentDate.update((currentStoredDate) => {
       if (!currentStoredDate || typeof currentStoredDate.subtract !== 'function') {
         return today(getLocalTimeZone()).subtract({ days: offset })
@@ -760,12 +763,21 @@ export const dateStore = {
     })
   },
   setSpecificDate: (date: CalendarDate | null) => {
+    clearRideForDateChange()
     if (date && typeof date.add === 'function' && typeof date.subtract === 'function') {
       currentDate.set(date)
     } else if (!date) {
       currentDate.set(today(getLocalTimeZone()))
     }
   }
+}
+
+function clearRideForDateChange() {
+  currentRide.set(initialRideState)
+  rawMapStore.update(store => ({
+    ...store,
+    showCurrentRide: false
+  }))
 }
 
 
@@ -1037,6 +1049,7 @@ function offsetDuplicateCoordinate(lat: number, duplicateIndex: number) {
 
 export const STARTING_ZOOM = 12
 export const SINGLE_RIDE_ZOOM = 16
+export const MAX_FIT_BOUNDS_ZOOM = 15
 
 
 function createMapStore() {
@@ -1072,7 +1085,7 @@ function createMapStore() {
 
     const bounds = new LngLatBounds();
     rides.forEach((ride) => bounds.extend(ride));
-    map.fitBounds(bounds, { padding: 100, duration: 800, ...orientation });
+    map.fitBounds(bounds, { padding: 100, duration: 800, maxZoom: MAX_FIT_BOUNDS_ZOOM, ...orientation });
   }
 
   return {
@@ -1104,7 +1117,7 @@ function createMapStore() {
         }, 50
       )
     },
-    flyToSelected: (mapInstance: Map) => {
+    flyToSelected: (mapInstance: Map, offset: [number, number] = [0, 0]) => {
       if (!mapInstance) return
 
       update(store => ({ ...store, isPreformingSpecificAction: true }))
@@ -1116,6 +1129,7 @@ function createMapStore() {
         mapInstance.flyTo({
           zoom: SINGLE_RIDE_ZOOM,
           center: coords,
+          offset,
           duration: 900,
           essential: true
         })

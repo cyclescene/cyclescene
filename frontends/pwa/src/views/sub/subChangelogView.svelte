@@ -6,6 +6,30 @@
   // For the example, we'll use a simple array.
   const changelogData = [
     {
+      version: "1.7.0",
+      date: "May 27, 2026",
+      changes: {
+        Added: [
+          "Unmapped ride shortcut on the map showing how many rides are missing mappable start locations.",
+          "Dedicated unmapped rides list with context for rides that cannot be shown on the map.",
+        ],
+        Fixed: [
+          "Map ride marker taps now reliably focus the selected ride without requiring a second tap.",
+          "Ride detail maps are hidden for unmapped rides to avoid showing fallback city coordinates.",
+          "Date changes now clear any selected ride card so stale ride details do not linger between days.",
+          "Backing out of ride details now clears map selection state consistently.",
+        ],
+        Changed: [
+          "Closing a map ride card by tapping empty map space now refits the map to all mapped rides.",
+          "Empty map taps no longer recenter the map when no ride card is open.",
+          "Selected ride fly-to now offsets above the bottom card so the marker stays visible.",
+          "Swipe navigation between ride cards now moves the map to the newly selected ride.",
+          "Map fitting now caps zoom for nearby rides to avoid over-zooming clustered starts.",
+          "Recenter highlighting now waits for app-driven map fitting to finish before evaluating drift.",
+        ],
+      },
+    },
+    {
       version: "1.6.0",
       date: "May 16, 2026",
       changes: {
