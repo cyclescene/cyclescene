@@ -18,9 +18,11 @@
           "Ride detail maps are hidden for unmapped rides to avoid showing fallback city coordinates.",
           "Date changes now clear any selected ride card so stale ride details do not linger between days.",
           "Backing out of ride details now clears map selection state consistently.",
+          "Route previews in ride details now initialize on the city map instead of occasionally showing the whole world.",
         ],
         Changed: [
           "Closing a map ride card by tapping empty map space now refits the map to all mapped rides.",
+          "Tapping the active Map tab now clears the selected ride and recenters the map.",
           "Empty map taps no longer recenter the map when no ride card is open.",
           "Selected ride fly-to now offsets above the bottom card so the marker stays visible.",
           "Swipe navigation between ride cards now moves the map to the newly selected ride.",

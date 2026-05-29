@@ -2,7 +2,11 @@
   import Button from "$lib/components/ui/button/button.svelte";
   import {
     activeView,
+    currentRide,
+    currentRideStore,
+    mapStore,
     navigateTo,
+    requestMapRecenter,
     VIEW_LIST,
     VIEW_MAP,
     VIEW_SAVED,
@@ -38,6 +42,15 @@
   ];
 
   function onChangeView(view: string) {
+    if (view === VIEW_MAP && $activeView === VIEW_MAP) {
+      if ($currentRide) {
+        currentRideStore.clearRide();
+        mapStore.showCurrentRide(false);
+      }
+      requestMapRecenter();
+      return;
+    }
+
     navigateTo(view);
   }
 </script>

@@ -3,6 +3,7 @@
   import { GeoJSONSource, MapLibre } from "svelte-maplibre-gl";
   import {
     currentRideStore,
+    mapRecenterRequest,
     mapStore,
     rideGeoJSON,
     STARTING_ZOOM,
@@ -156,6 +157,14 @@
     if (!mapInstance || $todaysRides.length === 0) {
       return;
     }
+    fitMapToRides();
+  });
+
+  $effect(() => {
+    if (!mapInstance || $mapRecenterRequest === 0) {
+      return;
+    }
+
     fitMapToRides();
   });
 

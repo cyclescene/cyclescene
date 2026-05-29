@@ -683,6 +683,11 @@ const initialPrimaryView = getInitialPrimaryView()
 
 export const viewStack = writable<string[]>([initialPrimaryView])
 export const activeView = writable<string>(initialPrimaryView)
+export const mapRecenterRequest = writable(0)
+
+export function requestMapRecenter() {
+  mapRecenterRequest.update(value => value + 1)
+}
 
 viewStack.subscribe(stack => {
   if (stack.length > 0) {
