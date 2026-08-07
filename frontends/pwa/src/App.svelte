@@ -74,6 +74,7 @@
       const cityNames = {
         pdx: "Portland",
         slc: "Salt Lake City",
+        la: "Los Angeles",
       };
       const cityName = cityNames[cityCode] || cityCode.toUpperCase();
       document.title = `Cycle Scene - ${cityName}`;

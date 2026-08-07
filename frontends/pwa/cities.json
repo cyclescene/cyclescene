@@ -8,5 +8,10 @@
     "name": "Salt Lake City",
     "code": "slc",
     "url": "https://slc.cyclescene.cc"
+  },
+  {
+    "name": "Los Angeles",
+    "code": "la",
+    "url": "https://la.cyclescene.cc"
   }
 ]

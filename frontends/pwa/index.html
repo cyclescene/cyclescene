@@ -2,11 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="CycleScene - Find local group bike rides in Portland (PDX) and Salt Lake City (SLC). Discover cycling events, meet the community, and join rides near you. Powered by Shift2Bikes." />
-    <meta name="keywords" content="bike rides, cycling events, Portland bikes, SLC cycling, group rides, cycle scene, shift2bikes, pedalpalooza" />
+    <meta name="description" content="%CITY_DESCRIPTION%" />
+    <meta name="keywords" content="%CITY_KEYWORDS%" />
     <meta name="author" content="CycleScene" />
-    <meta name="application-name" content="CycleScene" />
+    <meta name="application-name" content="%CITY_SHORT_NAME%" />
     <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="%CITY_URL%" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="%CITY_APP_NAME%" />
+    <meta property="og:description" content="%CITY_DESCRIPTION%" />
+    <meta property="og:url" content="%CITY_URL%" />
+    <meta property="og:image" content="%CITY_URL%/cyclescene_temp.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="%CITY_APP_NAME%" />
+    <meta name="twitter:description" content="%CITY_DESCRIPTION%" />
+    <meta name="twitter:image" content="%CITY_URL%/cyclescene_temp.png" />
 
     <!-- Standard PWA icons -->
     <!-- Build trigger check: pwa v2 -->
@@ -20,7 +31,7 @@
     <!-- iOS Status Bar -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="CycleScene" />
+    <meta name="apple-mobile-web-app-title" content="%CITY_SHORT_NAME%" />
 
     <!-- iOS Viewport with Safe Area Support -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=standalone, user-scalable=no" />
@@ -48,7 +59,7 @@
     <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/9.7__iPad_Pro__7.9__iPad_mini__9.7__iPad_Air__9.7__iPad_portrait.png" />
     <link rel="apple-touch-startup-image" media="screen and (device-width: 744px) and (device-height: 1133px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="/splash/8.3__iPad_Mini_portrait.png" />
 
-    <title>Cycle Scene - PDX</title>
+    <title>%CITY_APP_NAME%</title>
   </head>
   <body>
     <div id="app"></div>

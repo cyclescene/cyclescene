@@ -2,8 +2,9 @@ import { openDB } from "idb"
 import type { RideData } from "./types"
 import type { RouteGeoJSON } from "./api"
 import { errorLogger } from "./errorLogger"
+import { CITY_CODE } from "./config"
 
-const DB_NAME = 'cycle-scene-pdx'
+const DB_NAME = `cycle-scene-${CITY_CODE}`
 const ALLRIDES_STORE_NAME = 'rides'
 const SAVED_RIDES_STORE_NAME = "saved"
 const SAVED_RIDES_STORE_DATE_INDEX = "dateIndex"

@@ -13,7 +13,7 @@ The PWA is the main user application for browsing and interacting with bike ride
 - Install as a native app on their device
 
 **Technology**: Svelte 5, Vite, MapLibre GL, Workbox, IndexedDB
-**URL**: https://pdx.cyclescene.cc (and other cities)
+**URL**: https://pdx.cyclescene.cc, https://slc.cyclescene.cc, and https://la.cyclescene.cc
 **Deployment**: Vercel
 
 ## Getting Started

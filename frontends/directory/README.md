@@ -111,6 +111,11 @@ Cities are configured in `src/lib/data/cities.json`:
     "name": "Salt Lake City",
     "code": "slc",
     "url": "https://slc.cyclescene.cc"
+  },
+  {
+    "name": "Los Angeles",
+    "code": "la",
+    "url": "https://la.cyclescene.cc"
   }
 ]
 ```

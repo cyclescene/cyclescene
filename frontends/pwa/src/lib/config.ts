@@ -14,6 +14,14 @@ const CONFIG = [
       "lat": 40.76078,
       "lng": -111.89105
     }
+  },
+  {
+    "city-code": "la",
+    "city-name": "Los Angeles",
+    "starting-coords": {
+      "lat": 34.0522,
+      "lng": -118.2437
+    }
   }
 ]
 

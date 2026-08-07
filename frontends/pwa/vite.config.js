@@ -11,12 +11,23 @@ const cityConfigs = {
   pdx: {
     name: "Cycle Scene - PDX",
     short_name: "CycleScenePDX",
-    description: "Upcoming bike rides in Portland, Oregon"
+    description: "Upcoming bike rides in Portland, Oregon",
+    keywords: "bike rides, cycling events, Portland bikes, group rides, Cycle Scene, Shift2Bikes, Pedalpalooza",
+    url: "https://pdx.cyclescene.cc"
   },
   slc: {
     name: "Cycle Scene - SLC",
     short_name: "CycleSceneSLC",
-    description: "Upcoming bike rides in Salt Lake City, Utah"
+    description: "Upcoming bike rides in Salt Lake City, Utah",
+    keywords: "bike rides, cycling events, Salt Lake City bikes, SLC cycling, group rides, Cycle Scene",
+    url: "https://slc.cyclescene.cc"
+  },
+  la: {
+    name: "Cycle Scene - LA",
+    short_name: "CycleSceneLA",
+    description: "Upcoming bike rides in Los Angeles, California",
+    keywords: "bike rides, cycling events, Los Angeles bikes, LA cycling, group rides, Cycle Scene",
+    url: "https://la.cyclescene.cc"
   }
 };
 
@@ -29,6 +40,13 @@ export default defineConfig(({ mode }) => {
   // Get city code from environment variable, default to pdx for development
   const cityCode = env.VITE_CITY_CODE || 'pdx';
   const cityConfig = cityConfigs[cityCode] || cityConfigs.pdx;
+  const htmlMetadata = {
+    '%CITY_APP_NAME%': cityConfig.name,
+    '%CITY_SHORT_NAME%': cityConfig.short_name,
+    '%CITY_DESCRIPTION%': cityConfig.description,
+    '%CITY_KEYWORDS%': cityConfig.keywords,
+    '%CITY_URL%': cityConfig.url,
+  };
 
   return {
 
@@ -37,6 +55,15 @@ export default defineConfig(({ mode }) => {
 
     },
     plugins: [
+      {
+        name: 'city-html-metadata',
+        transformIndexHtml(html) {
+          return Object.entries(htmlMetadata).reduce(
+            (updatedHtml, [placeholder, value]) => updatedHtml.replaceAll(placeholder, value),
+            html,
+          );
+        },
+      },
       tailwindcss(),
       svelte(),
       Icons({
