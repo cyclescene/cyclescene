@@ -92,6 +92,7 @@ jobs:
       - name: Deploy with OpenTofu
         working-directory: backend/cmd/g-cal/infra
         env:
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_google_calendars: ${{ secrets.GOOGLE_CALENDARS }}
           TF_VAR_turso_db_url: ${{ secrets.TURSO_DB_URL }}
           TF_VAR_turso_db_rw_token: ${{ secrets.TURSO_DB_RW_TOKEN }}
