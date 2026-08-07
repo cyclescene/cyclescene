@@ -49,7 +49,15 @@ variable "api_allow_public" {
 variable "allowed_origins" {
   description = "List of allowed origins for CORS"
   type        = list(string)
-  default     = ["*"]
+  default = [
+    "https://cyclescene.cc",
+    "https://www.cyclescene.cc",
+    "https://form.cyclescene.cc",
+    "https://dashboard.cyclescene.cc",
+    "https://la.cyclescene.cc",
+    "https://pdx.cyclescene.cc",
+    "https://slc.cyclescene.cc",
+  ]
 }
 
 variable "env_vars" {

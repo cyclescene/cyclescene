@@ -77,6 +77,7 @@ var ProdOrigins = []string{
 	"https://pdx.cyclescene.cc",
 	"https://slc.cyclescene.cc",
 	"https://dashboard.cyclescene.cc",
+	"https://la.cyclescene.cc",
 }
 
 // CORSConfig returns the CORS options for the current environment
