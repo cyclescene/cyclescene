@@ -361,6 +361,7 @@ func (r *Repository) SearchRides(city, searchQuery string, limit int) ([]Scraped
 				JOIN event_occurrences eo ON e.id = eo.event_id
 				LEFT JOIN ride_groups rg ON e.group_code = rg.code
 				WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+				AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL
 				AND (
 					LOWER(COALESCE(e.title, '')) LIKE ? ESCAPE '\'
 					OR LOWER(COALESCE(e.venue_name, '')) LIKE ? ESCAPE '\'
@@ -412,6 +413,7 @@ func (r *Repository) SearchRides(city, searchQuery string, limit int) ([]Scraped
 			JOIN event_occurrences eo ON e.id = eo.event_id
 			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+			AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL
 			AND (
 				LOWER(COALESCE(e.title, '')) LIKE ? ESCAPE '\'
 				OR LOWER(COALESCE(e.venue_name, '')) LIKE ? ESCAPE '\'
@@ -488,6 +490,7 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 			JOIN event_occurrences eo ON e.id = eo.event_id
 			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+			AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL
 			ORDER BY date ASC, starttime ASC
 		`
 		args = []any{city, todayStr, city, todayStr}
@@ -527,6 +530,7 @@ func (r *Repository) GetUpcomingRides(city string) ([]ScrapedRideFromDB, error) 
 			JOIN event_occurrences eo ON e.id = eo.event_id
 			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date >= ?
+			AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL
 			ORDER BY date ASC, starttime ASC
 		`
 		args = []any{city, todayStr}
@@ -595,6 +599,7 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 			JOIN event_occurrences eo ON e.id = eo.event_id
 			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date BETWEEN ? AND ?
+			AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL
 			ORDER BY date DESC, starttime DESC
 		`
 		args = []any{city, sevenDaysAgoStr, todayStr, city, sevenDaysAgoStr, todayStr}
@@ -634,6 +639,7 @@ func (r *Repository) GetPastRides(city string) ([]ScrapedRideFromDB, error) {
 			JOIN event_occurrences eo ON e.id = eo.event_id
 			LEFT JOIN ride_groups rg ON e.group_code = rg.code
 			WHERE e.city = ? AND e.is_published = 1 AND eo.start_date BETWEEN ? AND ?
+			AND e.latitude IS NOT NULL AND e.longitude IS NOT NULL
 			ORDER BY date DESC, starttime DESC
 		`
 		args = []any{city, sevenDaysAgoStr, todayStr}
@@ -665,10 +671,11 @@ func (r *Repository) scanScrapedRides(query string, args ...any) ([]ScrapedRideF
 	var rides []ScrapedRideFromDB
 	for rows.Next() {
 		var ride ScrapedRideFromDB
+		var address, audience, details, venue, organizer sql.NullString
 		if err := rows.Scan(
-			&ride.ID, &ride.Title, &ride.Lat, &ride.Lng, &ride.Address,
-			&ride.Audience, &ride.Cancelled, &ride.Date, &ride.StartTime,
-			&ride.SafetyPlan, &ride.Details, &ride.Venue, &ride.Organizer,
+			&ride.ID, &ride.Title, &ride.Lat, &ride.Lng, &address,
+			&audience, &ride.Cancelled, &ride.Date, &ride.StartTime,
+			&ride.SafetyPlan, &details, &venue, &organizer,
 			&ride.LoopRide, &ride.Shareable, &ride.RideSource, &ride.RouteID, &ride.EndTime,
 			&ride.Email, &ride.EventDuration, &ride.Image, &ride.LocDetails,
 			&ride.LocEnd, &ride.NewsFlash, &ride.TimeDetails, &ride.WebName, &ride.WebURL,
@@ -676,6 +683,11 @@ func (r *Repository) scanScrapedRides(query string, args ...any) ([]ScrapedRideF
 		); err != nil {
 			return nil, err
 		}
+		ride.Address = address.String
+		ride.Audience = audience.String
+		ride.Details = details.String
+		ride.Venue = venue.String
+		ride.Organizer = organizer.String
 		rides = append(rides, ride)
 	}
 	return rides, rows.Err()

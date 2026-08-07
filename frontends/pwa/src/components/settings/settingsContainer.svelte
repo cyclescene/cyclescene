@@ -130,8 +130,8 @@
       </Card.Root>
 
       <!-- Aggregated Rides -->
-      <Card.Root class="p-2 gap-2">
-        {#if CITY_CODE === "pdx"}
+      {#if CITY_CODE === "pdx"}
+        <Card.Root class="p-2 gap-2">
           <Card.Header class=" flex p-0">
             <Button
               disabled={false}
@@ -148,84 +148,86 @@
             </Button>
           </Card.Header>
           <Separator />
-        {/if}
-        <Card.Header class=" flex p-0">
-          <Button
-            disabled={false}
-            onclick={handleHostRide}
-            variant="ghost"
-            class="w-full justify-center"
-          >
-            <Card.Title class="grow text-left">Host a Ride</Card.Title>
-            <IconChevronRight class="shrink" />
-          </Button>
-        </Card.Header>
-        <Separator />
-        <Card.Header class=" flex p-0">
-          <Button
-            disabled={false}
-            variant="ghost"
-            onclick={handleRegisterGroup}
-            class="w-full justify-center"
-          >
-            <Card.Title class="grow text-left">Register Group</Card.Title>
-            <IconChevronRight class="shrink" />
-          </Button>
-        </Card.Header>
-        <Separator class="" />
-        <Card.Header class=" flex p-0">
-          <Button
-            disabled={false}
-            variant="ghost"
-            onclick={() => navigateTo(SUB_VIEW_ADULT_ONLY_RIDES)}
-            class="w-full justify-center"
-          >
-            <Card.Title class="grow text-left">Adults Only Rides</Card.Title>
-            <IconChevronRight class="shrink" />
-          </Button>
-        </Card.Header>
-        <Separator class="" />
-        <Card.Header class=" flex p-0">
-          <Button
-            disabled={false}
-            variant="ghost"
-            onclick={() => navigateTo(SUB_VIEW_FAMILY_FRIENDLY_RIDES)}
-            class="w-full justify-center"
-          >
-            <Card.Title class="grow text-left">Family Friendly Rides</Card.Title
+          <Card.Header class=" flex p-0">
+            <Button
+              disabled={false}
+              onclick={handleHostRide}
+              variant="ghost"
+              class="w-full justify-center"
             >
-            <IconChevronRight class="shrink" />
-          </Button>
-        </Card.Header>
-        <Separator class="" />
-        <Card.Header class=" flex p-0">
-          <Button
-            disabled={false}
-            variant="ghost"
-            onclick={() => navigateTo(SUB_VIEW_COVID_SAFETY_RIDES)}
-            class="w-full justify-center"
-          >
-            <Card.Title class="grow text-left">Covid Safety Rides</Card.Title>
-            <IconChevronRight class="shrink" />
-          </Button>
-        </Card.Header>
-      </Card.Root>
+              <Card.Title class="grow text-left">Host a Ride</Card.Title>
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+          <Separator />
+          <Card.Header class=" flex p-0">
+            <Button
+              disabled={false}
+              variant="ghost"
+              onclick={handleRegisterGroup}
+              class="w-full justify-center"
+            >
+              <Card.Title class="grow text-left">Register Group</Card.Title>
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+          <Separator class="" />
+          <Card.Header class=" flex p-0">
+            <Button
+              disabled={false}
+              variant="ghost"
+              onclick={() => navigateTo(SUB_VIEW_ADULT_ONLY_RIDES)}
+              class="w-full justify-center"
+            >
+              <Card.Title class="grow text-left">Adults Only Rides</Card.Title>
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+          <Separator class="" />
+          <Card.Header class=" flex p-0">
+            <Button
+              disabled={false}
+              variant="ghost"
+              onclick={() => navigateTo(SUB_VIEW_FAMILY_FRIENDLY_RIDES)}
+              class="w-full justify-center"
+            >
+              <Card.Title class="grow text-left">Family Friendly Rides</Card.Title
+              >
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+          <Separator class="" />
+          <Card.Header class=" flex p-0">
+            <Button
+              disabled={false}
+              variant="ghost"
+              onclick={() => navigateTo(SUB_VIEW_COVID_SAFETY_RIDES)}
+              class="w-full justify-center"
+            >
+              <Card.Title class="grow text-left">Covid Safety Rides</Card.Title>
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+        </Card.Root>
+      {/if}
       <Card.Root class="p-2 gap-2">
-        <Card.Header class=" flex p-0">
-          <Button
-            disabled={false}
-            variant="ghost"
-            href="https://www.shift2bikes.org/pages/donate/"
-            ref="noopener noreferrer"
-            target="_blank"
-            class="w-full justify-center"
-          >
-            <Card.Title class="grow text-left">Donate to Shift2Bikes</Card.Title
+        {#if CITY_CODE === "pdx"}
+          <Card.Header class=" flex p-0">
+            <Button
+              disabled={false}
+              variant="ghost"
+              href="https://www.shift2bikes.org/pages/donate/"
+              ref="noopener noreferrer"
+              target="_blank"
+              class="w-full justify-center"
             >
-            <IconChevronRight class="shrink" />
-          </Button>
-        </Card.Header>
-        <Separator class="" />
+              <Card.Title class="grow text-left">Donate to Shift2Bikes</Card.Title
+              >
+              <IconChevronRight class="shrink" />
+            </Button>
+          </Card.Header>
+          <Separator class="" />
+        {/if}
         <Card.Header class=" flex p-0">
           <Button
             disabled={false}
