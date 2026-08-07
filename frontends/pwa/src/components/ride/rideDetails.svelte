@@ -20,6 +20,10 @@
   const CITY_CODE = import.meta.env.VITE_CITY_CODE;
   const SHIFT2BIKES_URL = "https://www.shift2bikes.org/";
 
+  type DescriptionPart =
+    | { type: "text"; content: string }
+    | { type: "link"; content: string; href: string };
+
   const ride = $derived($currentRide);
   const route = $derived($currentRoute);
   const hasMapLocation = $derived.by(() => {
@@ -54,6 +58,84 @@
   const webUrl = $derived.by(() =>
     ride?.weburl ? normalizeUrl(ride.weburl) : "",
   );
+  const descriptionParts = $derived.by(() =>
+    toDescriptionParts(ride?.details ?? ""),
+  );
+
+  function isSafeExternalURL(url: string): boolean {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "https:" || parsed.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }
+
+  function addTextParts(parts: DescriptionPart[], text: string) {
+    const urlPattern = /https?:\/\/[^\s<>"']+/g;
+    let lastIndex = 0;
+
+    for (const match of text.matchAll(urlPattern)) {
+      const index = match.index ?? 0;
+      if (index > lastIndex) {
+        parts.push({ type: "text", content: text.slice(lastIndex, index) });
+      }
+
+      const url = match[0].replace(/[.,!?;:)]*$/, "");
+      if (isSafeExternalURL(url)) {
+        parts.push({ type: "link", content: url, href: url });
+      } else {
+        parts.push({ type: "text", content: match[0] });
+      }
+      lastIndex = index + match[0].length;
+    }
+
+    if (lastIndex < text.length) {
+      parts.push({ type: "text", content: text.slice(lastIndex) });
+    }
+  }
+
+  function toDescriptionParts(description: string): DescriptionPart[] {
+    const parts: DescriptionPart[] = [];
+
+    if (typeof DOMParser === "undefined") {
+      addTextParts(parts, description);
+      return parts;
+    }
+
+    const document = new DOMParser().parseFromString(description, "text/html");
+    const visit = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        addTextParts(parts, node.textContent ?? "");
+        return;
+      }
+
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+      const element = node as HTMLElement;
+      if (element.tagName === "BR") {
+        parts.push({ type: "text", content: "\n" });
+        return;
+      }
+
+      if (element.tagName === "A") {
+        const href = element.getAttribute("href") ?? "";
+        if (isSafeExternalURL(href)) {
+          parts.push({
+            type: "link",
+            content: element.textContent?.trim() || href,
+            href,
+          });
+          return;
+        }
+      }
+
+      for (const child of element.childNodes) visit(child);
+    };
+
+    for (const child of document.body.childNodes) visit(child);
+    return parts;
+  }
 
   $inspect(ride);
 
@@ -207,7 +289,23 @@
           <img src={imageUrl} alt={`Image for ${ride.title} bike ride`} />
         {/if}
 
-        <p class="text-lg whitespace-pre-wrap">{ride.details}</p>
+        {#if descriptionParts.length > 0}
+          <p class="text-lg whitespace-pre-wrap">
+            {#each descriptionParts as part}
+              {#if part.type === "link"}
+                <a
+                  class="text-yellow-400 underline"
+                  href={part.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >{part.content}</a
+                >
+              {:else}
+                {part.content}
+              {/if}
+            {/each}
+          </p>
+        {/if}
         <Card.Root>
           <Card.Header>
             <Card.Title>{ride.organizer}</Card.Title>
