@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/spacesedan/cyclescene/backend/internal/scraper"
@@ -23,6 +24,20 @@ type calendarEvent struct {
 	Longitude      float64
 	HasCoordinates bool
 	GeocodeError   error
+}
+
+const defaultLookaheadDays = 14
+
+func loadLookaheadDays(raw string) (int, error) {
+	if strings.TrimSpace(raw) == "" {
+		return defaultLookaheadDays, nil
+	}
+
+	days, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || days < 1 || days > 365 {
+		return 0, fmt.Errorf("must be an integer between 1 and 365")
+	}
+	return days, nil
 }
 
 func loadCalendars(raw string) ([]CalendarConfig, error) {

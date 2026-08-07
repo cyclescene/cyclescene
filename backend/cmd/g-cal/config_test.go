@@ -20,6 +20,36 @@ func TestLoadCalendars(t *testing.T) {
 	}
 }
 
+func TestLoadLookaheadDays(t *testing.T) {
+	tests := []struct {
+		raw  string
+		want int
+		ok   bool
+	}{
+		{raw: "", want: 14, ok: true},
+		{raw: "14", want: 14, ok: true},
+		{raw: " 30 ", want: 30, ok: true},
+		{raw: "0"},
+		{raw: "366"},
+		{raw: "two weeks"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.raw, func(t *testing.T) {
+			got, err := loadLookaheadDays(test.raw)
+			if test.ok {
+				if err != nil || got != test.want {
+					t.Fatalf("loadLookaheadDays(%q) = %d, %v; want %d, nil", test.raw, got, err, test.want)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("loadLookaheadDays(%q) error = nil, want error", test.raw)
+			}
+		})
+	}
+}
+
 func TestLoadCalendarsRejectsInvalidConfiguration(t *testing.T) {
 	tests := []string{
 		"",

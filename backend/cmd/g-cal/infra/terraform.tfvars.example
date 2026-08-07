@@ -1,5 +1,6 @@
 project_id = "cyclescene-479119"
 region     = "us-west1"
+calendar_lookahead_days = 14
 
 # Set these in an uncommitted terraform.tfvars file or your deployment secret store.
 turso_db_url      = "libsql://your-database.turso.io"

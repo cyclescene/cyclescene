@@ -17,9 +17,14 @@ fetches, geocodes, and stores events in Turso's shared rides tables. It loads
 the persistent geocode cache before calling Google, so a location is only
 geocoded once unless its cache record is removed.
 
+`GOOGLE_CALENDAR_LOOKAHEAD_DAYS` controls the future import window. It defaults
+to `14` days and must be between 1 and 365. The deployed job receives this from
+the `calendar_lookahead_days` Terraform variable, which also defaults to `14`.
+
 After a complete successful fetch, a future event that is no longer returned
-by its Google Calendar is marked cancelled in Turso. A Calendar API failure
-stops the job before this reconciliation can run.
+by its Google Calendar is marked cancelled in Turso only when it falls inside
+the configured import window. A Calendar API failure stops the job before this
+reconciliation can run.
 
 Geocoding uses Application Default Credentials, just like `scraperv2`. Locally,
 run `gcloud auth application-default login`; the deployed job's service account

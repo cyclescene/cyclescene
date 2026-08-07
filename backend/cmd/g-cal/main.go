@@ -32,6 +32,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("invalid GOOGLE_CALENDARS configuration: %v", err)
 	}
+	lookaheadDays, err := loadLookaheadDays(os.Getenv("GOOGLE_CALENDAR_LOOKAHEAD_DAYS"))
+	if err != nil {
+		log.Fatalf("invalid GOOGLE_CALENDAR_LOOKAHEAD_DAYS configuration: %v", err)
+	}
 
 	// Use Application Default Credentials. On Cloud Run this resolves to the
 	// job's service account; locally it resolves to gcloud ADC credentials.
@@ -54,13 +58,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to load geocode cache: %v", err)
 	}
-	slog.Info("starting Google Calendar import", "calendar_count", len(calendars), "geocode_cache_entries", len(geocodeCache))
+	slog.Info("starting Google Calendar import", "calendar_count", len(calendars), "lookahead_days", lookaheadDays, "geocode_cache_entries", len(geocodeCache))
 
 	allEvents := []calendarEvent{}
 
 	timeStart := time.Now()
 	for _, calendarConfig := range calendars {
-		events := getCalendarEvents(calendarService, calendarConfig)
+		events := getCalendarEvents(calendarService, calendarConfig, lookaheadDays)
 		allEvents = append(allEvents, events...)
 		slog.Info("fetched Google Calendar events", "calendar_id", calendarConfig.ID, "city", calendarConfig.City, "event_count", len(events))
 	}
@@ -81,7 +85,8 @@ func main() {
 		log.Fatalf("unable to persist geocode cache: %v", err)
 	}
 	slog.Info("persisted Google Calendar geocode cache entries", "entry_count", len(newLocations))
-	if err := syncCalendarEvents(db, allEvents, calendars); err != nil {
+	slog.Info("starting Turso Google Calendar event sync", "event_count", len(allEvents), "calendar_count", len(calendars))
+	if err := syncCalendarEvents(db, allEvents, calendars, lookaheadDays); err != nil {
 		log.Fatalf("unable to sync Google Calendar events: %v", err)
 	}
 	slog.Info("Google Calendar import completed successfully", "event_count", len(allEvents), "duration", time.Since(timeStart))
@@ -172,10 +177,10 @@ func calendarGeocodeCacheKey(city, location string) string {
 	return "gcal:" + city + ":" + normalizedLocation
 }
 
-func getCalendarEvents(service *calendar.Service, calendarConfig CalendarConfig) []calendarEvent {
+func getCalendarEvents(service *calendar.Service, calendarConfig CalendarConfig, lookaheadDays int) []calendarEvent {
 	now := time.Now()
 	timeMin := now.Format(time.RFC3339)
-	timeMax := now.AddDate(0, 100, 0).Format(time.RFC3339)
+	timeMax := now.AddDate(0, 0, lookaheadDays).Format(time.RFC3339)
 	allEvents := []calendarEvent{}
 	pageToken := ""
 	pageCount := 0
@@ -204,7 +209,7 @@ func getCalendarEvents(service *calendar.Service, calendarConfig CalendarConfig)
 		}
 
 	}
-	slog.Info("completed Google Calendar API pagination", "calendar_id", calendarConfig.ID, "city", calendarConfig.City, "page_count", pageCount, "event_count", len(allEvents))
+	slog.Info("completed Google Calendar API pagination", "calendar_id", calendarConfig.ID, "city", calendarConfig.City, "lookahead_days", lookaheadDays, "page_count", pageCount, "event_count", len(allEvents))
 
 	return allEvents
 }

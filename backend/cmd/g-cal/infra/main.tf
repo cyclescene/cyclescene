@@ -90,9 +90,10 @@ module "calendar_job" {
   image                 = "${var.region}-docker.pkg.dev/${var.project_id}/cyclescene/g-cal:${var.image_tag}"
   service_account_email = module.calendar_job_service_account.email
   env_vars = merge(var.env_vars, {
-    GOOGLE_CALENDARS  = var.google_calendars
-    TURSO_DB_URL      = var.turso_db_url
-    TURSO_DB_RW_TOKEN = var.turso_db_rw_token
+    GOOGLE_CALENDARS                = var.google_calendars
+    GOOGLE_CALENDAR_LOOKAHEAD_DAYS  = tostring(var.calendar_lookahead_days)
+    TURSO_DB_URL                    = var.turso_db_url
+    TURSO_DB_RW_TOKEN               = var.turso_db_rw_token
   })
 
   cpu_limit    = "1"

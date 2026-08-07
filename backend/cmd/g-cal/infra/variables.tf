@@ -27,6 +27,17 @@ variable "google_calendars" {
   type        = string
 }
 
+variable "calendar_lookahead_days" {
+  description = "Number of future days to import from Google Calendar"
+  type        = number
+  default     = 14
+
+  validation {
+    condition     = var.calendar_lookahead_days >= 1 && var.calendar_lookahead_days <= 365
+    error_message = "calendar_lookahead_days must be between 1 and 365."
+  }
+}
+
 variable "turso_db_url" {
   description = "Turso database URL for the shared rides database"
   type        = string

@@ -13,7 +13,7 @@ const googleCalendarSource = "google-calendar"
 // syncCalendarEvents writes all fetched Calendar instances in a single
 // transaction. Each Calendar instance is represented by one public event and
 // one occurrence so the existing ride endpoints can return it unchanged.
-func syncCalendarEvents(db *sql.DB, calendarEvents []calendarEvent, calendars []CalendarConfig) error {
+func syncCalendarEvents(db *sql.DB, calendarEvents []calendarEvent, calendars []CalendarConfig, lookaheadDays int) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return fmt.Errorf("begin Calendar sync: %w", err)
@@ -141,11 +141,15 @@ func syncCalendarEvents(db *sql.DB, calendarEvents []calendarEvent, calendars []
 			return fmt.Errorf("upsert Calendar sync metadata for %q: %w", sourceID, err)
 		}
 		syncedEvents++
+		if syncedEvents%1000 == 0 {
+			slog.Info("Turso Google Calendar sync progress", "synced_event_count", syncedEvents, "total_event_count", len(calendarEvents))
+		}
 	}
 
 	cancelledEvents := int64(0)
 	for calendarID, city := range calendarCities {
-		cancelledCount, err := cancelUnseenFutureOccurrences(tx, calendarID, now, todayForCity(city))
+		startDate, endDate := importDateRangeForCity(city, lookaheadDays)
+		cancelledCount, err := cancelUnseenOccurrences(tx, calendarID, now, startDate, endDate)
 		if err != nil {
 			return fmt.Errorf("reconcile missing Calendar events for %q: %w", calendarID, err)
 		}
@@ -162,37 +166,40 @@ func syncCalendarEvents(db *sql.DB, calendarEvents []calendarEvent, calendars []
 	return nil
 }
 
-// cancelUnseenFutureOccurrences handles an event deleted from Google Calendar.
-// It is called only after all pages have been fetched successfully: if Calendar
-// retrieval fails, main exits before syncCalendarEvents starts a transaction.
-func cancelUnseenFutureOccurrences(tx *sql.Tx, calendarID, syncTime, today string) (int64, error) {
+// cancelUnseenOccurrences handles an event deleted from Google Calendar within
+// the import window. It is called only after all pages have been fetched
+// successfully: if Calendar retrieval fails, main exits before
+// syncCalendarEvents starts a transaction.
+func cancelUnseenOccurrences(tx *sql.Tx, calendarID, syncTime, startDate, endDate string) (int64, error) {
 	result, err := tx.Exec(`
 		UPDATE event_occurrences
 		SET is_cancelled = 1
 		WHERE is_cancelled = 0
-		  AND start_date >= ?
+		  AND start_date BETWEEN ? AND ?
 		  AND event_id IN (
 			SELECT event_id
 			FROM google_calendar_sync
 			WHERE calendar_id = ? AND last_seen_at <> ?
 		  )
-	`, today, calendarID, syncTime)
+	`, startDate, endDate, calendarID, syncTime)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected()
 }
 
-func todayForCity(city string) string {
+func importDateRangeForCity(city string, lookaheadDays int) (string, string) {
 	timeZone := "America/Los_Angeles"
 	if city == "slc" {
 		timeZone = "America/Denver"
 	}
 	location, err := time.LoadLocation(timeZone)
 	if err != nil {
-		return time.Now().UTC().Format("2006-01-02")
+		now := time.Now().UTC()
+		return now.Format("2006-01-02"), now.AddDate(0, 0, lookaheadDays).Format("2006-01-02")
 	}
-	return time.Now().In(location).Format("2006-01-02")
+	now := time.Now().In(location)
+	return now.Format("2006-01-02"), now.AddDate(0, 0, lookaheadDays).Format("2006-01-02")
 }
 
 func occurrenceDetails(calendarEvent calendarEvent) (string, string, int, error) {
