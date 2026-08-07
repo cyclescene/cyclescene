@@ -1,0 +1,14 @@
+project_id = "cyclescene-479119"
+region     = "us-west1"
+
+# Set these in an uncommitted terraform.tfvars file or your deployment secret store.
+turso_db_url      = "libsql://your-database.turso.io"
+turso_db_rw_token = "replace-with-a-read-write-token"
+
+google_calendars = <<-JSON
+[
+  {"id":"nci0dn513lqb1rcbvfb72drqq0@group.calendar.google.com","city":"la"},
+  {"id":"trashpandacycling@gmail.com","city":"la"},
+  {"id":"skitchersgetpitchers@gmail.com","city":"la"}
+]
+JSON

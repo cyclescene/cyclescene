@@ -12,11 +12,11 @@ on:
   workflow_dispatch:
     inputs:
       services:
-        description: 'Services to deploy (comma-separated: api,image-optimizer,scraperv2,token-cleaner,db-backups)'
+        description: 'Services to deploy (comma-separated: api,image-optimizer,scraperv2,g-cal,token-cleaner,db-backups)'
         required: false
 
 env:
-  SERVICES: api image-optimizer scraperv2 token-cleaner db-backups
+  SERVICES: api image-optimizer scraperv2 g-cal token-cleaner db-backups
 
 jobs:
   detect-changes:
@@ -27,6 +27,7 @@ jobs:
       api: ${{ steps.detect.outputs.api }}
       image-optimizer: ${{ steps.detect.outputs.image-optimizer }}
       scraperv2: ${{ steps.detect.outputs.scraperv2 }}
+      g-cal: ${{ steps.detect.outputs.g-cal }}
       token-cleaner: ${{ steps.detect.outputs.token-cleaner }}
       db-backups: ${{ steps.detect.outputs.db-backups }}
 
@@ -79,6 +80,12 @@ jobs:
             echo "scraperv2=true" >> $GITHUB_OUTPUT
           fi
 
+          # Check Google Calendar importer. It shares the geocoder with Scraperv2.
+          if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/g-cal/|backend/internal/scraper/|backend/go\.|\.github/workflows/deploy-g-cal\.yml)"; then
+            CHANGED_SERVICES="$CHANGED_SERVICES g-cal"
+            echo "g-cal=true" >> $GITHUB_OUTPUT
+          fi
+
           # Check Token Cleaner
           if echo "$CHANGED_FILES" | grep -qE "(backend/cmd/token-cleaner/|backend/internal/|backend/go\.)"; then
             CHANGED_SERVICES="$CHANGED_SERVICES token-cleaner"
@@ -93,9 +100,10 @@ jobs:
 
           # Check database migrations
           if echo "$CHANGED_FILES" | grep -qE "^db/"; then
-            CHANGED_SERVICES="$CHANGED_SERVICES api scraperv2"
+            CHANGED_SERVICES="$CHANGED_SERVICES api scraperv2 g-cal"
             echo "api=true" >> $GITHUB_OUTPUT
             echo "scraperv2=true" >> $GITHUB_OUTPUT
+            echo "g-cal=true" >> $GITHUB_OUTPUT
           fi
 
           # Output final service list
@@ -128,6 +136,16 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.scraperv2 == 'true'
     uses: ./.github/workflows/deploy-scraperv2.yml
+    permissions:
+      contents: read
+      id-token: write
+    secrets: inherit
+
+  deploy-g-cal:
+    name: Deploy Google Calendar Importer
+    needs: detect-changes
+    if: needs.detect-changes.outputs.g-cal == 'true'
+    uses: ./.github/workflows/deploy-g-cal.yml
     permissions:
       contents: read
       id-token: write
@@ -169,5 +187,6 @@ jobs:
           echo "- API: ${{ needs.detect-changes.outputs.api }}"
           echo "- Image Optimizer: ${{ needs.detect-changes.outputs.image-optimizer }}"
           echo "- Scraperv2: ${{ needs.detect-changes.outputs.scraperv2 }}"
+          echo "- Google Calendar Importer: ${{ needs.detect-changes.outputs.g-cal }}"
           echo "- Token Cleaner: ${{ needs.detect-changes.outputs.token-cleaner }}"
           echo "- DB Backups: ${{ needs.detect-changes.outputs.db-backups }}"

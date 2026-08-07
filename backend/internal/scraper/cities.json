@@ -14,5 +14,13 @@
     "swLng": -112.1,
     "neLat": 41.0,
     "neLng": -111.5
+  },
+  "la": {
+    "cityName": "Los Angeles",
+    "state": "CA",
+    "swLat": 33.6,
+    "swLng": -118.9,
+    "neLat": 34.5,
+    "neLng": -117.6
   }
 }

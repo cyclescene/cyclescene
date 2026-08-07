@@ -59,7 +59,19 @@ func init() {
 	}
 }
 
+// HasCity reports whether a city has geocoding locality and location-bias
+// settings. Importers should validate their configured city before fetching.
+func HasCity(cityCode string) bool {
+	_, ok := cityMap[cityCode]
+	return ok
+}
+
 func GeocodeQuery(query, cityCode string) (float64, float64, error) {
+	cityDetails, ok := cityMap[cityCode]
+	if !ok {
+		return 0, 0, fmt.Errorf("unsupported city code %q", cityCode)
+	}
+
 	ctx := context.Background()
 	client, err := getAuthenticatedClient(ctx)
 	if err != nil {
@@ -67,8 +79,6 @@ func GeocodeQuery(query, cityCode string) (float64, float64, error) {
 	}
 
 	baseURL := "https://geocode.googleapis.com/v4beta/geocode/address/"
-
-	cityDetails := cityMap[cityCode]
 
 	var req *http.Request
 	req, err = http.NewRequest(http.MethodGet, baseURL, nil)
@@ -112,8 +122,6 @@ func GeocodeQuery(query, cityCode string) (float64, float64, error) {
 
 	lat := googleResponse.Results[0].Location.Latitude
 	lng := googleResponse.Results[0].Location.Longitude
-
-	fmt.Println(lat, lng)
 
 	return lat, lng, nil
 }

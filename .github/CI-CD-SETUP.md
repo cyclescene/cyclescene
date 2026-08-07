@@ -16,6 +16,7 @@ The CI/CD pipeline will:
 - api
 - image-optimizer
 - scraperv2
+- g-cal
 - token-cleaner
 - db-backups
 
@@ -89,13 +90,25 @@ Add these as repository secrets:
    - **Name:** `TURSO_DB_RO_TOKEN`
    - **Value:** Your Turso read-only token
 
+**Google Calendar importer**
+12. Add a repository secret named `GOOGLE_CALENDARS` containing the JSON array
+    configured for the importer, for example:
+
+    ```json
+    [{"id":"calendar@example.com","city":"la"}]
+    ```
+
+    The importer uses its Cloud Run service account rather than a Calendar API
+    key. Share each calendar with the job service account after its first
+    Terraform deployment.
+
 **Cloud Storage & Email**
-12. Click "New repository secret"
+13. Click "New repository secret"
 13. Add:
    - **Name:** `STAGING_BUCKET_NAME`
    - **Value:** `cyclescene-479119-user-media-staging`
 
-14. Click "New repository secret"
+15. Click "New repository secret"
 15. Add:
    - **Name:** `RESEND_API_KEY`
    - **Value:** Your Resend API key (for magic link emails)
