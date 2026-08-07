@@ -82,12 +82,16 @@ func syncCalendarEvents(db *sql.DB, calendarEvents []calendarEvent, calendars []
 		calendarCities[calendar.ID] = calendar.City
 	}
 	now := time.Now().UTC().Format(time.RFC3339)
+	syncedEvents := 0
+	skippedEvents := 0
 	for _, calendarEvent := range calendarEvents {
 		if calendarEvent.Event == nil || calendarEvent.Event.Id == "" {
+			skippedEvents++
 			continue
 		}
 		sourceID := calendarSourceID(calendarEvent.Calendar.ID, calendarEvent.Event.Id)
 		if _, duplicate := seen[sourceID]; duplicate {
+			skippedEvents++
 			continue
 		}
 		seen[sourceID] = struct{}{}
@@ -136,14 +140,17 @@ func syncCalendarEvents(db *sql.DB, calendarEvents []calendarEvent, calendars []
 		if _, err := syncStmt.Exec(calendarEvent.Calendar.ID, calendarEvent.Event.Id, eventID, calendarEvent.Event.Updated, now); err != nil {
 			return fmt.Errorf("upsert Calendar sync metadata for %q: %w", sourceID, err)
 		}
+		syncedEvents++
 	}
 
+	cancelledEvents := int64(0)
 	for calendarID, city := range calendarCities {
 		cancelledCount, err := cancelUnseenFutureOccurrences(tx, calendarID, now, todayForCity(city))
 		if err != nil {
 			return fmt.Errorf("reconcile missing Calendar events for %q: %w", calendarID, err)
 		}
 		if cancelledCount > 0 {
+			cancelledEvents += cancelledCount
 			slog.Info("marked Calendar events cancelled because they were absent from a completed sync", "calendar_id", calendarID, "count", cancelledCount)
 		}
 	}
@@ -151,6 +158,7 @@ func syncCalendarEvents(db *sql.DB, calendarEvents []calendarEvent, calendars []
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("commit Calendar sync: %w", err)
 	}
+	slog.Info("completed Turso Google Calendar sync", "synced_event_count", syncedEvents, "skipped_event_count", skippedEvents, "cancelled_occurrence_count", cancelledEvents)
 	return nil
 }
 

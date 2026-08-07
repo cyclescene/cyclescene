@@ -1,1 +1,6 @@
 .env
+
+# Terraform/OpenTofu variable files commonly contain credentials. Keep only
+# non-standard examples such as terraform.tfvars.example under version control.
+**/*.tfvars
+**/*.tfvars.json

@@ -46,7 +46,7 @@ func TestGeocodeCalendarEventsCachesLocations(t *testing.T) {
 	}
 
 	calls := 0
-	newLocations := geocodeCalendarEvents(events, map[string]scraper.GeoCodeCached{}, func(query, city string) (float64, float64, error) {
+	newLocations, stats := geocodeCalendarEvents(events, map[string]scraper.GeoCodeCached{}, func(query, city string) (float64, float64, error) {
 		calls++
 		if query != "Griffith Park" || city != "la" {
 			t.Fatalf("geocode called with (%q, %q)", query, city)
@@ -59,6 +59,9 @@ func TestGeocodeCalendarEventsCachesLocations(t *testing.T) {
 	}
 	if len(newLocations) != 1 || newLocations[0].Query != "gcal:la:griffith park" {
 		t.Fatalf("new geocode locations = %#v", newLocations)
+	}
+	if stats.Requests != 1 || stats.InMemoryCacheHits != 1 || stats.MissingLocationEvents != 1 {
+		t.Fatalf("unexpected geocode stats: %#v", stats)
 	}
 	if !events[0].HasCoordinates || !events[1].HasCoordinates {
 		t.Fatal("expected locations to be geocoded")
@@ -79,12 +82,15 @@ func TestGeocodeCalendarEventsUsesPersistentCache(t *testing.T) {
 		"gcal:la:griffith park": {Latitude: 34.1367, Longitude: -118.2942},
 	}
 
-	newLocations := geocodeCalendarEvents(events, cache, func(string, string) (float64, float64, error) {
+	newLocations, stats := geocodeCalendarEvents(events, cache, func(string, string) (float64, float64, error) {
 		t.Fatal("geocoder should not be called for a cached location")
 		return 0, 0, nil
 	})
 
 	if len(newLocations) != 0 || !events[0].HasCoordinates {
 		t.Fatalf("expected coordinates from persistent cache: locations=%#v event=%#v", newLocations, events[0])
+	}
+	if stats.PersistentCacheHits != 1 {
+		t.Fatalf("expected one persistent cache hit: %#v", stats)
 	}
 }
