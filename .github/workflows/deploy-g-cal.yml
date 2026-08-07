@@ -4,13 +4,13 @@ on:
   workflow_call:
     inputs:
       image_tag:
-        description: Custom image tag (default: commit SHA)
+        description: "Custom image tag (default: commit SHA)"
         type: string
         required: false
   workflow_dispatch:
     inputs:
       image_tag:
-        description: Custom image tag (default: commit SHA)
+        description: "Custom image tag (default: commit SHA)"
         required: false
 
 env:
